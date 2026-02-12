@@ -1,6 +1,6 @@
 # DocStudio
 
-![DocStudio Icon](docStudio_icon.png)
+<img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
 
 实时协作文档平台 - 团队的知识库系统
 
