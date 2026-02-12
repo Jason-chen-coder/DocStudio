@@ -1,6 +1,8 @@
 # DocStudio v1 – 文档
 
-<img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
+<div align="center">
+  <img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
+</div>
 
 **产品**：docStudio  
 **目标**：实时协作 Wiki / 文档平台 + 公开知识分享平台  

@@ -1,6 +1,8 @@
 # DocStudio
 
-<img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
+<div align="center">
+  <img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
+</div>
 
 实时协作文档平台 - 团队的知识库系统
 
