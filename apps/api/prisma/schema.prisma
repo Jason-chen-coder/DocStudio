@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户模型 ====================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String? // 可选：如果使用 GitHub OAuth 则为空
+  avatarUrl String? // 用户头像 URL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  ownedSpaces      Space[]           @relation("SpaceOwner")
+  spacePermissions SpacePermission[]
+  createdDocuments Document[]        @relation("DocumentCreator")
+  invitationsSent  SpaceInvitation[] @relation("InvitationSender")
+
+  @@map("users")
+}
+
+// ==================== 空间模型 ====================
+model Space {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isPublic    Boolean  @default(false)
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关系
+  owner       User              @relation("SpaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  documents   Document[]
+  permissions SpacePermission[]
+  invitations SpaceInvitation[]
+
+  @@index([ownerId])
+  @@index([isPublic])
+  @@map("spaces")
+}
+
+// ==================== 文档模型 ====================
+model Document {
+  id        String   @id @default(cuid())
+  spaceId   String
+  parentId  String? // 支持层级结构
+  title     String
+  content   String   @db.Text
+  ydocKey   String?  @unique // Yjs 文档标识符 (Stage 4使用)
+  order     Int      @default(0) // 用于拖拽排序
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  parent      Document?    @relation("DocumentHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Document[]   @relation("DocumentHierarchy")
+  creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id])
+  shareTokens ShareToken[]
+
+  @@index([spaceId])
+  @@index([parentId])
+  @@index([createdBy])
+  @@map("documents")
+}
+
+// ==================== 空间权限模型 ====================
+model SpacePermission {
+  id        String   @id @default(cuid())
+  userId    String
+  spaceId   String
+  role      Role     @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, spaceId]) // 一个用户在一个空间只能有一个角色
+  @@map("space_permissions")
+}
+
+// ==================== 邀请记录模型 ====================
+model SpaceInvitation {
+  id        String   @id @default(cuid())
+  spaceId   String
+  email     String?  // 可选，如果邀请特定邮箱
+  role      Role     @default(VIEWER)
+  inviterId String
+  token     String   @unique
+  expiresAt DateTime
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  space   Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  inviter User  @relation("InvitationSender", fields: [inviterId], references: [id])
+
+  @@unique([spaceId, email]) // 同一个空间同一个邮箱只能有一个待处理邀请(如果是特定邮箱邀请)
+  @@map("space_invitations")
+}
+
+// ==================== 分享令牌模型 ====================
+// ... (ShareToken remains same, skipping for brevity if not changed, but here I replace the whole block so i will include it)
+model ShareToken {
+  id         String     @id @default(cuid())
+  docId      String
+  token      String     @unique @default(cuid())
+  permission Permission @default(READ)
+  expiresAt  DateTime? // 可选的过期时间
+  createdAt  DateTime   @default(now())
+
+  // 关系
+  document Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("share_tokens")
+}
+
+// ==================== 枚举类型 ====================
+// 角色枚举
+enum Role {
+  OWNER   // 拥有者：完全控制
+  ADMIN   // 管理员：管理成员、设置
+  EDITOR  // 编辑者：读写文档
+  VIEWER  // 访客：只读
+}
+
+// 邀请状态
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+// 分享权限枚举
+enum Permission {
+  READ // 只读
+  WRITE // 可写
+}
