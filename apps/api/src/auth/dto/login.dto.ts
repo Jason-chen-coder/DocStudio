@@ -1,12 +1,12 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({
-    description: '用户邮箱地址',
+    description: '用户邮箱地址或登录标识',
     example: 'user@docStudio.com',
   })
-  @IsEmail({}, { message: '请输入有效的邮箱地址' })
+  @IsString({ message: '邮箱不能为空' })
   @IsNotEmpty({ message: '邮箱不能为空' })
   email: string;
 

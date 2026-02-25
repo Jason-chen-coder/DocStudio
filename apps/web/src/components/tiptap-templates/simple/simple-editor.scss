@@ -1,0 +1,350 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+body {
+  --tt-toolbar-height: 44px;
+  --tt-theme-text: var(--tt-gray-light-900);
+
+  .dark & {
+    --tt-theme-text: var(--tt-gray-dark-900);
+  }
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: var(--tt-theme-text);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  padding: 0;
+  overscroll-behavior-y: none;
+}
+
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+html,
+body,
+#root,
+#app {
+  height: 100%;
+  background-color: var(--tt-bg-color);
+}
+
+::-webkit-scrollbar {
+  width: 0.25rem;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-scrollbar-color) transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--tt-scrollbar-color);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiptap.ProseMirror {
+  font-family: "DM Sans", sans-serif;
+}
+
+.simple-editor-wrapper {
+  // width: 100vw;
+  // height: 100vh;
+  // overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.simple-editor-main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.simple-editor-content {
+  // max-width: 648px;
+  overflow-y: auto;
+  width: 100%;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.simple-editor-content .tiptap.ProseMirror.simple-editor {
+  flex: 1;
+  padding: 3rem 3rem 30vh;
+}
+
+.simple-editor-wrapper .simple-editor-toc {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0.2rem;
+  z-index: 20;
+  --toc-indent: 0.75rem;
+  --toc-depth-factor: 1;
+  --toc-progress-indent: 0.25rem;
+  --toc-progress-width-base: 1rem;
+  --toc-progress-width-min: 0.25rem;
+  --tt-toc-sidebar-line-bg: var(--tt-gray-light-a-300);
+  --toc-expanded-width: min(200px, calc(100% - 2rem));
+  width: 2.5rem;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  
+  background: color-mix(in srgb, var(--tt-bg-color) 92%, white 8%);
+  padding: 1.0rem .5rem;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transition:
+    width 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.simple-editor-wrapper[data-mode="edit"] .simple-editor-toc {
+  top: 0;
+}
+
+.simple-editor-wrapper[data-mode="preview"] .simple-editor-toc {
+  top: 0;
+}
+
+.simple-editor-wrapper .simple-editor-toc:hover,
+.simple-editor-wrapper .simple-editor-toc:focus-within {
+  width: var(--toc-expanded-width);
+  border-color: var(--tt-gray-light-a-200);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.simple-editor-wrapper .simple-editor-toc-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-height: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.simple-editor-wrapper .simple-editor-toc:hover .simple-editor-toc-progress,
+.simple-editor-wrapper .simple-editor-toc:focus-within .simple-editor-toc-progress {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.simple-editor-wrapper .toc-sidebar-progress-line {
+  height: 0.125rem;
+  border-radius: 0.25rem;
+  background-color: var(--tt-toc-sidebar-line-bg);
+  transition: background-color 0.3s ease;
+  margin-left: calc(
+    var(--toc-progress-indent) * (var(--toc-depth, 1) - 1) * var(--toc-depth-factor)
+  );
+  width: max(
+    var(--toc-progress-width-min),
+    var(--toc-progress-width-base) - var(--toc-progress-indent) * (var(--toc-depth, 1) - 1)
+  );
+}
+
+.simple-editor-wrapper .toc-sidebar-progress-line.is-active {
+  background-color: var(--tt-brand-color-500, var(--tt-theme-text));
+}
+
+.simple-editor-wrapper .simple-editor-toc-drawer {
+  position: absolute;
+  inset: 0;
+  padding: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(0.15rem);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+}
+
+.simple-editor-wrapper .simple-editor-toc:hover .simple-editor-toc-drawer,
+.simple-editor-wrapper .simple-editor-toc:focus-within .simple-editor-toc-drawer {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.simple-editor-wrapper .simple-editor-toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--tt-gray-light-a-200);
+}
+
+.simple-editor-wrapper .simple-editor-toc-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tt-gray-light-700);
+}
+
+.simple-editor-wrapper .simple-editor-toc-pin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tt-theme-text);
+  cursor: pointer;
+}
+
+.simple-editor-wrapper .simple-editor-toc-pin-button:hover {
+  background: var(--tt-gray-light-a-100);
+}
+
+.simple-editor-wrapper .simple-editor-toc-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.simple-editor-wrapper .simple-editor-toc-item + .simple-editor-toc-item {
+  margin-top: 0.25rem;
+}
+
+.simple-editor-wrapper .simple-editor-toc-link {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--tt-theme-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  cursor: pointer;
+  padding: 0.25rem 0.375rem;
+  border-radius: 6px;
+}
+
+.simple-editor-wrapper .simple-editor-toc-link:hover {
+  background: var(--tt-gray-light-a-100);
+}
+
+.simple-editor-wrapper .simple-editor-toc-link.is-active {
+  background: var(--tt-gray-light-a-200);
+  color: var(--tt-brand-color-500, var(--tt-theme-text));
+  font-weight: 600;
+}
+
+.simple-editor-wrapper .simple-editor-toc-item-level-2 {
+  padding-left: 0.75rem;
+}
+
+.simple-editor-wrapper .simple-editor-toc-item-level-3 {
+  padding-left: 1.5rem;
+}
+
+.simple-editor-wrapper .simple-editor-toc-item-level-4 {
+  padding-left: 2.25rem;
+}
+
+.simple-editor-wrapper.is-toc-pinned .simple-editor-main {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.simple-editor-wrapper.is-toc-pinned .simple-editor-content {
+  flex: 1;
+  box-shadow: none;
+  border: none;
+}
+
+.simple-editor-wrapper.is-toc-pinned .simple-editor-toc {
+  position: relative;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  flex: 0 0 var(--toc-expanded-width);
+  width: var(--toc-expanded-width);
+  border: 1px solid var(--tt-gray-light-a-200);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: none;
+  border: none;
+}
+
+// .simple-editor-wrapper.is-toc-pinned .simple-editor-toc:hover,
+// .simple-editor-wrapper.is-toc-pinned .simple-editor-toc:focus-within {
+//   box-shadow: none;
+//   border: none;
+// }
+
+.simple-editor-wrapper.is-toc-pinned.has-toolbar .simple-editor-toc {
+  top: 0;
+}
+
+.simple-editor-wrapper .simple-editor-toc.is-pinned .simple-editor-toc-progress {
+  opacity: 0;
+  display: none;
+  pointer-events: none;
+}
+
+.simple-editor-wrapper .simple-editor-toc.is-pinned .simple-editor-toc-drawer {
+  position: static;
+  inset: auto;
+  height: auto;
+  max-height: 100%;
+  padding: 0.75rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.simple-editor-wrapper .simple-editor-toc-progress,
+.simple-editor-wrapper .simple-editor-toc-drawer {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.simple-editor-wrapper .simple-editor-toc-progress::-webkit-scrollbar,
+.simple-editor-wrapper .simple-editor-toc-drawer::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@media screen and (max-width: 480px) {
+  .simple-editor-wrapper .simple-editor-toc {
+    display: none;
+  }
+
+  .simple-editor-content .tiptap.ProseMirror.simple-editor {
+    padding: 1rem 1.5rem 30vh;
+  }
+}

@@ -31,6 +31,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log('Login attempt:', { email, passwordLength: password.length });
       await login({ email, password });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请重试');
@@ -43,7 +44,7 @@ export default function LoginPage() {
     <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
       <div className="space-y-8">
         {/* Header */}
-        <div>
+        <div className="form-float-in" style={{ animationDelay: '40ms' }}>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
             欢迎使用 DocStudio
           </h1>
@@ -55,7 +56,7 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '120ms' }}>
             <label
               htmlFor="email"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -64,7 +65,7 @@ export default function LoginPage() {
             </label>
             <input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -74,7 +75,7 @@ export default function LoginPage() {
           </div>
 
           {/* Password */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '200ms' }}>
             <label
               htmlFor="password"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -88,7 +89,6 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
                 className="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#333DFC]/20 focus:border-[#333DFC] dark:text-white transition-all duration-200 pr-16 placeholder:text-gray-400"
                 placeholder="••••••••"
               />
@@ -108,7 +108,10 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="status-danger flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium">
+            <div
+              className="status-danger form-float-in flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium"
+              style={{ animationDelay: '260ms' }}
+            >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -120,7 +123,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-interactive w-full bg-[#333DFC] hover:bg-[#2930D9] disabled:bg-[#333DFC]/50 text-white font-semibold py-3.5 px-4 rounded-xl disabled:cursor-not-allowed shadow-lg shadow-[#333DFC]/25"
+            className="btn-interactive form-float-in w-full bg-[#333DFC] hover:bg-[#2930D9] disabled:bg-[#333DFC]/50 text-white font-semibold py-3.5 px-4 rounded-xl disabled:cursor-not-allowed shadow-lg shadow-[#333DFC]/25"
+            style={{ animationDelay: '300ms' }}
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -137,7 +141,10 @@ export default function LoginPage() {
         </form>
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+        <div
+          className="form-float-in text-center text-sm text-gray-500 dark:text-gray-400"
+          style={{ animationDelay: '360ms' }}
+        >
           还没有账号？{' '}
           <Link
             href="/auth/register"
@@ -147,6 +154,33 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+      <style jsx>{`
+        .form-float-in {
+          opacity: 0;
+          transform: translateY(14px);
+          animation: formFloatIn 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes formFloatIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .form-float-in {
+            opacity: 1;
+            transform: none;
+            animation: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }

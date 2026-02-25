@@ -21,6 +21,9 @@ export class UsersService {
     }
 
     // 哈希密码
+    console.log(
+      `Creating user ${email}, password length before hash: ${password.length}`,
+    );
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 创建用户
@@ -48,6 +51,13 @@ export class UsersService {
     return this.transformUser(rest);
   }
 
+  async findByEmailWithPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    return this.transformUser(user);
+  }
+
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -65,7 +75,12 @@ export class UsersService {
     plainPassword: string,
     hashedPassword: string,
   ): Promise<boolean> {
-    return bcrypt.compare(plainPassword, hashedPassword);
+    console.log(
+      `Validating password. Plain length: ${plainPassword.length}, Hash length: ${hashedPassword.length}`,
+    );
+    const result = await bcrypt.compare(plainPassword, hashedPassword);
+    console.log(`Password validation result: ${result}`);
+    return result;
   }
 
   async updatePassword(userId: string, newPassword: string) {

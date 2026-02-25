@@ -12,13 +12,15 @@ datasource db {
 
 // ==================== 用户模型 ====================
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String? // 可选：如果使用 GitHub OAuth 则为空
-  avatarUrl String? // 用户头像 URL
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  password     String? // 可选：如果使用 GitHub OAuth 则为空
+  avatarUrl    String? // 用户头像 URL
+  isSuperAdmin Boolean  @default(false) // 平台级超级管理员
+  isDisabled   Boolean  @default(false) // 账号禁用状态
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // 关系
   ownedSpaces      Space[]           @relation("SpaceOwner")
@@ -68,7 +70,9 @@ model Document {
   parent      Document?    @relation("DocumentHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children    Document[]   @relation("DocumentHierarchy")
   creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id])
-  shareTokens ShareToken[]
+  shareLinks  ShareLink[]
+
+
 
   @@index([spaceId])
   @@index([parentId])
@@ -116,19 +120,29 @@ model SpaceInvitation {
 
 // ==================== 分享令牌模型 ====================
 // ... (ShareToken remains same, skipping for brevity if not changed, but here I replace the whole block so i will include it)
-model ShareToken {
-  id         String     @id @default(cuid())
-  docId      String
-  token      String     @unique @default(cuid())
-  permission Permission @default(READ)
-  expiresAt  DateTime? // 可选的过期时间
-  createdAt  DateTime   @default(now())
+model ShareLink {
+  id          String    @id @default(cuid())
+  documentId  String
+  token       String    @unique @default(cuid())
+  type        ShareType @default(PUBLIC)
+  password    String?   // Hashed password if type is PASSWORD
+  expiresAt   DateTime?
+  viewCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  // 关系
-  document Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+  // Relations
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([token])
-  @@map("share_tokens")
+  @@index([documentId])
+  @@map("share_links")
+}
+
+enum ShareType {
+  PUBLIC
+  PASSWORD
 }
 
 // ==================== 枚举类型 ====================

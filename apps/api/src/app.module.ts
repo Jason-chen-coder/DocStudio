@@ -7,7 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SpacesModule } from './spaces/spaces.module';
 import { MinioModule } from './common/minio/minio.module';
-
+import { DocumentsModule } from './documents/documents.module';
+import { ShareModule } from './share/share.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -16,6 +18,9 @@ import { MinioModule } from './common/minio/minio.module';
     UsersModule,
     SpacesModule,
     MinioModule,
+    DocumentsModule,
+    ShareModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
@@ -27,3 +32,4 @@ import { MinioModule } from './common/minio/minio.module';
   ],
 })
 export class AppModule {}
+

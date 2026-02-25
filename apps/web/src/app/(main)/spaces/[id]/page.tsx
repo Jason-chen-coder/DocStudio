@@ -6,25 +6,29 @@ import { useRouter, useParams } from 'next/navigation';
 import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
 import Link from 'next/link';
+import { useDocuments } from '@/hooks/use-documents';
+import { FileText, Plus } from 'lucide-react';
 
 export default function SpaceDetailPage() {
   const { user } = useAuth();
-  // const router = useRouter(); // Unused
+  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const [space, setSpace] = useState<Space | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [spaceLoading, setSpaceLoading] = useState(true);
+  
+  const { documents, loading: docsLoading, createDocument } = useDocuments(id);
 
   useEffect(() => {
     async function loadSpace() {
       try {
-        setLoading(true);
+        setSpaceLoading(true);
         const data = await spaceService.getSpace(id);
         setSpace(data);
       } catch (error) {
         console.error('Failed to load space', error);
       } finally {
-        setLoading(false);
+        setSpaceLoading(false);
       }
     }
 
@@ -33,13 +37,27 @@ export default function SpaceDetailPage() {
     }
   }, [user, id]);
 
-  if (loading) {
+  const handleCreate = async () => {
+    try {
+      const newDoc = await createDocument({
+        title: '无标题文档',
+        spaceId: id,
+      });
+      router.push(`/spaces/${id}/documents/${newDoc.id}`);
+    } catch {
+      // Toast handled in hook
+    }
+  };
+
+  if (spaceLoading) {
     return <div className="text-center p-10 text-gray-500">加载中...</div>;
   }
 
   if (!space) {
     return <div className="text-center p-10 text-gray-500">空间不存在或无权访问</div>;
   }
+
+  const hasDocuments = documents.length > 0;
 
   return (
     <div className="space-y-6">
@@ -78,16 +96,59 @@ export default function SpaceDetailPage() {
         </div>
       </div>
 
-      {/* Content Area (Placeholder for Documents) */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm min-h-[400px] flex items-center justify-center border border-dashed border-gray-300 dark:border-gray-700">
-        <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-                文档列表功能开发中...
-            </p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                + 新建文档
-            </button>
-        </div>
+      {/* Content Area */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm min-h-[400px] p-6 border border-gray-200 dark:border-gray-700">
+        
+        {docsLoading ? (
+            <div className="text-center p-10 text-gray-400">加载文档中...</div>
+        ) : !hasDocuments ? (
+            <div className="flex flex-col items-center justify-center h-[300px] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    此空间暂无文档
+                </p>
+                <button 
+                    onClick={handleCreate}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                    <Plus className="w-4 h-4" />
+                    新建文档
+                </button>
+            </div>
+        ) : (
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">最近文档</h2>
+                    <button 
+                        onClick={handleCreate}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                         <Plus className="w-4 h-4" />
+                         新建文档
+                    </button>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Show a few recent documents */}
+                    {documents.slice(0, 6).map(doc => (
+                        <Link 
+                            key={doc.id}
+                            href={`/spaces/${space.id}/documents/${doc.id}`}
+                            className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition bg-gray-50 dark:bg-gray-900/50"
+                        >
+                            <div className="flex items-start gap-3">
+                                <FileText className="w-8 h-8 text-blue-500 mt-1" />
+                                <div>
+                                    <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{doc.title}</h3>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        更新于 {new Date(doc.updatedAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        )}
+
       </div>
     </div>
   );

@@ -48,6 +48,10 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      console.log('Register attempt:', {
+        email: formData.email,
+        passwordLength: formData.password.length,
+      });
       await register({
         email: formData.email,
         name: formData.name,
@@ -64,7 +68,7 @@ export default function RegisterPage() {
     <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
       <div className="space-y-8">
         {/* Header */}
-        <div>
+        <div className="form-float-in" style={{ animationDelay: '40ms' }}>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
             创建账号
           </h1>
@@ -76,7 +80,7 @@ export default function RegisterPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '120ms' }}>
             <label
               htmlFor="name"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -96,7 +100,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Email */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '180ms' }}>
             <label
               htmlFor="email"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -116,7 +120,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Password */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '240ms' }}>
             <label
               htmlFor="password"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -150,7 +154,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Confirm Password */}
-          <div>
+          <div className="form-float-in" style={{ animationDelay: '300ms' }}>
             <label
               htmlFor="confirmPassword"
               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
@@ -172,7 +176,10 @@ export default function RegisterPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="status-danger flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium">
+            <div
+              className="status-danger form-float-in flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium"
+              style={{ animationDelay: '340ms' }}
+            >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -184,7 +191,8 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-interactive w-full bg-[#333DFC] hover:bg-[#2930D9] disabled:bg-[#333DFC]/50 text-white font-semibold py-3.5 px-4 rounded-xl disabled:cursor-not-allowed shadow-lg shadow-[#333DFC]/25"
+            className="btn-interactive form-float-in w-full bg-[#333DFC] hover:bg-[#2930D9] disabled:bg-[#333DFC]/50 text-white font-semibold py-3.5 px-4 rounded-xl disabled:cursor-not-allowed shadow-lg shadow-[#333DFC]/25"
+            style={{ animationDelay: '380ms' }}
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -201,7 +209,10 @@ export default function RegisterPage() {
         </form>
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+        <div
+          className="form-float-in text-center text-sm text-gray-500 dark:text-gray-400"
+          style={{ animationDelay: '440ms' }}
+        >
           已有账号？{' '}
           <Link
             href="/auth/login"
@@ -211,6 +222,33 @@ export default function RegisterPage() {
           </Link>
         </div>
       </div>
+      <style jsx>{`
+        .form-float-in {
+          opacity: 0;
+          transform: translateY(14px);
+          animation: formFloatIn 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        @keyframes formFloatIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .form-float-in {
+            opacity: 1;
+            transform: none;
+            animation: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }

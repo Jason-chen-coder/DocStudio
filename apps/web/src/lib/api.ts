@@ -18,7 +18,7 @@ export function clearToken(): void {
 }
 
 // API 请求封装
-async function apiRequest<T>(
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -28,9 +28,8 @@ async function apiRequest<T>(
     ...options.headers,
   };
 
-  // 只有当 body 不是 FormData 时才设置 Content-Type 为 application/json
-  // FormData 会自动设置 Content-Type: multipart/form-data; boundary=...
-  if (!(options.body instanceof FormData)) {
+  // 只有当 body 存在且不是 FormData 时才设置 Content-Type 为 application/json
+  if (options.body && !(options.body instanceof FormData)) {
     // 检查 options.headers 里是否已经手动设置了 Content-Type
     const hasContentType = Object.keys(options.headers || {}).some(
       key => key.toLowerCase() === 'content-type'
@@ -41,7 +40,7 @@ async function apiRequest<T>(
     }
   }
 
-  if (token) {
+  if (token && !(headers as any)['Authorization']) {
     (headers as any)['Authorization'] = `Bearer ${token}`;
   }
 
@@ -63,6 +62,15 @@ async function apiRequest<T>(
 
   return response.json();
 }
+
+// Convenience wrapper matching axios-like usage or previous assumptions
+export const api = {
+  get: <T = any>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T = any>(endpoint: string, data?: any, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(data) }),
+  put: <T = any>(endpoint: string, data?: any, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(data) }),
+  patch: <T = any>(endpoint: string, data?: any, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(data) }),
+  delete: <T = any>(endpoint: string, options?: RequestInit) => apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+};
 
 // Auth API
 export interface RegisterData {
@@ -91,6 +99,8 @@ export interface User {
   email: string;
   name: string;
   avatarUrl?: string;
+  isSuperAdmin: boolean;
+  isDisabled: boolean;
   createdAt: string;
 }
 
@@ -123,4 +133,78 @@ export const authAPI = {
       body: formData,
     });
   }
+};
+
+// ─── Admin API ─────────────────────────────────────────────────────────────────
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  isSuperAdmin: boolean;
+  isDisabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  spaceCount: number;
+  documentCount: number;
+}
+
+export interface AdminUserDetail extends AdminUserItem {
+  spaces: { id: string; name: string; role: string }[];
+}
+
+export interface AdminUsersResponse {
+  data: AdminUserItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminSpaceItem {
+  id: string;
+  name: string;
+  memberCount: number;
+}
+
+export interface AdminUserQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  spaceId?: string;
+}
+
+export const adminAPI = {
+  getUsers: (query: AdminUserQuery = {}) => {
+    const params = new URLSearchParams();
+    if (query.page) params.set('page', String(query.page));
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.search) params.set('search', query.search);
+    if (query.spaceId) params.set('spaceId', query.spaceId);
+    return apiRequest<AdminUsersResponse>(`/admin/users?${params.toString()}`);
+  },
+
+  getUserById: (userId: string) =>
+    apiRequest<AdminUserDetail>(`/admin/users/${userId}`),
+
+  updatePassword: (userId: string, newPassword: string) =>
+    apiRequest<{ message: string }>(`/admin/users/${userId}/password`, {
+      method: 'PATCH',
+      body: JSON.stringify({ newPassword }),
+    }),
+
+  updateStatus: (userId: string, isDisabled: boolean) =>
+    apiRequest<{ message: string; isDisabled: boolean }>(
+      `/admin/users/${userId}/status`,
+      { method: 'PATCH', body: JSON.stringify({ isDisabled }) },
+    ),
+
+  deleteUser: (userId: string) =>
+    apiRequest<{ message: string }>(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    }),
+
+  getSpaces: (search?: string) => {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    return apiRequest<AdminSpaceItem[]>(`/admin/spaces${params}`);
+  },
 };

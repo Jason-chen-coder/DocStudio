@@ -4,7 +4,7 @@ import '@radix-ui/themes/styles.css';
 import './globals.css';
 import { Theme } from '@radix-ui/themes';
 import { AuthProvider } from '@/lib/auth-context';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 import { GlobalLoading } from '@/components/layout/global-loading';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -35,7 +35,7 @@ export default function RootLayout({
           <AuthProvider>
             <GlobalLoading />
             {children}
-            <Toaster />
+            <Toaster position="top-center" richColors />
           </AuthProvider>
         </Theme>
       </body>

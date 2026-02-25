@@ -1,4 +1,8 @@
+@import '../styles/_variables.scss';
+@import '../styles/_keyframe-animations.scss';
+
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* Configure dark mode to use class strategy instead of media query */
 @custom-variant dark (&:is(.dark *));

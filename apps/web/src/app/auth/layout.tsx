@@ -60,9 +60,9 @@ export default function AuthLayout({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-white/50 to-transparent rounded-full blur-3xl" />
         
         {/* Floating Elements */}
-        <div className="absolute top-20 left-20 w-20 h-20 bg-white/40 rounded-3xl rotate-12 blur-sm" />
-        <div className="absolute bottom-32 right-24 w-16 h-16 bg-[#333DFC]/20 rounded-2xl -rotate-12" />
-        <div className="absolute top-1/3 right-16 w-12 h-12 bg-white/30 rounded-full" />
+        <div className="floating-el floating-el-a absolute top-20 left-20 w-20 h-20 bg-white/40 rounded-3xl rotate-12 blur-sm" />
+        <div className="floating-el floating-el-b absolute bottom-32 right-24 w-16 h-16 bg-[#333DFC]/20 rounded-2xl -rotate-12" />
+        <div className="floating-el floating-el-c absolute top-1/3 right-16 w-12 h-12 bg-white/30 rounded-full" />
 
         {/* Brand Content */}
         <div className="relative z-10 text-center max-w-md animate-fade-in">
@@ -74,25 +74,19 @@ export default function AuthLayout({
                 <div className="absolute inset-0 bg-gradient-to-br from-[#333DFC] to-[#5C63FF] rounded-full shadow-2xl shadow-[#333DFC]/30" />
                 
                 {/* Floating Elements */}
-                <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-3xl rotate-12 shadow-lg shadow-emerald-500/30" />
-                <div className="absolute -bottom-2 -left-8 w-24 h-24 bg-gradient-to-br from-violet-400 to-purple-500 rounded-[2rem] -rotate-6 shadow-lg shadow-purple-500/30" />
-                <div className="absolute top-1/2 -right-10 w-14 h-14 bg-gradient-to-br from-sky-300 to-blue-400 rounded-full shadow-md shadow-blue-400/30" />
+                <div className="icon-floating icon-floating-a absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-3xl rotate-12 shadow-lg shadow-emerald-500/30" />
+                <div className="icon-floating icon-floating-b absolute -bottom-2 -left-8 w-24 h-24 bg-gradient-to-br from-violet-400 to-purple-500 rounded-[2rem] -rotate-6 shadow-lg shadow-purple-500/30" />
+                <div className="icon-floating icon-floating-c absolute top-1/2 -right-10 w-14 h-14 bg-gradient-to-br from-sky-300 to-blue-400 rounded-full shadow-md shadow-blue-400/30" />
                 
-                {/* Document Icon Center */}
+                {/* App Icon Center */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <svg
-                    className="w-24 h-24 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
+                  <Image
+                    src="/docStudio_icon.png"
+                    alt="DocStudio App Icon"
+                    width={96}
+                    height={96}
+                    className="rounded-full shadow-xl"
+                  />
                 </div>
               </div>
             </div>
@@ -120,6 +114,103 @@ export default function AuthLayout({
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .floating-el {
+          will-change: transform;
+          animation-iteration-count: infinite;
+          animation-timing-function: ease-in-out;
+        }
+
+        .floating-el-a {
+          animation-name: floatA;
+          animation-duration: 5.8s;
+        }
+
+        .floating-el-b {
+          animation-name: floatB;
+          animation-duration: 6.6s;
+        }
+
+        .floating-el-c {
+          animation-name: floatC;
+          animation-duration: 5.2s;
+        }
+
+        .icon-floating {
+          will-change: transform;
+          animation-iteration-count: infinite;
+          animation-timing-function: ease-in-out;
+        }
+
+        .icon-floating-a {
+          animation-name: iconFloatA;
+          animation-duration: 3.8s;
+        }
+
+        .icon-floating-b {
+          animation-name: iconFloatB;
+          animation-duration: 4.6s;
+        }
+
+        .icon-floating-c {
+          animation-name: iconFloatC;
+          animation-duration: 3.4s;
+        }
+
+        @keyframes floatA {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) rotate(12deg);
+          }
+          50% {
+            transform: translate3d(0, -8px, 0) rotate(9deg);
+          }
+        }
+
+        @keyframes floatB {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) rotate(-12deg);
+          }
+          50% {
+            transform: translate3d(0, 9px, 0) rotate(-8deg);
+          }
+        }
+
+        @keyframes floatC {
+          0%, 100% {
+            transform: translate3d(0, 0, 0);
+          }
+          50% {
+            transform: translate3d(0, -7px, 0);
+          }
+        }
+
+        @keyframes iconFloatA {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) rotate(12deg) scale(1);
+          }
+          50% {
+            transform: translate3d(6px, -14px, 0) rotate(20deg) scale(1.05);
+          }
+        }
+
+        @keyframes iconFloatB {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) rotate(-6deg) scale(1);
+          }
+          50% {
+            transform: translate3d(-8px, 12px, 0) rotate(-14deg) scale(1.06);
+          }
+        }
+
+        @keyframes iconFloatC {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          50% {
+            transform: translate3d(10px, -10px, 0) scale(1.08);
+          }
+        }
+      `}</style>
     </div>
   );
 }

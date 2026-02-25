@@ -34,7 +34,7 @@ export class AuthService {
     const { email, password } = loginDto;
 
     // 查找用户
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmailWithPassword(email);
     if (!user || !user.password) {
       throw new UnauthorizedException('邮箱或密码错误');
     }
