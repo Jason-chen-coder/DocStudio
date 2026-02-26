@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import { Shield, Search, ChevronDown, ChevronLeft, ChevronRight, MoreVertical, KeyRound, Ban, CheckCircle, Trash2 } from 'lucide-react';
+import { getCdnUrl } from '@/lib/cdn';
 
 // ─── 修改密码弹窗 ─────────────────────────────────────────────────────────────
 function ChangePasswordModal({
@@ -347,7 +348,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col h-full min-h-[calc(100vh-8rem)]">
       {/* 页头 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -391,7 +392,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* 用户表格 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-900/50 text-xs text-gray-500 uppercase tracking-wider">
             <tr>
@@ -409,40 +410,43 @@ export default function AdminUsersPage() {
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">加载中...</td></tr>
             ) : users.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">暂无用户</td></tr>
-            ) : users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    {u.avatarUrl && /^https?:\/\//.test(u.avatarUrl) ? (
-                      <Image src={u.avatarUrl} alt={u.name} width={32} height={32} className="rounded-full object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-xs">
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <span className="font-medium text-gray-900 dark:text-white">{u.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-500">{u.email}</td>
-                <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{u.spaceCount}</td>
-                <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{u.documentCount}</td>
-                <td className="px-4 py-3"><StatusBadge user={u} /></td>
-                <td className="px-4 py-3 text-gray-500">{new Date(u.createdAt).toLocaleDateString('zh-CN')}</td>
-                <td className="px-4 py-3 text-center">
-                  <ActionMenu
-                    user={u}
-                    currentUserId={currentUser?.id ?? ''}
-                    onAction={(type) => openModal(u, type)}
-                  />
-                </td>
-              </tr>
-            ))}
+            ) : users.map((u) => {
+              const avatarUrl = getCdnUrl(u.avatarUrl);
+              return (
+                <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {avatarUrl ? (
+                        <Image src={avatarUrl} alt={u.name} width={32} height={32} unoptimized className="rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-xs">
+                          {u.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="font-medium text-gray-900 dark:text-white">{u.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">{u.email}</td>
+                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{u.spaceCount}</td>
+                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{u.documentCount}</td>
+                  <td className="px-4 py-3"><StatusBadge user={u} /></td>
+                  <td className="px-4 py-3 text-gray-500">{new Date(u.createdAt).toLocaleDateString('zh-CN')}</td>
+                  <td className="px-4 py-3 text-center">
+                    <ActionMenu
+                      user={u}
+                      currentUserId={currentUser?.id ?? ''}
+                      onAction={(type) => openModal(u, type)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* 分页 */}
-      <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+      <div className="flex items-center justify-between mt-4 pt-4 text-sm text-gray-500 shrink-0">
         <div className="flex items-center gap-3">
           <label className="whitespace-nowrap">每页显示</label>
           <select

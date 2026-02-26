@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } fro
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { MoveDocumentDto } from './dto/move-document.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SpacePermissionGuard } from '../common/guards/space-permission.guard';
 
@@ -41,6 +42,15 @@ export class DocumentsController {
     @Body() updateDocumentDto: UpdateDocumentDto,
   ) {
     return this.documentsService.update(id, updateDocumentDto);
+  }
+
+  @UseGuards(JwtAuthGuard, SpacePermissionGuard)
+  @Patch(':id/move')
+  move(
+    @Param('id') id: string,
+    @Body() moveDocumentDto: MoveDocumentDto,
+  ) {
+    return this.documentsService.move(id, moveDocumentDto);
   }
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)

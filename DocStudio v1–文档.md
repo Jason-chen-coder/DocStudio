@@ -354,7 +354,6 @@ enum ShareType {
 
 1. **Space 工作空间管理**
    - 创建 Space（设置公开/私有）
-   - Space 列表（我的工作空间）
    - Space 基本信息管理
    - 数据模型：增加 `isPublic` 字段
 

@@ -19,6 +19,7 @@ export interface SpaceMember {
   userId: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   role: Role;
   joinedAt: Date;
 }
@@ -131,15 +132,7 @@ export class SpacesService {
     userId: string,
     updateSpaceDto: UpdateSpaceDto,
   ): Promise<Space> {
-    const space = await this.prisma.space.findUnique({
-      where: { id },
-      select: { ownerId: true },
-    });
-
-    if (!space) throw new NotFoundException('Space not found');
-    if (space.ownerId !== userId) {
-      throw new ForbiddenException('Only the owner can update the space');
-    }
+    await this.checkPermission(id, userId, [Role.OWNER, Role.ADMIN]);
 
     return this.prisma.space.update({
       where: { id },
@@ -201,7 +194,7 @@ export class SpacesService {
     const members = await this.prisma.spacePermission.findMany({
       where: { spaceId },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -213,6 +206,7 @@ export class SpacesService {
       userId: m.userId,
       name: m.user.name,
       email: m.user.email,
+      avatarUrl: m.user.avatarUrl,
       role: m.role,
       joinedAt: m.createdAt,
     }));

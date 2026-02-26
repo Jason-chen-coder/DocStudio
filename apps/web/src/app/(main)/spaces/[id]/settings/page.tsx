@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter, useParams } from 'next/navigation';
 import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
+import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -16,15 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
 
 export default function SpaceSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-
-  const { toast } = useToast();
 
   const [space, setSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,12 +48,8 @@ export default function SpaceSettingsPage() {
     try {
       setLoading(true);
       const data = await spaceService.getSpace(id);
-      if (data.myRole !== 'OWNER') {
-        toast({
-          title: '权限错误',
-          description: '您没有权限访问此页面',
-          variant: 'destructive',
-        });
+      if (data.myRole !== 'OWNER' && data.myRole !== 'ADMIN') {
+        toast.error('权限错误');
         router.push(`/spaces/${id}`);
         return;
       }
@@ -80,20 +74,22 @@ export default function SpaceSettingsPage() {
     try {
       setSaving(true);
       await spaceService.updateSpace(space.id, formData);
-      toast({
-        toastType: 'success',
-        title: '成功',
-        description: '更新成功',
-      });
+      toast.success('更新成功');
+      // toast({
+      //   title: '成功',
+      //   description: '工作空间设置更新成功',
+      // });
       window.dispatchEvent(new CustomEvent('workspace-updated'));
       // router.push(`/spaces/${id}`);
     } catch (error) {
-      toast({
-        toastType: 'error',
-        title: '错误',
-        description: '更新失败',
-        variant: 'destructive',
-      });
+      toast.error('更新失败');
+
+      // toast({
+      //   toastType: 'error',
+      //   title: '错误',
+      //   description: '更新失败',
+      //   variant: 'destructive',
+      // });
     } finally {
       setSaving(false);
     }
@@ -109,20 +105,22 @@ export default function SpaceSettingsPage() {
     try {
       setSaving(true);
       await spaceService.deleteSpace(space.id);
-      toast({
-        toastType: 'success',
-        title: '成功',
-        description: '工作空间已删除',
-      });
+      toast.success('删除成功');
+      // toast({
+      //   toastType: 'success',
+      //   title: '成功',
+      //   description: '工作空间已删除',
+      // });
       window.dispatchEvent(new CustomEvent('workspace-updated'));
       router.push('/spaces');
     } catch (error) {
-      toast({
-        toastType: 'error',
-        title: '错误',
-        description: '删除失败',
-        variant: 'destructive',
-      });
+      toast.error('删除失败');
+      // toast({
+      //   toastType: 'error',
+      //   title: '错误',
+      //   description: '删除失败',
+      //   variant: 'destructive',
+      // });
       setSaving(false);
       setDeleteConfirmOpen(false);
     }
@@ -131,7 +129,7 @@ export default function SpaceSettingsPage() {
   if (loading || !space) return <div className="p-8 text-center text-gray-500">加载中...</div>;
 
   return (
-    <div className="w-full p-8">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <div>
           <button
@@ -188,22 +186,26 @@ export default function SpaceSettingsPage() {
         </div>
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+          {space.myRole === 'OWNER' ? (
             <button
-                type="button"
-                onClick={handleDelete}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium"
+              type="button"
+              onClick={handleDelete}
+              className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-medium"
             >
-                删除空间
+              删除空间
             </button>
-            <div className="flex gap-3">
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg transition disabled:opacity-50 hover:bg-blue-700"
-                >
-                    {saving ? '保存中...' : '保存更改'}
-                </button>
-            </div>
+          ) : (
+            <div></div> /* Placeholder to keep the flex layout for save button */
+          )}
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg transition disabled:opacity-50 hover:bg-blue-700"
+            >
+              {saving ? '保存中...' : '保存更改'}
+            </button>
+          </div>
         </div>
       </form>
 

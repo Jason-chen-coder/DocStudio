@@ -1,6 +1,6 @@
 "use client"
 
-import { CSSProperties, useEffect, useRef, useState } from "react"
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
@@ -193,6 +193,8 @@ export interface SimpleEditorProps {
   onUpdate?: (content: string) => void
   editable?: boolean
   showTableOfContents?: boolean
+  /** 在编辑器内容底部追加的自定义渲染（与内容共享同一滚动容器） */
+  footer?: ReactNode
 }
 
 type TableOfContentsItem = {
@@ -207,6 +209,7 @@ export function SimpleEditor({
   onUpdate,
   editable = true,
   showTableOfContents = true,
+  footer,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
@@ -220,6 +223,9 @@ export function SimpleEditor({
   const [isTocPinned, setIsTocPinned] = useState(false)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  /** 点击 TOC 跳转时锁住高亮，防止 scroll 事件期间抖动 */
+  const isScrollingRef = useRef(false)
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -288,7 +294,14 @@ export function SimpleEditor({
   })
 
   const scrollToHeading = (id: string) => {
+    // 立即高亮点击的目标，并锁定不让 scroll 事件覆盖
     setActiveTocId(id)
+    isScrollingRef.current = true
+
+    // 清除上一次的解锁定时器
+    if (scrollEndTimerRef.current) {
+      clearTimeout(scrollEndTimerRef.current)
+    }
 
     const target = document.getElementById(id)
     if (!target) return
@@ -330,6 +343,18 @@ export function SimpleEditor({
     if (!scrollContainer || tableOfContentsItems.length === 0) return
 
     const updateActiveTocByScroll = () => {
+      // 滚动期间若是由点击触发的，锁定高亮不跟随滚动抖动
+      // 每次 scroll 事件都重置解锁定时器，150ms 无新 scroll 事件即视为滚动结束
+      if (isScrollingRef.current) {
+        if (scrollEndTimerRef.current) {
+          clearTimeout(scrollEndTimerRef.current)
+        }
+        scrollEndTimerRef.current = setTimeout(() => {
+          isScrollingRef.current = false
+        }, 150)
+        return
+      }
+
       const currentScrollTop = scrollContainer.scrollTop
       const threshold = 8
       let currentId: string | null = tableOfContentsItems[0]?.id ?? null
@@ -394,6 +419,7 @@ export function SimpleEditor({
         <div className="simple-editor-main">
           <div className="simple-editor-content" ref={contentRef}>
             <EditorContent editor={editor} role="presentation" />
+            {footer}
           </div>
 
           {showTableOfContents && tableOfContentsItems.length > 0 && (

@@ -113,7 +113,17 @@ export class ShareService {
     const share = await this.prisma.shareLink.findUnique({
       where: { token },
       include: {
-        document: true,
+        document: {
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -145,13 +155,16 @@ export class ShareService {
       }
     }
 
-    // Return content
+    // Return content with document metadata
     return {
       title: share.document.title,
       content: share.document.content,
+      createdAt: share.document.createdAt,
       updatedAt: share.document.updatedAt,
+      creator: share.document.creator,
     };
   }
+
 
   private generateToken(shareId: string) {
     return {

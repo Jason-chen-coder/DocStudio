@@ -1,13 +1,16 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateDocumentDto } from './create-document.dto';
-import { IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class UpdateDocumentDto extends PartialType(CreateDocumentDto) {
+export class UpdateDocumentDto extends PartialType(
+  OmitType(CreateDocumentDto, ['parentId'] as const),
+) {
   @IsNumber()
   @IsOptional()
   order?: number;
 
-  @IsUUID()
+  /** 允许传 null，表示移到根节点 */
+  @IsString()
   @IsOptional()
-  parentId?: string;
+  parentId?: string | null;
 }

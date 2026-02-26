@@ -89,9 +89,9 @@ body,
 
 .simple-editor-wrapper .simple-editor-toc {
   position: absolute;
-  top: 0;
+  top: 10px;
   bottom: 0;
-  right: 0.2rem;
+  right: 0.5rem;
   z-index: 20;
   --toc-indent: 0.75rem;
   --toc-depth-factor: 1;
@@ -99,7 +99,7 @@ body,
   --toc-progress-width-base: 1rem;
   --toc-progress-width-min: 0.25rem;
   --tt-toc-sidebar-line-bg: var(--tt-gray-light-a-300);
-  --toc-expanded-width: min(200px, calc(100% - 2rem));
+  --toc-expanded-width: min(250px, calc(100% - 2rem));
   width: 2.5rem;
   box-sizing: border-box;
   border: 1px solid transparent;
@@ -107,9 +107,9 @@ body,
   min-height: 0;
   height: auto;
   max-height: none;
-  
+  padding-top: 10px;
   background: color-mix(in srgb, var(--tt-bg-color) 92%, white 8%);
-  padding: 1.0rem .5rem;
+  // padding: 1.0rem .5rem;
   overflow: hidden;
   overscroll-behavior: contain;
   transition:
@@ -118,9 +118,9 @@ body,
     border-color 0.25s ease;
 }
 
-.simple-editor-wrapper[data-mode="edit"] .simple-editor-toc {
-  top: 0;
-}
+// .simple-editor-wrapper[data-mode="edit"] .simple-editor-toc {
+//   top: 0;
+// }
 
 .simple-editor-wrapper[data-mode="preview"] .simple-editor-toc {
   top: 0;

@@ -6,6 +6,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { spaceService } from '@/services/space-service';
 import { Role, Space, SpaceMember } from '@/types/space';
 import { InviteDialog } from '@/components/invite-dialog';
+import Image from 'next/image';
+import { getCdnUrl } from '@/lib/cdn';
 
 import {
   AlertDialog,
@@ -44,7 +46,7 @@ export default function MembersPage() {
     if (user && id) {
       loadData();
     }
-  }, [user, authLoading, id, router]);
+  }, [user, authLoading, id, router]); // Keep loadData out to avoid infinite loop unless we wrap it in useCallback
 
   async function loadData() {
     try {
@@ -109,22 +111,22 @@ export default function MembersPage() {
   if (loading || !space) return <div className="p-8 text-center text-gray-500">加载中...</div>;
 
   return (
-    <div className="w-full p-8">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <div>
-           <button onClick={() => router.push(`/spaces/${id}`)} className="text-sm text-gray-500 hover:text-gray-900 mb-2">
-               ← 返回工作空间
-           </button>
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">成员管理</h1>
-           <p className="text-gray-500 text-sm">管理此工作空间的成员权限。</p>
+          <button onClick={() => router.push(`/spaces/${id}`)} className="text-sm text-gray-500 hover:text-gray-900 mb-2">
+            ← 返回工作空间
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">成员管理</h1>
+          <p className="text-gray-500 text-sm">管理此工作空间的成员权限。</p>
         </div>
         {canManage && (
-            <button
-                onClick={() => setInviteOpen(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-                邀请成员
-            </button>
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            邀请成员
+          </button>
         )}
       </div>
 
@@ -151,13 +153,29 @@ export default function MembersPage() {
               <tr key={member.userId}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                        {member.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {member.name}
-                      {member.userId === space.ownerId && <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">拥有者</span>}
-                      {member.userId === user?.id && <span className="ml-2 text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">你</span>}
+                    {(() => {
+                      const avatarUrl = getCdnUrl(member.avatarUrl);
+                      return avatarUrl ? (
+                        <Image
+                          src={avatarUrl}
+                          alt={member.name}
+                          width={32}
+                          height={32}
+                          unoptimized
+                          className="rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                      );
+                    })()}
+                    <div className="ml-3 text-sm font-medium text-gray-900 dark:text-white flex-1 min-w-0">
+                      <span className="truncate block">{member.name}</span>
+                      <div className="mt-1 flex gap-1">
+                        {member.userId === space.ownerId && <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-full whitespace-nowrap">拥有者</span>}
+                        {member.userId === user?.id && <span className="text-[10px] bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-full whitespace-nowrap">你</span>}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -166,17 +184,17 @@ export default function MembersPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {canManage && member.userId !== space.ownerId && member.userId !== user?.id ? (
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleRoleChange(member.userId, e.target.value as Role)}
-                        className="bg-transparent border-none text-sm font-medium text-gray-900 dark:text-white focus:ring-0 cursor-pointer"
-                      >
-                          <option value="VIEWER">访问者</option>
-                          <option value="EDITOR">编辑者</option>
-                          <option value="ADMIN">管理员</option>
-                      </select>
+                    <select
+                      value={member.role}
+                      onChange={(e) => handleRoleChange(member.userId, e.target.value as Role)}
+                      className="bg-transparent border-none text-sm font-medium text-gray-900 dark:text-white focus:ring-0 cursor-pointer"
+                    >
+                      <option value="VIEWER">访问者</option>
+                      <option value="EDITOR">编辑者</option>
+                      <option value="ADMIN">管理员</option>
+                    </select>
                   ) : (
-                      <span className="capitalize">{member.role.toLowerCase()}</span>
+                    <span className="capitalize">{member.role.toLowerCase()}</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

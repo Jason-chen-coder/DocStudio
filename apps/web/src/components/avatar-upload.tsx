@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Button, Flex, Text, Avatar } from '@radix-ui/themes';
+import { Button, Flex, Text } from '@radix-ui/themes';
+import Image from 'next/image';
 import { authAPI } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Camera } from 'lucide-react';
+import { getCdnUrl } from '@/lib/cdn';
 
 export function AvatarUpload() {
-  const { user, updateUser } = useAuth(); // We might need to refresh user data
+  const { user, updateUser } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,19 +29,14 @@ export function AvatarUpload() {
 
     try {
       setIsUploading(true);
-      // Upload avatar
       const updatedUser = await authAPI.uploadAvatar(file);
-      
-      // Update local user state
       updateUser(updatedUser);
       alert('头像上传成功');
-      
     } catch (error) {
       console.error('Upload failed:', error);
       alert(error instanceof Error ? error.message : '上传失败');
     } finally {
       setIsUploading(false);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -50,27 +47,31 @@ export function AvatarUpload() {
     fileInputRef.current?.click();
   };
 
-  const avatarUrl = user?.avatarUrl 
-    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${process.env.NEXT_PUBLIC_API_URL}${user.avatarUrl}`)
-    : undefined;
+  const avatarUrl = getCdnUrl(user?.avatarUrl);
+  const fallbackLetter = user?.name?.[0]?.toUpperCase() || 'U';
 
   return (
     <Flex direction="column" align="center" gap="3">
-       <div className="relative group cursor-pointer" onClick={onAvatarClick}>
-        <Avatar
-          size="8"
-          src={avatarUrl}
-          fallback={user?.name?.[0]?.toUpperCase() || 'U'}
-          radius="full"
-          className="w-32 h-32 text-4xl" 
-          // Note: Radix Avatar size is mapped, '8' is usually 64px or similar. 
-          // We might want larger. standard text-4xl might not work inside fallback if not handled.
-        />
+      <div className="relative group cursor-pointer" onClick={onAvatarClick}>
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={user?.name || 'Avatar'}
+            width={128}
+            height={128}
+            unoptimized
+            className="rounded-full object-cover w-32 h-32"
+          />
+        ) : (
+          <div className="w-32 h-32 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 text-4xl font-semibold select-none">
+            {fallbackLetter}
+          </div>
+        )}
         <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <Camera className="w-8 h-8 text-white" />
         </div>
       </div>
-      
+
       <input
         type="file"
         ref={fileInputRef}
@@ -78,10 +79,10 @@ export function AvatarUpload() {
         accept="image/png,image/jpeg,image/gif"
         className="hidden"
       />
-      
-      <Button 
-        variant="soft" 
-        onClick={onAvatarClick} 
+
+      <Button
+        variant="soft"
+        onClick={onAvatarClick}
         loading={isUploading}
         disabled={isUploading}
       >

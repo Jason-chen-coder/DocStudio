@@ -4,15 +4,14 @@ import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import { authAPI } from '@/lib/api';
 import { Dialog, Button, Flex, Text, TextField } from '@radix-ui/themes';
-import { useToast } from '@/hooks/use-toast';
 
 import { AvatarUpload } from '@/components/avatar-upload';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
 
   if (!user) {
     return null;
@@ -29,30 +28,18 @@ export default function ProfilePage() {
     const confirmPassword = formData.get('confirmPassword') as string;
 
     if (newPassword !== confirmPassword) {
-      toast({
-        title: '密码不匹配',
-        description: '两次输入的新密码不一致',
-        variant: 'destructive',
-      });
+      toast.error("密码不匹配,两次输入的新密码不一致")
       setIsSubmitting(false);
       return;
     }
 
     try {
       await authAPI.changePassword({ currentPassword, newPassword });
-      toast({
-        title: '修改成功',
-        description: '您的密码已成功更新',
-        toastType: 'success',
-      });
+      toast.success("密码修改成功,您的密码已成功更新")
       setIsDialogOpen(false);
       (e.target as HTMLFormElement).reset();
     } catch (error) {
-      toast({
-        title: '修改失败',
-        description: error instanceof Error ? error.message : '密码修改失败，请稍后重试',
-        variant: 'destructive',
-      });
+      toast.error(`密码修改失败,${error instanceof Error ? error.message : '密码修改失败，请稍后重试'}`)
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +68,7 @@ export default function ProfilePage() {
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-shrink-0">
-               <AvatarUpload />
+              <AvatarUpload />
             </div>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 flex-grow">
               <div className="sm:col-span-1">
@@ -92,30 +79,30 @@ export default function ProfilePage() {
                   {user.name}
                 </dd>
               </div>
-            <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                邮箱地址
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
-                {user.email}
-              </dd>
-            </div>
-            <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                用户 ID
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">
-                {user.id}
-              </dd>
-            </div>
-            <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                注册时间
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                {new Date(user.createdAt).toLocaleString('zh-CN')}
-              </dd>
-            </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  邮箱地址
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-white font-medium">
+                  {user.email}
+                </dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  用户 ID
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">
+                  {user.id}
+                </dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  注册时间
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {new Date(user.createdAt).toLocaleString('zh-CN')}
+                </dd>
+              </div>
             </dl>
           </div>
         </div>

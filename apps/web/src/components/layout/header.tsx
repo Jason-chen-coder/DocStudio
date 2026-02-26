@@ -1,15 +1,15 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
-import { AlertDialog, Button, Flex, Avatar } from '@radix-ui/themes';
+import { AlertDialog, Button, Flex } from '@radix-ui/themes';
+import Image from 'next/image';
 import Link from 'next/link';
+import { getCdnUrl } from '@/lib/cdn';
 
 export function Header() {
   const { user, logout } = useAuth();
-  
-  const avatarUrl = user?.avatarUrl 
-    ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${process.env.NEXT_PUBLIC_API_URL}${user.avatarUrl}`)
-    : undefined;
+
+  const avatarUrl = getCdnUrl(user?.avatarUrl);
 
   return (
     <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center px-6 flex-shrink-0">
@@ -30,12 +30,20 @@ export function Header() {
                 {user.email}
               </span>
             </div>
-            <Avatar
-              size="2"
-              src={avatarUrl}
-              fallback={user.name[0].toUpperCase()}
-              radius="full"
-            />
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={user.name}
+                width={32}
+                height={32}
+                unoptimized
+                className="rounded-full object-cover w-8 h-8"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-sm select-none">
+                {user.name[0].toUpperCase()}
+              </div>
+            )}
           </Link>
         )}
         <AlertDialog.Root>

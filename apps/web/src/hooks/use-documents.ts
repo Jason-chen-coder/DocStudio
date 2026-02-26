@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Document, CreateDocumentDto, UpdateDocumentDto } from '@/types/document';
+import { Document, CreateDocumentDto, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
 import { documentService } from '@/services/document-service';
 import { toast } from 'sonner';
 import { useRouter, useParams } from 'next/navigation';
@@ -18,8 +18,6 @@ export function useDocuments(spaceId: string) {
         setLoading(true);
       }
       const data = await documentService.getDocuments(spaceId);
-      // The backend returns a flat list. We might want to construct a tree here or on the UI.
-      // For now, let's just store the flat list.
       setDocuments(data);
       setError(null);
     } catch (err) {
@@ -42,7 +40,7 @@ export function useDocuments(spaceId: string) {
 
     window.addEventListener('document-updated', handleDocumentUpdate);
     return () => {
-        window.removeEventListener('document-updated', handleDocumentUpdate);
+      window.removeEventListener('document-updated', handleDocumentUpdate);
     };
   }, [fetchDocuments]);
 
@@ -74,6 +72,34 @@ export function useDocuments(spaceId: string) {
     }
   };
 
+  /**
+   * 移动文档（拖拽排序）
+   * 使用乐观更新：先立即更新本地状态，API 失败则回滚
+   */
+  const moveDocument = async (id: string, data: MoveDocumentDto) => {
+    // 记录回滚点
+    const prevDocuments = documents;
+
+    // 乐观更新本地状态
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === id
+          ? { ...doc, parentId: data.parentId, order: data.order }
+          : doc
+      )
+    );
+
+    try {
+      await documentService.moveDocument(id, data);
+    } catch (err) {
+      // 失败则回滚
+      console.error(err);
+      setDocuments(prevDocuments);
+      toast.error('移动文档失败');
+      throw err;
+    }
+  };
+
   const deleteDocument = async (id: string) => {
     try {
       await documentService.deleteDocument(id);
@@ -82,7 +108,7 @@ export function useDocuments(spaceId: string) {
 
       // If the deleted document is the current one, redirect to space home
       if (params?.documentId === id) {
-          router.push(`/spaces/${spaceId}`);
+        router.push(`/spaces/${spaceId}`);
       }
     } catch (err) {
       console.error(err);
@@ -98,6 +124,7 @@ export function useDocuments(spaceId: string) {
     refresh: fetchDocuments,
     createDocument,
     updateDocument,
+    moveDocument,
     deleteDocument,
   };
 }

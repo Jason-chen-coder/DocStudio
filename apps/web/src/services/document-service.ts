@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api';
-import { CreateDocumentDto, Document, UpdateDocumentDto } from '@/types/document';
+import { CreateDocumentDto, Document, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
 
 export const documentService = {
   async getDocuments(spaceId: string): Promise<Document[]> {
@@ -19,6 +19,13 @@ export const documentService = {
 
   async updateDocument(id: string, data: UpdateDocumentDto): Promise<Document> {
     return apiRequest<Document>(`/documents/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async moveDocument(id: string, data: MoveDocumentDto): Promise<Document> {
+    return apiRequest<Document>(`/documents/${id}/move`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });

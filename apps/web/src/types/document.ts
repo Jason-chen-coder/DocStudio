@@ -31,6 +31,12 @@ export interface CreateDocumentDto {
 export interface UpdateDocumentDto {
   title?: string;
   content?: string;
-  parentId?: string; // For moving
+  parentId?: string | null; // For moving
   order?: number; // For reordering
 }
+
+export interface MoveDocumentDto {
+  parentId: string | null; // null = 移到根节点
+  order: number;           // 小数位法计算后的新 order 值
+}
+
