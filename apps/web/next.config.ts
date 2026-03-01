@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         port: '9000',
         pathname: '/**',
       },
+      // Mock images
+      {
+        protocol: 'https',
+        hostname: 'avatar.vercel.sh',
+        pathname: '/**',
+      },
       // 生产环境（Nginx 反代 MinIO）：取消注释并填写实际域名
       // {
       //   protocol: 'https',

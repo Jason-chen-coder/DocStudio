@@ -1,6 +1,4 @@
-import {
-  Injectable, OnApplicationBootstrap, Logger,
-} from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 
@@ -20,8 +18,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       return;
     }
 
-    const email =
-      process.env.SUPER_ADMIN_EMAIL ?? 'admin@doc-studio.com';
+    const email = process.env.SUPER_ADMIN_EMAIL ?? 'admin@doc-studio.com';
     const rawPassword = process.env.SUPER_ADMIN_PASSWORD ?? 'admin';
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
 

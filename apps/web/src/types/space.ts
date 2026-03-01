@@ -8,6 +8,11 @@ export interface Space {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  owner?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+  };
   myRole?: Role;
   _count?: {
     documents: number;

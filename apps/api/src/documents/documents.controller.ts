@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -12,10 +22,7 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Post()
-  create(
-    @Body() createDocumentDto: CreateDocumentDto,
-    @Req() req: any,
-  ) {
+  create(@Body() createDocumentDto: CreateDocumentDto, @Req() req: any) {
     return this.documentsService.create(
       req.body.spaceId,
       req.user.id,
@@ -46,10 +53,7 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Patch(':id/move')
-  move(
-    @Param('id') id: string,
-    @Body() moveDocumentDto: MoveDocumentDto,
-  ) {
+  move(@Param('id') id: string, @Body() moveDocumentDto: MoveDocumentDto) {
     return this.documentsService.move(id, moveDocumentDto);
   }
 

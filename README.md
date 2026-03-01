@@ -4,7 +4,7 @@
   <img src="docStudio_icon.png" width="200" height="200" alt="DocStudio Icon" />
 </div>
 
-实时协作文档平台 - 团队的知识库系统
+DocStudio 是一个**团队协作文档平台**，旨在成为团队的**知识库系统**。它提供类似 Notion 的体验，支持多文档管理、实时协作和知识沉淀。
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -12,6 +12,23 @@
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748)](https://www.prisma.io/)
 
 ---
+
+### 核心价值
+
+- **知识沉淀**：将团队知识集中管理，避免信息孤岛
+- **高效协作**：支持多人实时编辑，提升团队协作效率
+- **灵活扩展**：基于 Monorepo 架构，易于扩展新功能
+
+---
+
+<div align="center" style="display: flex; flex-direction: column; gap: 0;">
+  <img src="./home_page_1.png" width="100%" alt="DocStudio Home Page Part 1" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+  <img src="./home_page_2.png" width="100%" alt="DocStudio Home Page Part 2" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+  <img src="./home_page_3.png" width="100%" alt="DocStudio Home Page Part 3" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+  <img src="./home_page_4.png" width="100%" alt="DocStudio Home Page Part 4" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+  <img src="./home_page_5.png" width="100%" alt="DocStudio Home Page Part 5" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+  <img src="./home_page_6.png" width="100%" alt="DocStudio Home Page Part 6" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
+</div>
 
 ## 🚀 快速开始
 

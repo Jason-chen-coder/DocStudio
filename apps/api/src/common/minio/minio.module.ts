@@ -1,4 +1,3 @@
-
 import { Module, Global } from '@nestjs/common';
 import { MinioService } from './minio.service';
 

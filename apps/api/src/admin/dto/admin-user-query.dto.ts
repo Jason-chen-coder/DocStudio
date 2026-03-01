@@ -17,7 +17,9 @@ export class AdminUserQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '按空间 ID 筛选，返回该空间下的所有成员' })
+  @ApiPropertyOptional({
+    description: '按空间 ID 筛选，返回该空间下的所有成员',
+  })
   @IsOptional()
   @IsString()
   spaceId?: string;

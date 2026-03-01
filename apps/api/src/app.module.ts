@@ -10,6 +10,7 @@ import { MinioModule } from './common/minio/minio.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ShareModule } from './share/share.module';
 import { AdminModule } from './admin/admin.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AdminModule } from './admin/admin.module';
     DocumentsModule,
     ShareModule,
     AdminModule,
+    PublicModule,
   ],
   controllers: [AppController],
   providers: [
@@ -32,4 +34,3 @@ import { AdminModule } from './admin/admin.module';
   ],
 })
 export class AppModule {}
-

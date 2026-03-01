@@ -194,7 +194,9 @@ export class SpacesService {
     const members = await this.prisma.spacePermission.findMany({
       where: { spaceId },
       include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
       },
       orderBy: { createdAt: 'asc' },
     });

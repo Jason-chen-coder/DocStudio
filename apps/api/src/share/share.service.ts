@@ -21,7 +21,7 @@ export class ShareService {
     const { documentId, type, password, expiresAt } = createShareDto;
 
     // Check if document exists and user has permission (ownership or write)
-    // For simplicity, checking if user is owner or has access. 
+    // For simplicity, checking if user is owner or has access.
     // Ideally use a permission guard system, but here we enforce it before creation.
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
@@ -32,7 +32,7 @@ export class ShareService {
       throw new NotFoundException('Document not found');
     }
 
-    // TODO: Strict permission check can be added here. 
+    // TODO: Strict permission check can be added here.
     // Assuming the controller guard handles basic access, but we should verify ownership or editor role.
 
     let hashedPassword = null;
@@ -136,10 +136,12 @@ export class ShareService {
     }
 
     // Provide view count increment (fire and forget)
-    this.prisma.shareLink.update({
-      where: { id: share.id },
-      data: { viewCount: { increment: 1 } },
-    }).catch(console.error);
+    this.prisma.shareLink
+      .update({
+        where: { id: share.id },
+        data: { viewCount: { increment: 1 } },
+      })
+      .catch(console.error);
 
     if (share.type === ShareType.PASSWORD) {
       if (!accessToken) {
@@ -148,7 +150,7 @@ export class ShareService {
       try {
         const payload = this.jwtService.verify(accessToken);
         if (payload.sub !== share.id) {
-            throw new UnauthorizedException('Invalid access token');
+          throw new UnauthorizedException('Invalid access token');
         }
       } catch (e) {
         throw new UnauthorizedException('Invalid or expired token');
@@ -164,7 +166,6 @@ export class ShareService {
       creator: share.document.creator,
     };
   }
-
 
   private generateToken(shareId: string) {
     return {

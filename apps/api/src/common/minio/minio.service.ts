@@ -1,4 +1,3 @@
-
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as Minio from 'minio';
 
@@ -27,7 +26,7 @@ export class MinioService implements OnModuleInit {
       const bucketExists = await this.minioClient.bucketExists(this.bucketName);
       if (!bucketExists) {
         await this.minioClient.makeBucket(this.bucketName, 'us-east-1'); // Region is required but often ignored for local MinIO
-        
+
         // Set bucket policy to allow public read access for avatars
         const policy = {
           Version: '2012-10-17',
@@ -44,11 +43,16 @@ export class MinioService implements OnModuleInit {
           this.bucketName,
           JSON.stringify(policy),
         );
-        
-        this.logger.log(`Bucket ${this.bucketName} created successfully with public read policy.`);
+
+        this.logger.log(
+          `Bucket ${this.bucketName} created successfully with public read policy.`,
+        );
       }
     } catch (err: any) {
-      this.logger.error(`Error creating bucket ${this.bucketName}: ${err.message}`, err.stack);
+      this.logger.error(
+        `Error creating bucket ${this.bucketName}: ${err.message}`,
+        err.stack,
+      );
       // Don't throw here to avoid crashing the app if MinIO is down, but log error
     }
   }
@@ -62,11 +66,14 @@ export class MinioService implements OnModuleInit {
         fileBuffer.length,
         { 'Content-Type': mimetype },
       );
-      
+
       // Return relative path: bucket/filename
       return `${this.bucketName}/${filename}`;
     } catch (err: any) {
-      this.logger.error(`Error uploading file ${filename}: ${err.message}`, err.stack);
+      this.logger.error(
+        `Error uploading file ${filename}: ${err.message}`,
+        err.stack,
+      );
       throw err;
     }
   }

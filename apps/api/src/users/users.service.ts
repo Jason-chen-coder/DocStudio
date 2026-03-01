@@ -106,18 +106,18 @@ export class UsersService {
     return this.transformUser(result);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private transformUser(user: any) {
     // If user is null, return null
     if (!user) return null;
-    
-    // Create a copy to avoid mutating original object if needed, 
+
+    // Create a copy to avoid mutating original object if needed,
     // but here we just modify the property on the plain object result.
     // Ensure we don't leak password if it was passed in (though previous code stripped it).
     // The previous code `const { password: _, ...result } = user` returns a new object.
-    
+
     if (user.avatarUrl && !user.avatarUrl.startsWith('http')) {
-      const baseUrl = process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000';
+      const baseUrl =
+        process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000';
       user.avatarUrl = `${baseUrl}/${user.avatarUrl}`;
     }
     return user;

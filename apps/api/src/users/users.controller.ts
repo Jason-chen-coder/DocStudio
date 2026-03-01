@@ -28,7 +28,6 @@ export class UsersController {
   @Post('avatar')
   @UseGuards(AuthGuard('jwt'))
   async uploadAvatar(@Req() req: RequestWithUser) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fastifyReq = req as any;
 
     // Check if request is multipart
@@ -37,7 +36,7 @@ export class UsersController {
     }
 
     const part = await fastifyReq.file();
-    
+
     if (!part) {
       throw new BadRequestException('File is required');
     }
@@ -48,17 +47,20 @@ export class UsersController {
     }
 
     const fileBuffer = await part.toBuffer();
-    
+
     const randomName = Array(32)
       .fill(null)
       .map(() => Math.round(Math.random() * 16).toString(16))
       .join('');
-    
+
     const filename = `${randomName}${extname(part.filename)}`;
 
     try {
-
-      const fileUrl = await this.minioService.uploadFile(filename, fileBuffer, part.mimetype);
+      const fileUrl = await this.minioService.uploadFile(
+        filename,
+        fileBuffer,
+        part.mimetype,
+      );
       return this.usersService.updateAvatar(req.user.id, fileUrl);
     } catch (err) {
       throw new BadRequestException('File upload failed');

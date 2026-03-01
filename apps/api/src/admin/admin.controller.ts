@@ -66,7 +66,11 @@ export class AdminController {
     @Param('userId') userId: string,
     @Body() dto: UpdateUserStatusDto,
   ) {
-    return this.adminService.updateStatus(currentUser.id, userId, dto.isDisabled);
+    return this.adminService.updateStatus(
+      currentUser.id,
+      userId,
+      dto.isDisabled,
+    );
   }
 
   // ─── 删除用户 ────────────────────────────────────────────────────────────────
@@ -74,10 +78,7 @@ export class AdminController {
   @ApiOperation({ summary: '[超管] 删除用户（级联删除所有数据）' })
   @ApiResponse({ status: 403, description: '不能删除超管或自身' })
   @ApiResponse({ status: 404, description: '用户不存在' })
-  deleteUser(
-    @CurrentUser() currentUser: any,
-    @Param('userId') userId: string,
-  ) {
+  deleteUser(@CurrentUser() currentUser: any, @Param('userId') userId: string) {
     return this.adminService.deleteUser(currentUser.id, userId);
   }
 

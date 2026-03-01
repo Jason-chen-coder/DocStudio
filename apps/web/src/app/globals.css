@@ -3,6 +3,7 @@
 
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
 
 /* Configure dark mode to use class strategy instead of media query */
 @custom-variant dark (&:is(.dark *));
@@ -66,6 +67,24 @@
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 24px);
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  @keyframes marquee {
+  from {
+    transform: translateX(0);
+    }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+    }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
 }
 
 /* Light mode - Modern SaaS Dashboard Theme */
@@ -73,35 +92,35 @@
   /* Background & Foreground */
   --background: 240 20% 98.4%; /* #F9F9FB */
   --foreground: 240 10% 3.9%;
-  
+
   /* Card - Pure white */
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
-  
+
   /* Popover */
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
-  
+
   /* Primary - Brand Color #333DFC */
   --primary: 237 97% 59%;
   --primary-foreground: 0 0% 100%;
-  
+
   /* Secondary */
   --secondary: 240 4.8% 95.9%;
   --secondary-foreground: 240 5.9% 10%;
-  
+
   /* Muted */
   --muted: 240 4.8% 95.9%;
   --muted-foreground: 240 3.8% 46.1%;
-  
+
   /* Accent */
   --accent: 240 4.8% 95.9%;
   --accent-foreground: 240 5.9% 10%;
-  
+
   /* Destructive */
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  
+
   /* Semantic Status Colors */
   --success: 142 71% 45%;
   --success-foreground: 142 71% 15%;
@@ -109,15 +128,15 @@
   --warning-foreground: 38 92% 20%;
   --danger: 0 84% 60%;
   --danger-foreground: 0 84% 20%;
-  
+
   /* Border & Input */
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;
   --ring: 237 97% 59%;
-  
+
   /* Radius - 32px base for cards */
   --radius: 2rem;
-  
+
   /* Chart colors */
   --chart-1: 237 97% 59%;
   --chart-2: 160 60% 45%;
@@ -154,7 +173,7 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  
+
   /* Semantic Status Colors - Dark */
   --success: 142 71% 40%;
   --success-foreground: 142 71% 90%;
@@ -162,7 +181,7 @@
   --warning-foreground: 38 92% 90%;
   --danger: 0 70% 50%;
   --danger-foreground: 0 70% 90%;
-  
+
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 237 97% 65%;
@@ -187,7 +206,7 @@
 
 /* Base layer styles */
 * {
-  border-color: hsl(var(--border));
+  /* border-color: hsl(var(--border)); */
 }
 
 body {
@@ -280,7 +299,6 @@ body {
   border: 1px solid hsl(var(--border));
   border-radius: 0.75rem;
 }
-
 
 /* Toast Animations & Styles - User Provided Override */
 @keyframes toast-hide {
@@ -453,4 +471,3 @@ body {
   color: #075985;
   border: 1px solid #075985;
 }
-

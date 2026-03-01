@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('用户不存在或已被删除');
     }
-    if ((user as any).isDisabled) {
+    if (user.isDisabled) {
       throw new ForbiddenException('账号已被禁用，请联系管理员');
     }
     return user;
