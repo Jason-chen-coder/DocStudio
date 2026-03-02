@@ -371,14 +371,14 @@ export default function AdminUsersPage() {
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="搜索用户名或邮箱..."
-            className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full pl-9 pr-4 py-2 border-none rounded-lg text-sm bg-gray-50 dark:bg-gray-800 focus:ring-0 outline-none"
           />
         </div>
         <div className="relative inline-flex items-center">
           <select
             value={selectedSpaceId}
             onChange={(e) => setSelectedSpaceId(e.target.value)}
-            className="appearance-none border rounded-lg pl-3 pr-8 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="appearance-none border-none rounded-lg pl-3 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-800 focus:ring-0 outline-none"
           >
             <option value="">📁 全部空间</option>
             {spaces.map((s) => (
@@ -392,7 +392,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* 用户表格 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-y-auto flex-1 min-h-0">
+      <div className="bg-white dark:bg-gray-800 rounded-xl overflow-y-auto flex-1 min-h-0">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-900/50 text-xs text-gray-500 uppercase tracking-wider">
             <tr>
@@ -405,9 +405,24 @@ export default function AdminUsersPage() {
               <th className="px-4 py-3 text-center">操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y dark:divide-gray-700">
+          <tbody className="">
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">加载中...</td></tr>
+              [1, 2, 3, 4, 5].map((i) => (
+                <tr key={i} className="animate-pulse bg-white dark:bg-gray-800">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0"></div>
+                      <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                  <td className="px-4 py-3 flex justify-end"><div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded block mt-[2px]"></div></td>
+                  <td className="px-4 py-3 flex justify-end"><div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded block mt-[2px]"></div></td>
+                  <td className="px-4 py-3"><div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                  <td className="px-4 py-3 flex justify-center"><div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded block mt-[2px]"></div></td>
+                </tr>
+              ))
             ) : users.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">暂无用户</td></tr>
             ) : users.map((u) => {

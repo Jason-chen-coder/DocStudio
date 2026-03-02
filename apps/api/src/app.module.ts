@@ -11,6 +11,8 @@ import { DocumentsModule } from './documents/documents.module';
 import { ShareModule } from './share/share.module';
 import { AdminModule } from './admin/admin.module';
 import { PublicModule } from './modules/public/public.module';
+import { CollaborationModule } from './collaboration/collaboration.module';
+import { SnapshotsModule } from './snapshots/snapshots.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { PublicModule } from './modules/public/public.module';
     ShareModule,
     AdminModule,
     PublicModule,
+    CollaborationModule,
+    SnapshotsModule,
   ],
   controllers: [AppController],
   providers: [

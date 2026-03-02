@@ -29,7 +29,7 @@ export default function AuthLayout({
               DocStudio
             </span>
           </div>
-          
+
           {/* Theme Toggle Button */}
           {mounted && (
             <button
@@ -58,7 +58,7 @@ export default function AuthLayout({
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#333DFC]/20 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#333DFC]/15 to-transparent rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-white/50 to-transparent rounded-full blur-3xl" />
-        
+
         {/* Floating Elements */}
         <div className="floating-el floating-el-a absolute top-20 left-20 w-20 h-20 bg-white/40 rounded-3xl rotate-12 blur-sm" />
         <div className="floating-el floating-el-b absolute bottom-32 right-24 w-16 h-16 bg-[#333DFC]/20 rounded-2xl -rotate-12" />
@@ -72,12 +72,12 @@ export default function AuthLayout({
               {/* Main Circle */}
               <div className="w-56 h-56 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#333DFC] to-[#5C63FF] rounded-full shadow-2xl shadow-[#333DFC]/30" />
-                
+
                 {/* Floating Elements */}
                 <div className="icon-floating icon-floating-a absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-3xl rotate-12 shadow-lg shadow-emerald-500/30" />
                 <div className="icon-floating icon-floating-b absolute -bottom-2 -left-8 w-24 h-24 bg-gradient-to-br from-violet-400 to-purple-500 rounded-[2rem] -rotate-6 shadow-lg shadow-purple-500/30" />
                 <div className="icon-floating icon-floating-c absolute top-1/2 -right-10 w-14 h-14 bg-gradient-to-br from-sky-300 to-blue-400 rounded-full shadow-md shadow-blue-400/30" />
-                
+
                 {/* App Icon Center */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Image
@@ -99,7 +99,7 @@ export default function AuthLayout({
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
             下一代知识管理与团队协作平台
           </p>
-          
+
           {/* Feature Pills */}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <span className="px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-300">

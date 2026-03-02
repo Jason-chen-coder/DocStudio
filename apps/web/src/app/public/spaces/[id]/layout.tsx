@@ -124,7 +124,7 @@ export default function PublicSpaceLayout({
 
                 <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-2">
-                        <Image src="/docStudio_icon.png" alt="DocStudio" width={24} height={24} className="rounded" />
+                        <Image src="/docStudio_icon.png" alt="DocStudio" width={24} height={24} />
                         <span className="font-semibold text-gray-900 dark:text-white hidden sm:inline-block">DocStudio</span>
                     </Link>
                 </div>

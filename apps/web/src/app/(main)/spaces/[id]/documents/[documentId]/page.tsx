@@ -6,10 +6,20 @@ import { documentService } from '@/services/document-service';
 import { Document } from '@/types/document';
 import { Editor } from '@/components/editor/editor';
 import { ShareDialog } from '@/components/share/share-dialog';
+import { OnlineUsers } from '@/components/editor/online-users';
+import { VersionHistoryPanel } from '@/components/editor/version-history-panel';
+import { History } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import {
+  useCollaboration,
+  generateUserColor,
+  CollabUser,
+} from '@/hooks/use-collaboration';
 import { toast } from 'sonner';
 
 // Simple debounce function
-function useDebounce<T extends (...args: any[]) => any>(callback: T, delay: number) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: number) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   return useCallback((...args: Parameters<T>) => {
@@ -25,15 +35,44 @@ function useDebounce<T extends (...args: any[]) => any>(callback: T, delay: numb
 export default function DocumentPage() {
   const params = useParams();
   const router = useRouter();
+  const { user: authUser } = useAuth();
   const documentId = params.documentId as string;
 
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Status for auto-save
+  // Status for auto-save (title only in collab mode)
   const [status, setStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+
+  // Build the current user object for collaboration
+  const collabUser: CollabUser | null = authUser
+    ? {
+      id: authUser.id,
+      name: authUser.name,
+      color: generateUserColor(authUser.id),
+      avatarUrl: authUser.avatarUrl,
+    }
+    : null;
+
+  // Initialize collaboration (requires ydocKey from document)
+  const ydocKey = document?.ydocKey ?? null;
+
+  const { ydoc, provider, connectedUsers, status: collabStatus } = useCollaboration(
+    ydocKey && collabUser
+      ? {
+        documentId,
+        ydocKey,
+        currentUser: collabUser,
+      }
+      : null,
+  );
+
+  const isCollabReady = !!(ydocKey && ydoc && provider);
+
+  const [isEditorReady, setIsEditorReady] = useState(false);
 
   useEffect(() => {
     async function loadDocument() {
@@ -69,7 +108,6 @@ export default function DocumentPage() {
     } catch (error) {
       console.error('Failed to save document', error);
       setStatus('error');
-      // toast.error('自动保存失败'); // Maybe too annoying
     }
   };
 
@@ -81,17 +119,57 @@ export default function DocumentPage() {
     debouncedSave({ title: newTitle });
   };
 
-  const handleContentUpdate = (newContent: string) => {
-    debouncedSave({ content: newContent });
-  };
+  // Content auto-save has been removed. 
+  // Content rendering and saving is now fully managed by Yjs CRDT and Hocuspocus backend.
+
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-400">加载中...</div>;
+    return (
+      <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg">
+        {/* Header Skeleton */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-800" />
+            <div className="h-10 w-1/3 rounded animate-pulse bg-gray-200 dark:bg-gray-800" />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-24 rounded-full animate-pulse bg-gray-200 dark:bg-gray-800" />
+            <div className="h-8 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-800" />
+            <div className="h-8 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-800" />
+          </div>
+        </div>
+
+        {/* Editor Placeholder Skeleton */}
+        <div className="flex-1 rounded-lg border border-gray-100 dark:border-gray-800 p-8 space-y-4 animate-pulse">
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6"></div>
+          <div className="space-y-3 mt-8">
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-4/5"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!document) {
     return <div className="p-8 text-center text-gray-400">文档不存在</div>;
   }
+
+  // Connection status indicator
+  const statusLabel = {
+    connecting: '连接中...',
+    connected: '已保存',
+    disconnected: '已断开',
+  } as const;
+
+  const statusColor = {
+    connecting: 'text-yellow-400',
+    connected: 'text-gray-400',
+    disconnected: 'text-red-400',
+  } as const;
 
   return (
     <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg">
@@ -120,12 +198,37 @@ export default function DocumentPage() {
           />
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-400 min-w-[60px] text-right">
-            {status === 'saving' && '保存中...'}
-            {status === 'saved' && '已保存'}
-            {status === 'error' && <span className="text-red-500">保存失败</span>}
+          {/* Online users */}
+          {collabUser && (
+            <OnlineUsers
+              users={connectedUsers}
+              currentUser={collabUser}
+              maxVisible={5}
+            />
+          )}
+
+          {/* Save status */}
+          <div className={`text-sm min-w-[60px] text-right ${isCollabReady ? statusColor[collabStatus] : 'text-gray-400'}`}>
+            {isCollabReady ? statusLabel[collabStatus] : (
+              <>
+                {status === 'saving' && '保存中...'}
+                {status === 'saved' && '已保存'}
+                {status === 'error' && <span className="text-red-500">保存失败</span>}
+              </>
+            )}
           </div>
+
           <ShareDialog documentId={documentId} />
+
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="p-2 text-gray-500 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm text-sm"
+            title="版本历史"
+          >
+            <History className="w-4 h-4" />
+            <span className="hidden sm:inline">历史</span>
+          </button>
+
           <button
             onClick={() => setIsPreview(!isPreview)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${isPreview
@@ -138,14 +241,45 @@ export default function DocumentPage() {
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="min-h-[500px] flex-1">
+      {/* Editor Placeholder Skeleton */}
+      {!isEditorReady && (
+        <div className="flex-1 rounded-lg border border-gray-100 p-8 space-y-4 animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="space-y-3 mt-8">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Editor
+           key switches once when collab becomes ready, forcing a full remount with
+           the Collaboration extension. Without this, useEditor only runs on first
+           mount (when provider=null) and never picks up the Collaboration extension. */}
+      <div className={`min-h-[500px] flex-1 ${!isEditorReady ? 'hidden' : ''}`}>
         <Editor
+          key={isCollabReady ? `collab-${documentId}` : `normal-${documentId}`}
           initialContent={document.content || ''}
-          onUpdate={handleContentUpdate}
           editable={!isPreview}
+          provider={isCollabReady ? provider : undefined}
+          ydoc={isCollabReady ? ydoc : undefined}
+          collabUser={collabUser ?? undefined}
+          onReady={() => setIsEditorReady(true)}
         />
       </div>
+
+      <VersionHistoryPanel
+        documentId={documentId}
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onRestore={() => {
+          // Reload page to reflect restored version or fetch document contents
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

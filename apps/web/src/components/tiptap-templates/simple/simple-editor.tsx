@@ -3,6 +3,13 @@
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
+// --- Collaboration ---
+import { CustomCollaboration } from "./custom-collaboration"
+import { ySyncPluginKey } from 'y-prosemirror'
+import type { HocuspocusProvider } from "@hocuspocus/provider"
+import type * as Y from "yjs"
+import type { CollabUser } from "@/hooks/use-collaboration"
+
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
 import { Image } from "@tiptap/extension-image"
@@ -13,6 +20,7 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+
 import {
   TableOfContents,
   getHierarchicalIndexes,
@@ -195,6 +203,13 @@ export interface SimpleEditorProps {
   showTableOfContents?: boolean
   /** 在编辑器内容底部追加的自定义渲染（与内容共享同一滚动容器） */
   footer?: ReactNode
+  /** Collaboration mode: pass provider + ydoc to enable Yjs real-time collab */
+  provider?: HocuspocusProvider
+  ydoc?: Y.Doc
+  /** Current user info for collab cursor display */
+  collabUser?: CollabUser
+  /** Callback fired when editor is fully mounted and ready for interaction */
+  onReady?: () => void
 }
 
 type TableOfContentsItem = {
@@ -210,6 +225,10 @@ export function SimpleEditor({
   editable = true,
   showTableOfContents = true,
   footer,
+  provider,
+  ydoc,
+  collabUser,
+  onReady,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
@@ -226,6 +245,21 @@ export function SimpleEditor({
   /** 点击 TOC 跳转时锁住高亮，防止 scroll 事件期间抖动 */
   const isScrollingRef = useRef(false)
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isCollabMode = !!(provider && ydoc)
+  const [isCollabReadyToRender, setIsCollabReadyToRender] = useState(false)
+
+  // Delay the heavy Yjs injection by exactly one microtask to allow the main 
+  // UI shell to paint instantly. This prevents the "several seconds lag" on load
+  // caused by ProseMirror synchronously parsing a massive Y.Doc into DOM nodes.
+  useEffect(() => {
+    if (isCollabMode) {
+      const timer = setTimeout(() => {
+        setIsCollabReadyToRender(true)
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [isCollabMode])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -280,17 +314,44 @@ export function SimpleEditor({
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
+      // Collaboration extensions (only when provider + ydoc are present and shell is painted)
+      ...(isCollabMode && isCollabReadyToRender
+        ? [
+          CustomCollaboration.configure({
+            document: ydoc,
+            field: "content",
+            provider: provider,
+            user: collabUser || null,
+          }),
+        ]
+        : []),
     ],
-    content,
+    // In collab mode, don't pass initial content (Yjs manages it from server)
+    content: isCollabMode ? undefined : content,
     editable,
-    onUpdate: ({ editor }) => {
-      onUpdate?.(editor.getHTML())
+    onCreate: () => {
+      onReady?.();
+    },
+    onUpdate: ({ editor, transaction }) => {
+      // In collab mode, Yjs fires onUpdate for EVERY remote update too.
+      // Only call the callback for local user-initiated changes
+      // (i.e. when the transaction isn't a purely remote Yjs sync).
+      if (isCollabMode && transaction.getMeta(ySyncPluginKey)) return;
+      onUpdate?.(editor.getHTML());
     },
   })
 
+  const [toolbarHeight, setToolbarHeight] = useState(0)
+
+  useEffect(() => {
+    if (toolbarRef.current) {
+      setToolbarHeight(toolbarRef.current.getBoundingClientRect().height)
+    }
+  }, [toolbarRef]) // The ref object itself doesn't change, but it's safe
+
   const rect = useCursorVisibility({
     editor,
-    overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
+    overlayHeight: toolbarHeight,
   })
 
   const scrollToHeading = (id: string) => {
@@ -322,12 +383,12 @@ export function SimpleEditor({
     if (editor && content !== undefined) {
       // Prevent cursor jumping if content is same (though strictly likely different ref strings)
       // For read-only/share view this is safer.
-      if (editor.getHTML() !== content) { 
-         // Defer content update to avoid flushSync error during render cycle
-         setTimeout(() => {
-            if (editor.isDestroyed) return;
-            editor.commands.setContent(content);
-         }, 0);
+      if (editor.getHTML() !== content) {
+        // Defer content update to avoid flushSync error during render cycle
+        setTimeout(() => {
+          if (editor.isDestroyed) return;
+          editor.commands.setContent(content);
+        }, 0);
       }
     }
   }, [editor, content])
@@ -396,8 +457,8 @@ export function SimpleEditor({
             style={{
               ...(isMobile
                 ? {
-                    bottom: `calc(100% - ${height - rect.y}px)`,
-                  }
+                  bottom: `calc(100% - ${height - rect.y}px)`,
+                }
                 : {}),
             }}
           >

@@ -7,10 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { MoveDocumentDto } from './dto/move-document.dto';
+import { SnapshotsService } from '../snapshots/snapshots.service';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private snapshotsService: SnapshotsService,
+  ) {}
 
   async create(
     spaceId: string,
@@ -35,6 +39,9 @@ export class DocumentsService {
       order = lastDoc.order + 1;
     }
 
+    // Generate a unique Yjs document key for collaboration (Stage 4)
+    const ydocKey = `doc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     return this.prisma.document.create({
       data: {
         title: createDocumentDto.title,
@@ -43,6 +50,7 @@ export class DocumentsService {
         parentId,
         order,
         createdBy: userId,
+        ydocKey,
       },
       include: {
         creator: {
@@ -55,6 +63,7 @@ export class DocumentsService {
       },
     });
   }
+
 
   async findAll(spaceId: string) {
     const docs = await this.prisma.document.findMany({
@@ -92,7 +101,16 @@ export class DocumentsService {
     return doc;
   }
 
-  async update(id: string, updateDocumentDto: UpdateDocumentDto) {
+  async update(
+    id: string,
+    userId: string,
+    updateDocumentDto: UpdateDocumentDto,
+  ) {
+    if (updateDocumentDto.content !== undefined) {
+      // Content is being updated. Run autoSnapshot logic.
+      await this.snapshotsService.autoSnapshot(id, userId);
+    }
+
     return this.prisma.document.update({
       where: { id },
       data: updateDocumentDto,

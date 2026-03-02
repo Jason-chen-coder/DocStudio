@@ -26,7 +26,8 @@ export class SpacePermissionGuard implements CanActivate {
     const query = request.query;
 
     let spaceId = body?.spaceId || query?.spaceId;
-    const documentId = params?.id;
+    // Support both :id (document routes) and :docId (snapshot routes)
+    const documentId = params?.id || params?.docId;
 
     // If accessing a document, find its spaceId
     if (documentId) {

@@ -36,4 +36,26 @@ export const documentService = {
       method: 'DELETE',
     });
   },
+
+  // --- Snapshots ---
+  async getSnapshots(docId: string): Promise<import('@/types/document').DocumentSnapshot[]> {
+    return apiRequest<import('@/types/document').DocumentSnapshot[]>(`/documents/${docId}/snapshots`, { cache: 'no-store' });
+  },
+
+  async createSnapshot(docId: string, message?: string): Promise<import('@/types/document').DocumentSnapshot> {
+    return apiRequest<import('@/types/document').DocumentSnapshot>(`/documents/${docId}/snapshots`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+
+  async getSnapshot(docId: string, snapshotId: string): Promise<import('@/types/document').DocumentSnapshot> {
+    return apiRequest<import('@/types/document').DocumentSnapshot>(`/documents/${docId}/snapshots/${snapshotId}`);
+  },
+
+  async restoreSnapshot(docId: string, snapshotId: string): Promise<import('@/types/document').DocumentSnapshot> {
+    return apiRequest<import('@/types/document').DocumentSnapshot>(`/documents/${docId}/snapshots/${snapshotId}/restore`, {
+      method: 'POST',
+    });
+  },
 };

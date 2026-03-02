@@ -52,7 +52,42 @@ export default function SpaceDetailPage() {
   };
 
   if (spaceLoading) {
-    return <div className="text-center p-10 text-gray-500">加载中...</div>;
+    return (
+      <div className="space-y-6 animate-pulse w-full">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-6">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded mb-3"></div>
+            <div className="h-4 w-64 bg-gray-200 dark:bg-gray-800 rounded"></div>
+          </div>
+          <div className="flex gap-3">
+            <div className="h-10 w-28 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+            <div className="h-10 w-24 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+          </div>
+        </div>
+
+        {/* Content Area Skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm min-h-[400px] p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 mt-1 flex-shrink-0"></div>
+                  <div className="flex-1 w-full">
+                    <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                    <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!space) {

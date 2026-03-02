@@ -27,6 +27,7 @@ model User {
   spacePermissions SpacePermission[]
   createdDocuments Document[]        @relation("DocumentCreator")
   invitationsSent  SpaceInvitation[] @relation("InvitationSender")
+  snapshots        DocumentSnapshot[]
 
   @@map("users")
 }
@@ -60,6 +61,7 @@ model Document {
   title     String
   content   String   @db.Text
   ydocKey   String?  @unique // Yjs 文档标识符 (Stage 4使用)
+  ydocData  Bytes?           // Yjs 文档二进制持久化 (Stage 4)
   order     Int      @default(0) // 用于拖拽排序
   createdBy String
   createdAt DateTime @default(now())
@@ -71,8 +73,7 @@ model Document {
   children    Document[]   @relation("DocumentHierarchy")
   creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id])
   shareLinks  ShareLink[]
-
-
+  snapshots   DocumentSnapshot[]
 
   @@index([spaceId])
   @@index([parentId])
@@ -165,4 +166,20 @@ enum InvitationStatus {
 enum Permission {
   READ // 只读
   WRITE // 可写
+}
+
+// ==================== 版本历史快照模型 ====================
+model DocumentSnapshot {
+  id        String   @id @default(cuid())
+  docId     String
+  document  Document @relation(fields: [docId], references: [id], onDelete: Cascade)
+  content   String   @db.Text // Tiptap JSON 快照内容
+  ydocData  Bytes?            // Yjs 编码快照（可选，用于精确 Yjs 回滚）
+  message   String?           // 版本说明（可选）
+  createdBy String
+  creator   User     @relation(fields: [createdBy], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([docId, createdAt])
+  @@map("document_snapshots")
 }

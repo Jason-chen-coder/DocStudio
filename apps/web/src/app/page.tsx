@@ -801,7 +801,7 @@ export default function Home() {
       <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <Image src="/docStudio_icon.png" alt="DocStudio" width={24} height={24} className="rounded grayscale opacity-70" />
+            <Image src="/docStudio_icon.png" alt="DocStudio" width={24} height={24} className="opacity-70" />
             <span className="text-gray-500 font-semibold">DocStudio</span>
           </div>
           <p className="text-gray-400 text-sm">

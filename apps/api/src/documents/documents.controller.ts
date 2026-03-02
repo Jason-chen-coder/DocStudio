@@ -47,8 +47,9 @@ export class DocumentsController {
   update(
     @Param('id') id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
+    @Req() req: any,
   ) {
-    return this.documentsService.update(id, updateDocumentDto);
+    return this.documentsService.update(id, req.user.id, updateDocumentDto);
   }
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)

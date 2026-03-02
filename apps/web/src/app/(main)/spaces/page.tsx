@@ -35,10 +35,41 @@ export default function SpacesPage() {
 
   if (loading && !spaces.length) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">加载中...</p>
+      <div className="space-y-6 mt-2 animate-pulse w-full">
+        {/* Tabs Skeleton */}
+        <div className="flex gap-4 border-b border-gray-200 dark:border-gray-800 pb-2">
+          <div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+        </div>
+
+        <div className="pt-5 space-y-6">
+          {/* Header Action Skeleton */}
+          <div className="flex justify-end items-center">
+            <div className="h-10 w-28 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+          </div>
+
+          {/* Grid Skeleton */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 h-[178px] flex flex-col"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="h-6 w-1/2 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                  <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                </div>
+                <div className="space-y-2 mb-4 flex-1">
+                  <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+                <div className="flex justify-between items-center border-t border-gray-100 dark:border-gray-700 pt-4 mt-auto">
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

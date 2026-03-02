@@ -108,7 +108,61 @@ export default function MembersPage() {
     }
   }
 
-  if (loading || !space) return <div className="p-8 text-center text-gray-500">加载中...</div>;
+  if (loading || !space) {
+    return (
+      <div className="w-full animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded mb-4"></div>
+            <div className="h-8 w-32 bg-gray-200 dark:bg-gray-800 rounded mb-2"></div>
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-800 rounded"></div>
+          </div>
+          <div>
+            <div className="h-10 w-24 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+          </div>
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-xl overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="px-6 py-3"><div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div></th>
+                <th className="px-6 py-3"><div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div></th>
+                <th className="px-6 py-3"><div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div></th>
+                <th className="px-6 py-3 flex justify-end"><div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div></th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {[1, 2, 3].map((i) => (
+                <tr key={i}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0"></div>
+                      <div className="ml-3 flex-1">
+                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-1.5"></div>
+                        <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap flex justify-end">
+                    <div className="h-4 w-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

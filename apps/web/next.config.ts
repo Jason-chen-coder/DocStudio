@@ -24,6 +24,22 @@ const nextConfig: NextConfig = {
       // },
     ],
   },
+  webpack: (config) => {
+    // Force a single version of yjs to fix "Yjs was already imported" error
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      yjs: require.resolve('yjs'),
+    };
+    return config;
+  },
+  experimental: {
+    // @ts-expect-error turbo configuration type might vary across Next.js versions
+    turbo: {
+      resolveAlias: {
+        yjs: 'yjs',
+      },
+    },
+  },
 };
 
 export default nextConfig;

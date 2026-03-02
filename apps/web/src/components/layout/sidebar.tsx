@@ -75,7 +75,6 @@ export function Sidebar() {
           alt="DocStudio"
           width={32}
           height={32}
-          className="rounded-lg"
         />
         <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">DocStudio</h1>
       </div>

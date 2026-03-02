@@ -10,6 +10,7 @@ export interface Document {
   spaceId: string;
   parentId?: string | null;
   order: number;
+  ydocKey?: string | null; // Yjs collaboration room key (Stage 4)
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -20,6 +21,7 @@ export interface Document {
     avatarUrl?: string;
   };
 }
+
 
 export interface CreateDocumentDto {
   title: string;
@@ -40,3 +42,16 @@ export interface MoveDocumentDto {
   order: number;           // 小数位法计算后的新 order 值
 }
 
+export interface DocumentSnapshot {
+  id: string;
+  docId: string;
+  content: string; // Tiptap JSON content
+  message?: string | null;
+  createdBy: string;
+  createdAt: string;
+  creator?: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+}
