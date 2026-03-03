@@ -465,7 +465,7 @@ export function SimpleEditor({
 
   return (
     <div
-      className={`simple-editor-wrapper h-full${editable ? " has-toolbar" : ""}${isTocPinned ? " is-toc-pinned" : ""}`}
+      className={`simple-editor-wrapper dark:bg-gray-800 h-full${editable ? " has-toolbar" : ""}${isTocPinned ? " is-toc-pinned" : ""}`}
       data-mode={editable ? "edit" : "preview"}
     >
       <EditorContext.Provider value={{ editor }}>
@@ -503,7 +503,7 @@ export function SimpleEditor({
 
           {showTableOfContents && tableOfContentsItems.length > 0 && (
             <aside
-              className={`simple-editor-toc${isTocPinned ? " is-pinned" : ""}`}
+              className={`simple-editor-toc${isTocPinned ? " is-pinned" : ""} dark:bg-gray-800`}
               aria-label="Table of contents"
             >
               <div className="simple-editor-toc-progress" aria-hidden="true">
@@ -524,7 +524,7 @@ export function SimpleEditor({
                 })}
               </div>
 
-              <div className="simple-editor-toc-drawer">
+              <div className="simple-editor-toc-drawer bg-white dark:bg-gray-800">
                 <div className="simple-editor-toc-header">
                   <p className="simple-editor-toc-title">目录</p>
                   <button
