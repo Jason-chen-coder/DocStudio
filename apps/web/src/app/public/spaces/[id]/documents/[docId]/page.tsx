@@ -68,10 +68,6 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
     return (
         <div className="h-full w-full flex flex-col relative text-gray-900 bg-white">
-            {/* <header className="px-4 py-8 sm:px-6 md:px-12 md:py-12 max-w-[800px] mx-auto w-full">
-                <h1 className="text-4xl md:text-5xl font-bold font-mono tracking-tight leading-tight">{doc.title}</h1>
-            </header> */}
-
             <div className="flex-1 h-full w-full mx-auto relative content-container !pt-0">
                 <SimpleEditor
                     content={doc.content}

@@ -84,7 +84,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
   const order = useRef(Array.from({ length: childArr.length }, (_, i) => i));
 
   const tlRef = useRef<gsap.core.Timeline | null>(null);
-  const intervalRef = useRef<number>();
+  const intervalRef = useRef<number | null>(null);
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,22 +156,30 @@ const CardSwap: React.FC<CardSwapProps> = ({
       const node = container.current;
       const pause = () => {
         tlRef.current?.pause();
-        clearInterval(intervalRef.current);
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current as unknown as NodeJS.Timeout);
+        }
       };
       const resume = () => {
         tlRef.current?.play();
         intervalRef.current = window.setInterval(swap, delay);
       };
-      node.addEventListener('mouseenter', pause);
-      node.addEventListener('mouseleave', resume);
+      node?.addEventListener('mouseenter', pause);
+      container.current?.addEventListener("mouseleave", resume);
       return () => {
-        node.removeEventListener('mouseenter', pause);
-        node.removeEventListener('mouseleave', resume);
-        clearInterval(intervalRef.current);
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current as unknown as NodeJS.Timeout);
+        }
+        container.current?.removeEventListener("mouseenter", pause);
+        container.current?.removeEventListener("mouseleave", resume);
       };
-    }
-    return () => clearInterval(intervalRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    } else {
+      return () => {
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current as unknown as NodeJS.Timeout);
+        }
+      };
+    }// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
 
   const rendered = childArr.map((child, i) =>

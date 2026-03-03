@@ -9,6 +9,7 @@ import { ShareDialog } from '@/components/share/share-dialog';
 import { OnlineUsers } from '@/components/editor/online-users';
 import { VersionHistoryPanel } from '@/components/editor/version-history-panel';
 import { History } from 'lucide-react';
+import type { Editor as TiptapEditor } from '@tiptap/react';
 import { useAuth } from '@/lib/auth-context';
 import {
   useCollaboration,
@@ -22,7 +23,7 @@ import { toast } from 'sonner';
 function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: number) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  return useCallback((...args: Parameters<T>) => {
+  const run = useCallback((...args: Parameters<T>) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -30,6 +31,15 @@ function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: num
       callback(...args);
     }, delay);
   }, [callback, delay]);
+
+  const cancel = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  return { run, cancel };
 }
 
 export default function DocumentPage() {
@@ -45,7 +55,7 @@ export default function DocumentPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Status for auto-save (title only in collab mode)
-  const [status, setStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [status, setStatus] = useState<'saved' | 'saving' | 'error' | 'pending'>('saved');
 
   // Build the current user object for collaboration
   const collabUser: CollabUser | null = authUser
@@ -94,7 +104,7 @@ export default function DocumentPage() {
     }
   }, [documentId]);
 
-  const saveDocument = async (updates: { title?: string; content?: string }) => {
+  const saveDocument = useCallback(async (updates: { title?: string; content?: string }) => {
     if (!documentId) return;
     setStatus('saving');
     try {
@@ -109,9 +119,9 @@ export default function DocumentPage() {
       console.error('Failed to save document', error);
       setStatus('error');
     }
-  };
+  }, [documentId]);
 
-  const debouncedSave = useDebounce(saveDocument, 1000);
+  const { run: debouncedSave } = useDebounce(saveDocument, 1000);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
@@ -119,13 +129,42 @@ export default function DocumentPage() {
     debouncedSave({ title: newTitle });
   };
 
+  // 5s debounced auto-save for content
+  const { run: debouncedContentSave, cancel: cancelContentSave } = useDebounce((editor: TiptapEditor) => {
+    saveDocument({ content: editor.getHTML() });
+  }, 5000);
+
+  const handleContentUpdate = ({ editor }: { editor: TiptapEditor }) => {
+    // Immediately set UI to pending/saving state so user knows we have unsaved work waiting for 5s debounce
+    setStatus('pending');
+    debouncedContentSave(editor);
+  };
+
+  const editorRef = useRef<TiptapEditor | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        cancelContentSave();
+        const updates: { title?: string; content?: string } = { title };
+        if (editorRef.current) {
+          updates.content = editorRef.current.getHTML();
+        }
+        saveDocument(updates);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [title, cancelContentSave, saveDocument]);
+
   // Content auto-save has been removed. 
   // Content rendering and saving is now fully managed by Yjs CRDT and Hocuspocus backend.
 
 
   if (loading) {
     return (
-      <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg">
+      <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg dark:bg-gray-800">
         {/* Header Skeleton */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex-1 flex items-center gap-2">
@@ -172,7 +211,7 @@ export default function DocumentPage() {
   } as const;
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg">
+    <div className="mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full flex flex-col bg-white rounded-lg dark:bg-gray-800">
       {/* Header / Meta */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex-1 flex items-center gap-2">
@@ -211,6 +250,7 @@ export default function DocumentPage() {
           <div className={`text-sm min-w-[60px] text-right ${isCollabReady ? statusColor[collabStatus] : 'text-gray-400'}`}>
             {isCollabReady ? statusLabel[collabStatus] : (
               <>
+                {status === 'pending' && '等待保存...'}
                 {status === 'saving' && '保存中...'}
                 {status === 'saved' && '已保存'}
                 {status === 'error' && <span className="text-red-500">保存失败</span>}
@@ -267,7 +307,11 @@ export default function DocumentPage() {
           provider={isCollabReady ? provider : undefined}
           ydoc={isCollabReady ? ydoc : undefined}
           collabUser={collabUser ?? undefined}
-          onReady={() => setIsEditorReady(true)}
+          onUpdate={handleContentUpdate}
+          onReady={(editor) => {
+            editorRef.current = editor;
+            setIsEditorReady(true);
+          }}
         />
       </div>
 

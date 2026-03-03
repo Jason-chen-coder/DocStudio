@@ -101,8 +101,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
 
-  /* Primary - Brand Color #333DFC */
-  --primary: 237 97% 59%;
+  /* Primary - Brand Color lab(44.0605% 29.0279 -86.0352); */ 
+  --primary: 237 97% 59%; 
   --primary-foreground: 0 0% 100%;
 
   /* Secondary */

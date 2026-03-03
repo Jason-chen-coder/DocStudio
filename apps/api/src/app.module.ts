@@ -12,6 +12,8 @@ import { ShareModule } from './share/share.module';
 import { AdminModule } from './admin/admin.module';
 import { PublicModule } from './modules/public/public.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
+import { FilesModule } from './files/files.module';
+
 import { SnapshotsModule } from './snapshots/snapshots.module';
 
 @Module({
@@ -26,6 +28,7 @@ import { SnapshotsModule } from './snapshots/snapshots.module';
     AdminModule,
     PublicModule,
     CollaborationModule,
+    FilesModule,
     SnapshotsModule,
   ],
   controllers: [AppController],

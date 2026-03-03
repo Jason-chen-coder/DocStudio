@@ -1,7 +1,7 @@
 "use client"
 
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
-import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import { type Editor, EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Collaboration ---
 import { CustomCollaboration } from "./custom-collaboration"
@@ -198,7 +198,7 @@ const MobileToolbarContent = ({
 
 export interface SimpleEditorProps {
   content?: string
-  onUpdate?: (content: string) => void
+  onUpdate?: (props: { editor: Editor }) => void
   editable?: boolean
   showTableOfContents?: boolean
   /** 在编辑器内容底部追加的自定义渲染（与内容共享同一滚动容器） */
@@ -209,7 +209,7 @@ export interface SimpleEditorProps {
   /** Current user info for collab cursor display */
   collabUser?: CollabUser
   /** Callback fired when editor is fully mounted and ready for interaction */
-  onReady?: () => void
+  onReady?: (editor: Editor) => void
 }
 
 type TableOfContentsItem = {
@@ -294,17 +294,35 @@ export function SimpleEditor({
         getIndex: getHierarchicalIndexes,
         onUpdate: (items) => {
           const currentActive = items.find((item) => item.isActive)
+          const currentActiveId = currentActive?.id ?? null
 
-          setTableOfContentsItems(
-            items.map((item) => ({
+          setTableOfContentsItems((prevItems: TableOfContentsItem[]) => {
+            const newItems = items.map((item) => ({
               id: item.id,
               level: item.level,
               textContent: item.textContent,
               isActive: item.isActive,
             }))
-          )
 
-          setActiveTocId(currentActive?.id ?? null)
+            if (prevItems.length !== newItems.length) return newItems;
+
+            let isDifferent = false;
+            for (let i = 0; i < prevItems.length; i++) {
+              if (
+                prevItems[i].id !== newItems[i].id ||
+                prevItems[i].level !== newItems[i].level ||
+                prevItems[i].textContent !== newItems[i].textContent ||
+                prevItems[i].isActive !== newItems[i].isActive
+              ) {
+                isDifferent = true;
+                break;
+              }
+            }
+
+            return isDifferent ? newItems : prevItems;
+          })
+
+          setActiveTocId((prev: string | null) => prev !== currentActiveId ? currentActiveId : prev)
         },
       }),
       ImageUploadNode.configure({
@@ -329,15 +347,15 @@ export function SimpleEditor({
     // In collab mode, don't pass initial content (Yjs manages it from server)
     content: isCollabMode ? undefined : content,
     editable,
-    onCreate: () => {
-      onReady?.();
+    onCreate: ({ editor }: { editor: Editor }) => {
+      onReady?.(editor);
     },
     onUpdate: ({ editor, transaction }) => {
       // In collab mode, Yjs fires onUpdate for EVERY remote update too.
       // Only call the callback for local user-initiated changes
       // (i.e. when the transaction isn't a purely remote Yjs sync).
       if (isCollabMode && transaction.getMeta(ySyncPluginKey)) return;
-      onUpdate?.(editor.getHTML());
+      onUpdate?.({ editor });
     },
   })
 

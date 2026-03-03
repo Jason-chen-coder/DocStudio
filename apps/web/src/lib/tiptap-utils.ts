@@ -374,17 +374,71 @@ export const handleImageUpload = async (
     )
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
-  }
+  // Create FormData
+  const formData = new FormData()
+  formData.append("file", file)
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
+  try {
+    const response = await new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      
+      // We assume NEXT_PUBLIC_API_URL is available for the backend
+      // Fallback to localhost:3001 if not set
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+      xhr.open("POST", `${apiUrl}/files/upload`)
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = Math.round((event.loaded / event.total) * 100)
+          onProgress({ progress })
+        }
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const result = JSON.parse(xhr.responseText)
+            if (result && result.url) {
+              resolve(result.url)
+            } else {
+              reject(new Error("Invalid response from server"))
+            }
+          } catch (e) {
+            reject(new Error("Failed to parse server response"))
+          }
+        } else {
+          // Attempt to extract error message
+          try {
+            const errResult = JSON.parse(xhr.responseText)
+            reject(new Error(errResult.message || `Upload failed with status ${xhr.status}`))
+          } catch {
+            reject(new Error(`Upload failed with status ${xhr.status}`))
+          }
+        }
+      }
+
+      xhr.onerror = () => {
+        reject(new Error("Network error during file upload"))
+      }
+
+      xhr.onabort = () => {
+        reject(new Error("Upload cancelled"))
+      }
+
+      if (abortSignal) {
+        abortSignal.addEventListener("abort", () => {
+          xhr.abort()
+        })
+      }
+
+      xhr.send(formData)
+    })
+
+    return response
+  } catch (error) {
+    console.error("Error in handleImageUpload:", error)
+    throw error
+  }
 }
 
 type ProtocolOptions = {

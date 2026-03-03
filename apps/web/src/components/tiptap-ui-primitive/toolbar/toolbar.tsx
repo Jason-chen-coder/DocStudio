@@ -91,7 +91,7 @@ export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(
         role="toolbar"
         aria-label="toolbar"
         data-variant={variant}
-        className={cn("tiptap-toolbar", className)}
+        className={cn("tiptap-toolbar", "dark:bg-gray-800", className)}
         {...props}
       >
         {children}
@@ -106,7 +106,7 @@ export const ToolbarGroup = forwardRef<HTMLDivElement, BaseProps>(
     <div
       ref={ref}
       role="group"
-      className={cn("tiptap-toolbar-group", className)}
+      className={cn("tiptap-toolbar-group", "dark:bg-gray-800", className)}
       {...props}
     >
       {children}

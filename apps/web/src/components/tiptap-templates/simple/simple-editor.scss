@@ -152,6 +152,7 @@ body,
 }
 
 .simple-editor-wrapper .toc-sidebar-progress-line {
+  flex-shrink: 0;
   height: 0.125rem;
   border-radius: 0.25rem;
   background-color: var(--tt-toc-sidebar-line-bg);
