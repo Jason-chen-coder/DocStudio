@@ -167,7 +167,7 @@ body,
 }
 
 .simple-editor-wrapper .toc-sidebar-progress-line.is-active {
-  background-color: var(--tt-brand-color-500, var(--tt-theme-text));
+  background-color: var(--color-blue-600);
 }
 
 .simple-editor-wrapper .simple-editor-toc-drawer {
@@ -257,7 +257,7 @@ body,
 
 .simple-editor-wrapper .simple-editor-toc-link.is-active {
   background: var(--tt-gray-light-a-200);
-  color: var(--tt-brand-color-500, var(--tt-theme-text));
+  color: var(--color-blue-600);
   font-weight: 600;
 }
 
