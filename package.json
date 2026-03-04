@@ -32,6 +32,13 @@
   },
   "packageManager": "pnpm@9.15.4",
   "dependencies": {
+    "@fastify/compress": "^8.3.1",
+    "@hocuspocus/extension-logger": "^3.4.4",
+    "@tiptap/extension-document": "^3.20.0",
+    "@tiptap/extension-history": "^3.20.0",
+    "@tiptap/extension-paragraph": "^3.20.0",
+    "@tiptap/extension-text": "^3.20.0",
+    "@tiptap/html": "^3.20.0",
     "@types/express": "^5.0.0"
   }
 }

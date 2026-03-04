@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
@@ -16,6 +15,18 @@ import {
 } from '@hocuspocus/server';
 import { Database } from '@hocuspocus/extension-database';
 import { PrismaService } from '../prisma/prisma.service';
+import * as Y from 'yjs';
+import { generateHTML } from '@tiptap/html';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import { SnapshotsService } from '../snapshots/snapshots.service';
+
+// A minimal set of extensions to allow parsing the YDoc to HTML on the server.
+// For perfect HTML representation of customized nodes (like imageUpload),
+// we would import all custom extensions here, but for search/text extraction
+// and fallback rendering, the core blocks are sufficient.
+const serverExtensions = [Document, Paragraph, Text];
 
 @Injectable()
 export class CollaborationService implements OnModuleInit, OnModuleDestroy {
@@ -25,112 +36,210 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly snapshotsService: SnapshotsService,
   ) {}
 
   async onModuleInit() {
     const prisma = this.prisma;
     const jwtService = this.jwtService;
     const logger = this.logger;
+    const snapshotsService = this.snapshotsService;
 
     const collabPort = Number(process.env.COLLAB_PORT) || 1234;
 
-    this.server = new Server({
-      port: collabPort,
+    this.server = new Server(
+      {
+        port: collabPort,
 
-      extensions: [
-        new Database({
-          fetch: async ({ documentName }: { documentName: string }) => {
-            try {
-              const doc = await prisma.document.findUnique({
-                where: { ydocKey: documentName },
-              });
-              return doc?.ydocData ?? null;
-            } catch (err) {
-              logger.error(`Failed to fetch ydoc for ${documentName}`, err);
-              return null;
-            }
-          },
-          store: async ({
-            documentName,
-            state,
-          }: {
-            documentName: string;
-            state: Uint8Array;
-          }) => {
-            try {
-              await prisma.document.update({
-                where: { ydocKey: documentName },
-                data: { ydocData: Buffer.from(state) },
-              });
-            } catch (err) {
-              logger.error(`Failed to store ydoc for ${documentName}`, err);
-            }
-          },
-        }),
-      ],
+        // ── Store debounce ────────────────────────────────────────────────────
+        // Hocuspocus calls onStoreDocument after each incoming update.
+        // debounce: wait 2s after the last update before storing (batches rapid keystrokes).
+        // maxDebounce: guarantee a store at least every 30s even during continuous typing.
+        // This dramatically reduces DB write frequency during active editing sessions.
+        debounce: 2000,
+        maxDebounce: 30000,
 
-      async onAuthenticate(data: onAuthenticatePayload) {
-        const { token, documentName } = data;
+        extensions: [
+          new Database({
+            fetch: async ({ documentName }: { documentName: string }) => {
+              try {
+                const doc = await prisma.document.findUnique({
+                  where: { ydocKey: documentName },
+                });
+                return doc?.ydocData ?? null;
+              } catch (err) {
+                logger.error(`Failed to fetch ydoc for ${documentName}`, err);
+                return null;
+              }
+            },
+            store: async ({
+              documentName,
+              state,
+            }: {
+              documentName: string;
+              state: Uint8Array;
+            }) => {
+              try {
+                // 1. Store the binary YDoc state
+                await prisma.document.update({
+                  where: { ydocKey: documentName },
+                  data: { ydocData: Buffer.from(state) },
+                });
 
-        if (!token) {
-          throw new Error('Unauthorized: no token provided');
-        }
+                // 1b. Trigger auto-snapshot (max once per hour) using the live Yjs state.
+                // We pass `state` directly so the snapshot service does not need a
+                // redundant DB round-trip to fetch ydocData.
+                const docRecord = await prisma.document.findUnique({
+                  where: { ydocKey: documentName },
+                  select: { id: true, createdBy: true },
+                });
+                if (docRecord) {
+                  snapshotsService
+                    .autoSnapshot(docRecord.id, docRecord.createdBy, state)
+                    .catch((err: unknown) =>
+                      logger.warn(
+                        `Auto-snapshot skipped for ${documentName}: ${String(err)}`,
+                      ),
+                    );
+                }
 
-        let payload: { sub: string; email: string };
-        try {
-          payload = jwtService.verify<{ sub: string; email: string }>(token, {
-            secret: process.env.JWT_SECRET || 'your-secret-key',
-          });
-        } catch {
-          throw new Error('Unauthorized: invalid token');
-        }
+                // 2. Also parse the Yjs state into HTML to save to the main content field
+                try {
+                  const ydoc = new Y.Doc();
+                  Y.applyUpdate(ydoc, state);
+                  // "content" is the field name Tiptap collaboration extension uses
+                  const xmlFragment = ydoc.getXmlFragment('content');
 
-        const userId = payload.sub;
+                  // xmlFragment.toJSON() returns an XML *string* like "<heading ...>",
+                  // NOT a JSON string — so we must NOT call JSON.parse() on it.
+                  // Instead, build the Tiptap ProseMirror JSON manually from the fragment's children.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const contentNodes: any[] = [];
+                  xmlFragment.forEach((child) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const c = child as any;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    if (typeof c.toJSON === 'function') {
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                      contentNodes.push(c.toJSON());
+                    }
+                  });
 
-        const doc = await prisma.document.findUnique({
-          where: { ydocKey: documentName },
-          include: {
-            space: {
-              include: {
-                permissions: { where: { userId } },
+                  if (contentNodes.length > 0) {
+                    const html = generateHTML(
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+                      { type: 'doc', content: contentNodes as any },
+                      serverExtensions,
+                    );
+
+                    await prisma.document.update({
+                      where: { ydocKey: documentName },
+                      data: { content: html },
+                    });
+                  }
+                } catch (parseErr) {
+                  logger.error(
+                    `Failed to parse YDoc to HTML for ${documentName}`,
+                    parseErr,
+                  );
+                }
+              } catch (err) {
+                logger.error(`Failed to store ydoc for ${documentName}`, err);
+              }
+            },
+          }),
+        ],
+
+        async onAuthenticate(data: onAuthenticatePayload) {
+          const { token, documentName } = data;
+
+          if (!token) {
+            throw new Error('Unauthorized: no token provided');
+          }
+
+          let payload: { sub: string; email: string };
+          try {
+            payload = jwtService.verify<{ sub: string; email: string }>(token, {
+              secret: process.env.JWT_SECRET || 'your-secret-key',
+            });
+          } catch {
+            throw new Error('Unauthorized: invalid token');
+          }
+
+          const userId = payload.sub;
+
+          const doc = await prisma.document.findUnique({
+            where: { ydocKey: documentName },
+            include: {
+              space: {
+                include: {
+                  permissions: { where: { userId } },
+                },
               },
             },
+          });
+
+          if (!doc) {
+            throw new Error('Document not found');
+          }
+
+          const isOwner = doc.space.ownerId === userId;
+          const isMember = doc.space.permissions.length > 0;
+
+          if (!isOwner && !isMember) {
+            throw new Error('Unauthorized: no access to this document');
+          }
+
+          // Set read-only for VIEWERs
+          const permission = doc.space.permissions[0];
+          if (permission?.role === 'VIEWER') {
+            (data as any).connection.readOnly = true;
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, name: true, avatarUrl: true },
+          });
+
+          return { user };
+        },
+
+        async onConnect(data: onConnectPayload): Promise<void> {
+          logger.log(`Client connected to document: ${data.documentName}`);
+        },
+
+        async onDisconnect(data: onDisconnectPayload): Promise<void> {
+          logger.log(`Client disconnected from document: ${data.documentName}`);
+        },
+      },
+      // ── WebSocket-level permessage-deflate compression ────────────────────
+      // This is spread into the underlying ws.WebSocketServer constructor.
+      // Yjs binary deltas compress very well (typically 40–60% reduction),
+      // so enabling this for large documents is highly beneficial.
+      {
+        perMessageDeflate: {
+          // Only compress frames above 1KB; small pings are not worth compressing
+          threshold: 1024,
+          // Limit memory use by capping the window bits
+          serverMaxWindowBits: 13,
+          clientMaxWindowBits: 13,
+          // Prevent context takeover for better CPU/memory tradeoffs in multi-client sessions
+          serverNoContextTakeover: false,
+          clientNoContextTakeover: false,
+          // Zlib deflate options: level 6 is a good speed/ratio balance
+          zlibDeflateOptions: {
+            chunkSize: 1024,
+            memLevel: 7,
+            level: 6,
           },
-        });
-
-        if (!doc) {
-          throw new Error('Document not found');
-        }
-
-        const isOwner = doc.space.ownerId === userId;
-        const isMember = doc.space.permissions.length > 0;
-
-        if (!isOwner && !isMember) {
-          throw new Error('Unauthorized: no access to this document');
-        }
-
-        // Set read-only for VIEWERs
-        const permission = doc.space.permissions[0];
-        if (permission?.role === 'VIEWER') {
-          (data as any).connection.readOnly = true;
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true, name: true, avatarUrl: true },
-        });
-
-        return { user };
+          zlibInflateOptions: {
+            chunkSize: 10 * 1024,
+          },
+          // Cap concurrent compression ops to avoid CPU spikes
+          concurrencyLimit: 10,
+        },
       },
-
-      async onConnect(data: onConnectPayload): Promise<void> {
-        logger.log(`Client connected to document: ${data.documentName}`);
-      },
-
-      async onDisconnect(data: onDisconnectPayload): Promise<void> {
-        logger.log(`Client disconnected from document: ${data.documentName}`);
-      },
-    });
+    );
 
     await this.server.listen();
     this.logger.log(

@@ -416,3 +416,25 @@ body,
   right: -4px;
   pointer-events: auto;
 }
+
+/* Comment Highlight Styles */
+.comment-mark {
+  background-color: rgba(255, 213, 79, 0.4);
+  border-bottom: 2px solid #FFC107;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dark .comment-mark {
+  background-color: rgba(255, 213, 79, 0.15);
+  border-bottom: 2px solid #FFCA28;
+}
+
+.comment-mark:hover {
+  background-color: rgba(255, 213, 79, 0.6);
+}
+
+.dark .comment-mark:hover {
+  background-color: rgba(255, 213, 79, 0.3);
+}
+

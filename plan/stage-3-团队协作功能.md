@@ -408,18 +408,17 @@ User                  Server
 1. ✅ 🕒 版本历史与回滚机制 (Version History UI) - 完成度 100%
    当前状态：已完成后端自动快照生成（支持内容变更时自动防抖存盘以及每小时自动生成快照逻辑），并且前端已于侧边栏展示历史记录。
    达成特性：侧边栏支持查看快照时间与创建者备注，并且可以通过 Tiptap 只读预览弹窗看到对应历史节点的内容，一键恢复到历史版本。
-2. 🔌 离线编辑支持与秒开体验 (Offline Support & Local Caching)
-   当前状态：这块属于极客体验。目前每次加载页面，都要等着 websocket 连接或者从零开始同步全量文档。这在移动端弱网环境有时就会慢。
-   需要做啥：引入 y-indexeddb。这样一打开页面，文档“瞬间”从本地数据库读出先渲染出来并允许用户操作。后台会在连接 WebSocket 时把增量变更用 CRDT 算法默默合进去。
+2. ✅ 🔌 离线编辑支持与秒开体验 (Offline Support & Local Caching) - 完成度 100%
+   当前状态：已引入 y-indexeddb，一打开页面，文档将瞬间从本地数据库读出先渲染出来并允许用户操作。后台会在连接 WebSocket 时把增量变更用 CRDT 算法默默合进去。
 3. 🖼️ 图片与附件同步上传服务 (Image Upload & MinIO) - 完成度 100%
    当前状态：已实现 FilesModule 和真实的文件上传接口（MinIO/S3兼容），完美接管 handleImageUpload 钩子，图片能直接持久化上传并在所有协作者终端广播显示。
    需要做啥：增加大文件分片、上传进度条UI的美化（可选增强）。
 4. 🗨️ 行内划线评论与 @提及 (Comments & Mentions) - 全新挑战功能
    当前状态：真正的企业级文档不仅是“一起写”，主要也是“异步讨论”。
    需要做啥：类似于 Notion——划过一段文字，就可以在侧边弹出一个浮窗进行留言评论，所有参与者可以在这条下聊天。另外在正文中输入 @ 会弹出下拉列表提醒空间里的成员（这需要开发自定的 Tiptap Mention Extension）。
-5. 🔒 正式上线级别的只读权限校验 (Permissions Integration)
-   当前状态：目前我们可以在 admin/users/page.tsx 和空间设置里把人配成 VIEWER(访问者) 或 EDITOR(编辑者)。但是目前代码对协同流控并没有做这么细。
-   需要做啥：前端在拿到角色如果是个 VIEWER，那它渲染 Tiptap 时不能展示菜单栏且要传 editable={false}；更关键的是，后台 Hocuspocus 接到 VIEWER 擅自构造的二进制变更包（哪怕他们绕过前端直接调 WebSocket 接口）必须拒收，阻止恶意篡改。
+5. ✅ 🔒 正式上线级别的只读权限校验 (Permissions Integration) - 完成度 100%
+   当前状态：已完成对 VIEWER 角色的限制。
+   达成特性：前端会获取当前用户在空间的角色并向编辑器传入 `editable={false}`，同时隐藏菜单栏、禁用标题和显示只读徽标。后台 Hocuspocus 在 `onAuthenticate` 事件中已经针对 VIEWER 开启了 `connection.readOnly = true` ，能从网络层拒收一切二进制非法写入包，实现了真正无死角的只读保护。
 
 ## 下一步
 

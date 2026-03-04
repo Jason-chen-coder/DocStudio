@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/api';
 import { CreateDocumentDto, Document, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
+import pako from 'pako';
 
 export const documentService = {
   async getDocuments(spaceId: string): Promise<Document[]> {
@@ -18,9 +19,24 @@ export const documentService = {
   },
 
   async updateDocument(id: string, data: UpdateDocumentDto): Promise<Document> {
+    const rawJson = JSON.stringify(data);
+    
+    // 如果 Payload 大于 5KB，则启用 Gzip 压缩
+    if (rawJson.length > 5120) {
+      const compressedData = pako.gzip(rawJson);
+      return apiRequest<Document>(`/documents/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Encoding': 'gzip',
+          'Content-Type': 'application/json',
+        },
+        body: compressedData,
+      });
+    }
+
     return apiRequest<Document>(`/documents/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: rawJson,
     });
   },
 

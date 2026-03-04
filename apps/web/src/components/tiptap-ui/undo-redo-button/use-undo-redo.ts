@@ -63,7 +63,29 @@ export function canExecuteUndoRedoAction(
   if (!editor || !editor.isEditable) return false
   if (isNodeTypeSelected(editor, ["image"])) return false
 
-  return action === "undo" ? editor.can().undo() : editor.can().redo()
+  try {
+    // Tiptap v3 UndoRedo uses 'historyUndo' / 'historyRedo' commands.
+    // Tiptap v2 History used 'undo' / 'redo'.
+    // Use bracket notation to avoid TypeScript CanCommands type constraints
+    // while still being safe at runtime via the typeof guard.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const can = editor.can() as Record<string, any>
+    if (action === "undo") {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      return typeof can["historyUndo"] === "function" ? (can["historyUndo"]() as boolean)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        : typeof can["undo"] === "function" ? (can["undo"]() as boolean)
+        : false
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      return typeof can["historyRedo"] === "function" ? (can["historyRedo"]() as boolean)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        : typeof can["redo"] === "function" ? (can["redo"]() as boolean)
+        : false
+    }
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -77,7 +99,21 @@ export function executeUndoRedoAction(
   if (!canExecuteUndoRedoAction(editor, action)) return false
 
   const chain = editor.chain().focus()
-  return action === "undo" ? chain.undo().run() : chain.redo().run()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c = chain as Record<string, any>
+  try {
+    if (action === "undo") {
+      return typeof c["historyUndo"] === "function"
+        ? c["historyUndo"]().run()
+        : chain.undo().run()
+    } else {
+      return typeof c["historyRedo"] === "function"
+        ? c["historyRedo"]().run()
+        : chain.redo().run()
+    }
+  } catch {
+    return false
+  }
 }
 
 /**

@@ -121,7 +121,7 @@ export default function SpacesPage() {
                       onClick={() => router.push(`/spaces/${space.id}`)}
                       className="group bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer border border-gray-200 dark:border-gray-700 relative overflow-hidden"
                     >
-                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition">
+                      {/* <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -132,7 +132,7 @@ export default function SpacesPage() {
                         >
                           ⚙️
                         </button>
-                      </div>
+                      </div> */}
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate flex-1 pr-8">
                           {space.name}

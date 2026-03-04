@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import type * as Y from 'yjs'; // type-only import, no runtime Yjs
+import { IndexeddbPersistence } from 'y-indexeddb';
 import { getToken } from '@/lib/api';
 
 export interface CollabUser {
@@ -85,6 +86,12 @@ export function useCollaboration(
     });
     providerRef.current = hp;
 
+    let persistence: IndexeddbPersistence | null = null;
+    if (typeof window !== 'undefined') {
+      // Connect the Yjs document to IndexedDB for offline caching
+      persistence = new IndexeddbPersistence(ydocKey, hp.document as Y.Doc);
+    }
+
     // Set user presence in awareness
     hp.awareness?.setLocalStateField('user', {
       id: currentUser.id,
@@ -133,6 +140,9 @@ export function useCollaboration(
 
     return () => {
       hp.awareness?.off('change', handleAwarenessChange);
+      if (persistence) {
+        persistence.destroy();
+      }
       hp.destroy();
       providerRef.current = null;
       setYdoc(null);

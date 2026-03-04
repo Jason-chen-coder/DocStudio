@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { documentService } from '@/services/document-service';
+import { spaceService } from '@/services/space-service';
 import { Document } from '@/types/document';
+import { Space } from '@/types/space';
 import { Editor } from '@/components/editor/editor';
 import { ShareDialog } from '@/components/share/share-dialog';
 import { OnlineUsers } from '@/components/editor/online-users';
@@ -47,8 +49,10 @@ export default function DocumentPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const documentId = params.documentId as string;
+  const spaceId = params.id as string;
 
   const [document, setDocument] = useState<Document | null>(null);
+  const [space, setSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
@@ -56,6 +60,9 @@ export default function DocumentPage() {
 
   // Status for auto-save (title only in collab mode)
   const [status, setStatus] = useState<'saved' | 'saving' | 'error' | 'pending'>('saved');
+
+  // Permissions
+  const isReadOnly = space?.myRole === 'VIEWER';
 
   // Build the current user object for collaboration
   const collabUser: CollabUser | null = authUser
@@ -85,12 +92,16 @@ export default function DocumentPage() {
   const [isEditorReady, setIsEditorReady] = useState(false);
 
   useEffect(() => {
-    async function loadDocument() {
+    async function loadData() {
       try {
         setLoading(true);
-        const data = await documentService.getDocument(documentId);
-        setDocument(data);
-        setTitle(data.title);
+        const [docData, spaceData] = await Promise.all([
+          documentService.getDocument(documentId),
+          spaceService.getSpace(spaceId),
+        ]);
+        setDocument(docData);
+        setTitle(docData.title);
+        setSpace(spaceData);
       } catch (error) {
         console.error('Failed to load document', error);
         toast.error('无法加载文档');
@@ -99,10 +110,10 @@ export default function DocumentPage() {
       }
     }
 
-    if (documentId) {
-      loadDocument();
+    if (documentId && spaceId) {
+      loadData();
     }
-  }, [documentId]);
+  }, [documentId, spaceId]);
 
   const saveDocument = useCallback(async (updates: { title?: string; content?: string }) => {
     if (!documentId) return;
@@ -129,15 +140,12 @@ export default function DocumentPage() {
     debouncedSave({ title: newTitle });
   };
 
-  // 5s debounced auto-save for content
-  const { run: debouncedContentSave, cancel: cancelContentSave } = useDebounce((editor: TiptapEditor) => {
-    saveDocument({ content: editor.getHTML() });
-  }, 5000);
+  // Content rendering and saving is now fully managed by Yjs CRDT and Hocuspocus backend.
+  // We no longer need to send huge PATCH requests for every edit.
 
-  const handleContentUpdate = ({ editor }: { editor: TiptapEditor }) => {
-    // Immediately set UI to pending/saving state so user knows we have unsaved work waiting for 5s debounce
-    setStatus('pending');
-    debouncedContentSave(editor);
+  const handleContentUpdate = () => {
+    // Just sync the local editor state if needed, or trigger any non-persistence UI updates.
+    // The actual state synchronization to the DB is handled implicitly by Hocuspocus WebSocket.
   };
 
   const editorRef = useRef<TiptapEditor | null>(null);
@@ -146,20 +154,14 @@ export default function DocumentPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        cancelContentSave();
-        const updates: { title?: string; content?: string } = { title };
-        if (editorRef.current) {
-          updates.content = editorRef.current.getHTML();
-        }
+        const updates: { title?: string } = { title };
+        // Content is synced perfectly via WebSocket, so manual save only needs to sync the title
         saveDocument(updates);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [title, cancelContentSave, saveDocument]);
-
-  // Content auto-save has been removed. 
-  // Content rendering and saving is now fully managed by Yjs CRDT and Hocuspocus backend.
+  }, [title, saveDocument]);
 
 
   if (loading) {
@@ -232,7 +234,7 @@ export default function DocumentPage() {
             value={title}
             onChange={handleTitleChange}
             placeholder="无标题"
-            disabled={isPreview}
+            disabled={isPreview || isReadOnly}
             className="w-full text-4xl font-bold text-gray-900 dark:text-gray-100 bg-transparent border-none focus:ring-0 placeholder-gray-300 dark:placeholder-gray-600 px-0 disabled:opacity-50"
           />
         </div>
@@ -247,8 +249,10 @@ export default function DocumentPage() {
           )}
 
           {/* Save status */}
-          <div className={`text-sm min-w-[60px] text-right ${isCollabReady ? statusColor[collabStatus] : 'text-gray-400'}`}>
-            {isCollabReady ? statusLabel[collabStatus] : (
+          <div className={`text-sm min-w-[60px] text-right ${isReadOnly ? 'text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded' : isCollabReady ? statusColor[collabStatus] : 'text-gray-400'}`}>
+            {isReadOnly ? (
+              <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>只读模式</span>
+            ) : isCollabReady ? statusLabel[collabStatus] : (
               <>
                 {status === 'pending' && '等待保存...'}
                 {status === 'saving' && '保存中...'}
@@ -269,15 +273,17 @@ export default function DocumentPage() {
             <span className="hidden sm:inline">历史</span>
           </button>
 
-          <button
-            onClick={() => setIsPreview(!isPreview)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${isPreview
-              ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
-              : 'text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800 dark:hover:bg-blue-900/50'
-              }`}
-          >
-            {isPreview ? '编辑' : '预览'}
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => setIsPreview(!isPreview)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${isPreview
+                ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
+                : 'text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800 dark:hover:bg-blue-900/50'
+                }`}
+            >
+              {isPreview ? '编辑' : '预览'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -303,7 +309,7 @@ export default function DocumentPage() {
         <Editor
           key={isCollabReady ? `collab-${documentId}` : `normal-${documentId}`}
           initialContent={document.content || ''}
-          editable={!isPreview}
+          editable={!isPreview && !isReadOnly}
           provider={isCollabReady ? provider : undefined}
           ydoc={isCollabReady ? ydoc : undefined}
           collabUser={collabUser ?? undefined}

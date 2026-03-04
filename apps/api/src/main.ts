@@ -9,12 +9,15 @@ import fastifyCors from '@fastify/cors';
 
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import compression from '@fastify/compress';
 import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter({
+      bodyLimit: 50 * 1024 * 1024, // 50MB 解决大型文档/Base64图片保存时的 413 Payload Too Large 问题
+    }),
   );
 
   // 注册 Fastify CORS 插件
@@ -23,6 +26,9 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
+
+  // 注册压缩插件以解决过大 payload
+  await app.register(compression, { encodings: ['gzip', 'deflate'] });
 
   // 注册 @fastify/multipart 用于文件上传
   await app.register(multipart, {

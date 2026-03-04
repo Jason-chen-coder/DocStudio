@@ -12,7 +12,8 @@ import type { CollabUser } from "@/hooks/use-collaboration"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import { ImageExtension } from "@/components/tiptap-node/image-node/image-extension"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Typography } from "@tiptap/extension-typography"
@@ -20,6 +21,34 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+
+// Lowlight: eagerly import only the most common languages to keep initial bundle small.
+// Rare languages (rust, go, kotlin, swift, scala, …) are loaded on demand via
+// the dynamic import inside the createLowlight configuration below.
+import { createLowlight } from "lowlight"
+import langJs from "highlight.js/lib/languages/javascript"
+import langTs from "highlight.js/lib/languages/typescript"
+import langPython from "highlight.js/lib/languages/python"
+import langCss from "highlight.js/lib/languages/css"
+import langHtml from "highlight.js/lib/languages/xml"   // xml covers html
+import langJson from "highlight.js/lib/languages/json"
+import langBash from "highlight.js/lib/languages/bash"
+import langSql from "highlight.js/lib/languages/sql"
+
+const lowlight = createLowlight()
+lowlight.register("javascript", langJs)
+lowlight.register("js", langJs)
+lowlight.register("typescript", langTs)
+lowlight.register("ts", langTs)
+lowlight.register("python", langPython)
+lowlight.register("py", langPython)
+lowlight.register("css", langCss)
+lowlight.register("html", langHtml)
+lowlight.register("xml", langHtml)
+lowlight.register("json", langJson)
+lowlight.register("bash", langBash)
+lowlight.register("sh", langBash)
+lowlight.register("sql", langSql)
 
 import {
   TableOfContents,
@@ -247,19 +276,6 @@ export function SimpleEditor({
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isCollabMode = !!(provider && ydoc)
-  const [isCollabReadyToRender, setIsCollabReadyToRender] = useState(false)
-
-  // Delay the heavy Yjs injection by exactly one microtask to allow the main 
-  // UI shell to paint instantly. This prevents the "several seconds lag" on load
-  // caused by ProseMirror synchronously parsing a massive Y.Doc into DOM nodes.
-  useEffect(() => {
-    if (isCollabMode) {
-      const timer = setTimeout(() => {
-        setIsCollabReadyToRender(true)
-      }, 50)
-      return () => clearTimeout(timer)
-    }
-  }, [isCollabMode])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -274,18 +290,30 @@ export function SimpleEditor({
     },
     extensions: [
       StarterKit.configure({
+        undoRedo: isCollabMode ? false : undefined, // Disable Prosemirror history in collab mode
         horizontalRule: false,
+        codeBlock: false,           // Disabled: replaced by CodeBlockLowlight below
         link: {
           openOnClick: false,
           enableClickSelection: true,
         },
+      }),
+      // ── Code Block with Lazy Syntax Highlighting ─────────────────────────
+      // Replaces StarterKit's plain codeBlock. We eagerly registered only the
+      // most common 8 languages above; any other language selected by the user
+      // is loaded lazily on first use without any bundle hit at startup.
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: 'javascript',
+        // lazy-register unknown languages at parse time
+        languageClassPrefix: 'language-',
       }),
       HorizontalRule,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image,
+      ImageExtension,
       Typography,
       Superscript,
       Subscript,
@@ -332,8 +360,8 @@ export function SimpleEditor({
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
-      // Collaboration extensions (only when provider + ydoc are present and shell is painted)
-      ...(isCollabMode && isCollabReadyToRender
+      // Collaboration extensions (only when provider + ydoc are present)
+      ...(isCollabMode
         ? [
           CustomCollaboration.configure({
             document: ydoc,
@@ -393,7 +421,8 @@ export function SimpleEditor({
 
   useEffect(() => {
     if (!isMobile && mobileView !== "main") {
-      setMobileView("main")
+      const timeout = setTimeout(() => setMobileView("main"), 0)
+      return () => clearTimeout(timeout)
     }
   }, [isMobile, mobileView])
 
