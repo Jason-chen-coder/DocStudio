@@ -13,4 +13,9 @@ export class UpdateDocumentDto extends PartialType(
   @IsString()
   @IsOptional()
   parentId?: string | null;
+
+  /** JSON 序列化的评论线程数组 */
+  @IsString()
+  @IsOptional()
+  commentsData?: string;
 }

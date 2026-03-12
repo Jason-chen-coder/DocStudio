@@ -7,6 +7,7 @@ export interface Document {
   id: string;
   title: string;
   content?: string; // Content might not be fetched in list view
+  commentsData?: string | null; // JSON-serialized comment threads
   spaceId: string;
   parentId?: string | null;
   order: number;
@@ -33,6 +34,7 @@ export interface CreateDocumentDto {
 export interface UpdateDocumentDto {
   title?: string;
   content?: string;
+  commentsData?: string; // JSON-serialized comment threads
   parentId?: string | null; // For moving
   order?: number; // For reordering
 }

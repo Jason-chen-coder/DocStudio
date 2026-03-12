@@ -10,6 +10,13 @@ import type { HocuspocusProvider } from "@hocuspocus/provider"
 import type * as Y from "yjs"
 import type { CollabUser } from "@/hooks/use-collaboration"
 
+// --- Comment Extensions ---
+import { CommentMark } from "@/components/tiptap-extension/comment-mark-extension"
+import { useComments } from "@/hooks/use-comments"
+import type { CommentThread } from "@/hooks/use-comments"
+import { CommentBubbleMenu } from "@/components/editor/comment-bubble-menu"
+import { CommentPanel } from "@/components/editor/comment-panel"
+
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
@@ -239,6 +246,10 @@ export interface SimpleEditorProps {
   collabUser?: CollabUser
   /** Callback fired when editor is fully mounted and ready for interaction */
   onReady?: (editor: Editor) => void
+  /** Pre-loaded comment threads (from DB) */
+  initialCommentThreads?: CommentThread[]
+  /** Called whenever comment threads change, for persistence */
+  onCommentsChange?: (threads: CommentThread[]) => void
 }
 
 type TableOfContentsItem = {
@@ -258,12 +269,18 @@ export function SimpleEditor({
   ydoc,
   collabUser,
   onReady,
+  initialCommentThreads,
+  onCommentsChange,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
     "main"
   )
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
+  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false)
+  const { threads, addThread, replyToThread, resolveThread, deleteThread } =
+    useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl)
   const [tableOfContentsItems, setTableOfContentsItems] = useState<
     TableOfContentsItem[]
   >([])
@@ -318,6 +335,7 @@ export function SimpleEditor({
       Superscript,
       Subscript,
       Selection,
+      CommentMark,
       TableOfContents.configure({
         getIndex: getHierarchicalIndexes,
         onUpdate: (items) => {
@@ -388,6 +406,27 @@ export function SimpleEditor({
   })
 
   const [toolbarHeight, setToolbarHeight] = useState(0)
+
+  // Detect click on comment-marked text → open panel and activate thread
+  useEffect(() => {
+    if (!editor) return
+    const handleClick = () => {
+      const { state } = editor
+      const { from } = state.selection
+      // Walk marks at cursor position
+      const resolvedPos = state.doc.resolve(from)
+      const marks = resolvedPos.marks()
+      const commentMark = marks.find((m) => m.type.name === "commentMark")
+      if (commentMark) {
+        const threadId = commentMark.attrs.commentId as string
+        setActiveCommentId(threadId)
+        setIsCommentPanelOpen(true)
+      }
+    }
+    const dom = editor.view.dom
+    dom.addEventListener("click", handleClick)
+    return () => dom.removeEventListener("click", handleClick)
+  }, [editor])
 
   useEffect(() => {
     if (toolbarRef.current) {
@@ -494,10 +533,20 @@ export function SimpleEditor({
 
   return (
     <div
-      className={`simple-editor-wrapper dark:bg-gray-800 h-full${editable ? " has-toolbar" : ""}${isTocPinned ? " is-toc-pinned" : ""}`}
+      className={`simple-editor-wrapper dark:bg-gray-800 h-full${editable ? " has-toolbar" : ""}${isTocPinned ? " is-toc-pinned" : ""}${isCommentPanelOpen ? " has-comment-panel" : ""}`}
       data-mode={editable ? "edit" : "preview"}
     >
       <EditorContext.Provider value={{ editor }}>
+        {editor && editable && (
+          <CommentBubbleMenu
+            editor={editor}
+            onAddComment={addThread}
+            onCommentAdded={(id) => {
+              setActiveCommentId(id)
+              setIsCommentPanelOpen(true)
+            }}
+          />
+        )}
         {editable && (
           <Toolbar
             ref={toolbarRef}
@@ -529,6 +578,39 @@ export function SimpleEditor({
             <EditorContent editor={editor} role="presentation" />
             {footer}
           </div>
+
+          {isCommentPanelOpen && (
+            <aside className="simple-editor-comment-panel" aria-label="评论">
+              <div className="comment-panel-header">
+                <span className="comment-panel-title">评论</span>
+                <button
+                  type="button"
+                  className="comment-panel-close"
+                  onClick={() => {
+                    setIsCommentPanelOpen(false)
+                    setActiveCommentId(null)
+                  }}
+                  aria-label="关闭评论面板"
+                >
+                  ✕
+                </button>
+              </div>
+              <CommentPanel
+                threads={threads}
+                activeCommentId={activeCommentId}
+                onReply={replyToThread}
+                onResolve={(id) => {
+                  resolveThread(id)
+                  if (editor) editor.commands.unsetCommentMark(id)
+                }}
+                onDelete={(id) => {
+                  deleteThread(id)
+                  if (editor) editor.commands.unsetCommentMark(id)
+                }}
+                onSelectThread={setActiveCommentId}
+              />
+            </aside>
+          )}
 
           {showTableOfContents && tableOfContentsItems.length > 0 && (
             <aside

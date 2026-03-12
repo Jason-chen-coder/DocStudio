@@ -59,7 +59,8 @@ model Document {
   spaceId   String
   parentId  String? // 支持层级结构
   title     String
-  content   String   @db.Text
+  content      String   @db.Text
+  commentsData  String?  @db.Text // JSON 序列化的评论线程数组
   ydocKey   String?  @unique // Yjs 文档标识符 (Stage 4使用)
   ydocData  Bytes?           // Yjs 文档二进制持久化 (Stage 4)
   order     Int      @default(0) // 用于拖拽排序

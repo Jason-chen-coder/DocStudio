@@ -19,6 +19,7 @@ import {
   CollabUser,
 } from '@/hooks/use-collaboration';
 import { toast } from 'sonner';
+import { deserializeThreads, type CommentThread } from '@/hooks/use-comments';
 
 // Simple debounce function
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,7 @@ export default function DocumentPage() {
   const [title, setTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [initialCommentThreads, setInitialCommentThreads] = useState<CommentThread[]>([]);
 
   // Status for auto-save (title only in collab mode)
   const [status, setStatus] = useState<'saved' | 'saving' | 'error' | 'pending'>('saved');
@@ -102,6 +104,8 @@ export default function DocumentPage() {
         setDocument(docData);
         setTitle(docData.title);
         setSpace(spaceData);
+        // Restore persisted comment threads
+        setInitialCommentThreads(deserializeThreads(docData.commentsData));
       } catch (error) {
         console.error('Failed to load document', error);
         toast.error('无法加载文档');
@@ -133,6 +137,12 @@ export default function DocumentPage() {
   }, [documentId]);
 
   const { run: debouncedSave } = useDebounce(saveDocument, 1000);
+
+  const handleCommentsChange = useCallback((threads: CommentThread[]) => {
+    documentService.updateDocument(documentId, {
+      commentsData: JSON.stringify(threads),
+    }).catch((err) => console.error('Failed to save comments', err));
+  }, [documentId]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
@@ -314,6 +324,8 @@ export default function DocumentPage() {
           ydoc={isCollabReady ? ydoc : undefined}
           collabUser={collabUser ?? undefined}
           onUpdate={handleContentUpdate}
+          initialCommentThreads={initialCommentThreads}
+          onCommentsChange={handleCommentsChange}
           onReady={(editor) => {
             editorRef.current = editor;
             setIsEditorReady(true);
