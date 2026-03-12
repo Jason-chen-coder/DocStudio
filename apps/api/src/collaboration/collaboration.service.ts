@@ -16,16 +16,12 @@ import {
 import { Database } from '@hocuspocus/extension-database';
 import { PrismaService } from '../prisma/prisma.service';
 import * as Y from 'yjs';
-import { generateHTML } from '@tiptap/html';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
 import { SnapshotsService } from '../snapshots/snapshots.service';
 
-// A minimal set of extensions to allow parsing the YDoc to HTML on the server.
-// For perfect HTML representation of customized nodes (like imageUpload),
-// we would import all custom extensions here, but for search/text extraction
-// and fallback rendering, the core blocks are sufficient.
+// A minimal set of extensions to allow parsing the YDoc on the server.
 const serverExtensions = [Document, Paragraph, Text];
 
 @Injectable()
@@ -103,43 +99,44 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
                     );
                 }
 
-                // 2. Also parse the Yjs state into HTML to save to the main content field
+                // 2. Extract plain text for search/preview purposes
                 try {
                   const ydoc = new Y.Doc();
                   Y.applyUpdate(ydoc, state);
-                  // "content" is the field name Tiptap collaboration extension uses
                   const xmlFragment = ydoc.getXmlFragment('content');
 
-                  // xmlFragment.toJSON() returns an XML *string* like "<heading ...>",
-                  // NOT a JSON string — so we must NOT call JSON.parse() on it.
-                  // Instead, build the Tiptap ProseMirror JSON manually from the fragment's children.
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const contentNodes: any[] = [];
+                  // Extract plain text by recursively traversing the fragment
+                  const extractText = (node: any): string => {
+                    if (node.type === 'text') {
+                      return node.content || '';
+                    }
+                    let text = '';
+                    if (node.children) {
+                      node.children.forEach((child: any) => {
+                        text += extractText(child);
+                      });
+                    }
+                    return text;
+                  };
+
+                  let plainText = '';
                   xmlFragment.forEach((child) => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const c = child as any;
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     if (typeof c.toJSON === 'function') {
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                      contentNodes.push(c.toJSON());
+                      const json = c.toJSON();
+                      plainText += extractText(json) + '\n';
                     }
                   });
 
-                  if (contentNodes.length > 0) {
-                    const html = generateHTML(
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-                      { type: 'doc', content: contentNodes as any },
-                      serverExtensions,
-                    );
-
+                  if (plainText.trim()) {
                     await prisma.document.update({
                       where: { ydocKey: documentName },
-                      data: { content: html },
+                      data: { content: plainText.trim() },
                     });
                   }
                 } catch (parseErr) {
-                  logger.error(
-                    `Failed to parse YDoc to HTML for ${documentName}`,
+                  logger.warn(
+                    `Failed to extract text from YDoc for ${documentName}`,
                     parseErr,
                   );
                 }
