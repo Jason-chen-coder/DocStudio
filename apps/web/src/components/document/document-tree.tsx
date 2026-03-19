@@ -281,11 +281,20 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
   const activeItem = activeId ? flatItems.find(({ id }) => id === activeId) : null;
 
   if (loading) {
-    return <div className="p-4 text-sm text-gray-400 animate-pulse">加载文档中...</div>;
+    return (
+      <div className="space-y-1.5 px-1">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="flex items-center gap-2.5 py-2 px-2 animate-pulse">
+            <div className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0" />
+            <div className="h-3.5 rounded bg-gray-100 dark:bg-gray-700 flex-1" style={{ width: `${50 + i * 10}%` }} />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className={cn('py-2', className)}>
+    <div className={cn('', className)}>
       {/* 拖拽树 */}
       <DndContext
         sensors={sensors}
@@ -300,7 +309,13 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
         <SortableContext items={flatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-0.5">
             {flatItems.length === 0 ? (
-              <div className="px-4 text-sm text-gray-400 py-2">暂无文档</div>
+              <div className="flex flex-col items-center py-8 text-center">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2.5">
+                  <FileText className="w-5 h-5 text-gray-300 dark:text-gray-500" />
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">暂无文档</p>
+                <p className="text-[11px] text-gray-300 dark:text-gray-600 mt-0.5">点击右上角 + 创建</p>
+              </div>
             ) : (
               flatItems.map((item) => (
                 <SortableTreeItem
@@ -330,11 +345,13 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
         <DragOverlay dropAnimation={null}>
           {activeItem ? (
             <div
-              className="flex items-center py-1 px-3 text-sm bg-white dark:bg-gray-800 shadow-lg rounded-md border border-blue-400 opacity-90 pointer-events-none"
+              className="flex items-center py-1.5 px-3 text-[13px] font-medium bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 pointer-events-none"
               style={{ paddingLeft: `${activeItem.depth * INDENT_WIDTH + 12}px` }}
             >
-              <GripVertical className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" />
-              <FileText className="w-4 h-4 mr-2 opacity-70 flex-shrink-0" />
+              <GripVertical className="w-3 h-3 text-blue-400 mr-1.5 flex-shrink-0" />
+              <div className="w-5 h-5 rounded bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center mr-2 flex-shrink-0">
+                <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              </div>
               <span className="truncate">{activeItem.title}</span>
             </div>
           ) : null}
@@ -431,11 +448,13 @@ function SortableTreeItem({
           if (e.key === 'Enter' && !isRenaming) router.push(`/spaces/${spaceId}/documents/${item.id}`);
         }}
         className={cn(
-          'group flex items-center py-1 pr-2 text-sm text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative cursor-pointer select-none',
-          isCurrentDoc && 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
+          'group flex items-center py-1.5 pr-2 text-[13px] rounded-lg transition-all relative cursor-pointer select-none',
+          isCurrentDoc
+            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200',
           isActive && 'opacity-40'
         )}
-        style={{ paddingLeft: `${effectiveDepth * INDENT_WIDTH + 4}px` }}
+        style={{ paddingLeft: `${effectiveDepth * INDENT_WIDTH + 6}px` }}
       >
         {/* 拖拽手柄（hover 显示） */}
         <button
@@ -449,7 +468,19 @@ function SortableTreeItem({
           <GripVertical className="w-3 h-3 text-gray-400" />
         </button>
 
-        <FileText className="w-4 h-4 mr-2 opacity-70 flex-shrink-0" />
+        <div className={cn(
+          'w-5 h-5 rounded flex items-center justify-center mr-2 flex-shrink-0 transition-colors',
+          isCurrentDoc
+            ? 'bg-blue-100 dark:bg-blue-800/30'
+            : 'bg-gray-100 dark:bg-gray-700/50 group-hover:bg-gray-200 dark:group-hover:bg-gray-600/50'
+        )}>
+          <FileText className={cn(
+            'w-3 h-3',
+            isCurrentDoc
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-400 dark:text-gray-500'
+          )} />
+        </div>
 
         {/* 标题 / 内联重命名输入框 */}
         {isRenaming ? (
@@ -473,7 +504,7 @@ function SortableTreeItem({
 
         {/* Hover 操作菜单（重命名时隐藏） */}
         {!isRenaming && (
-          <div className="hidden group-hover:flex items-center gap-0.5 absolute right-1.5 bg-gray-100 dark:bg-gray-700 rounded px-0.5">
+          <div className="hidden group-hover:flex items-center gap-0.5 absolute right-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm rounded-lg px-0.5 py-0.5">
             <button
               onClick={(e) => onStartRename(item, e)}
               className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"

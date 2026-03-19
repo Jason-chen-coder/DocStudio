@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Head,
   Post,
   Body,
   Patch,
@@ -8,6 +9,8 @@ import {
   Delete,
   UseGuards,
   Req,
+  HttpCode,
+  NotFoundException,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -36,10 +39,22 @@ export class DocumentsController {
     return this.documentsService.findAll(req.query.spaceId as string);
   }
 
+  /**
+   * Lightweight existence check — returns 204 if exists, 404 if not.
+   * No body, no side effects (no visit recording).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/exists')
+  @HttpCode(204)
+  async checkExists(@Param('id') id: string) {
+    const doc = await this.documentsService.exists(id);
+    if (!doc) throw new NotFoundException();
+  }
+
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.documentsService.findOne(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
@@ -60,7 +75,7 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentsService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.documentsService.remove(id, req.user.id);
   }
 }

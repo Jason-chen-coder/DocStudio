@@ -28,6 +28,9 @@ model User {
   createdDocuments Document[]        @relation("DocumentCreator")
   invitationsSent  SpaceInvitation[] @relation("InvitationSender")
   snapshots        DocumentSnapshot[]
+  activityLogs     ActivityLog[]
+  documentVisits   DocumentVisit[]
+  templates        DocumentTemplate[]
 
   @@map("users")
 }
@@ -47,6 +50,7 @@ model Space {
   documents   Document[]
   permissions SpacePermission[]
   invitations SpaceInvitation[]
+  templates   DocumentTemplate[]
 
   @@index([ownerId])
   @@index([isPublic])
@@ -75,6 +79,7 @@ model Document {
   creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id])
   shareLinks  ShareLink[]
   snapshots   DocumentSnapshot[]
+  visits      DocumentVisit[]
 
   @@index([spaceId])
   @@index([parentId])
@@ -169,6 +174,72 @@ enum Permission {
   WRITE // 可写
 }
 
+// ==================== 活动日志模型 ====================
+model ActivityLog {
+  id         String       @id @default(cuid())
+  userId     String
+  action     ActivityAction
+  entityType EntityType
+  entityId   String
+  entityName String?      // 冗余存储实体名称，避免关联查询（实体删除后仍可显示）
+  spaceId    String?      // 冗余存储，方便按空间查询
+  spaceName  String?      // 冗余存储空间名称
+  metadata   String?      @db.Text // JSON 额外信息（如旧标题、变更字段等）
+  createdAt  DateTime     @default(now())
+
+  // 关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}
+
+// 活动动作枚举
+enum ActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  MOVE
+  RESTORE
+  SHARE
+  JOIN
+  LEAVE
+  INVITE
+  ROLE_CHANGE
+}
+
+// 实体类型枚举
+enum EntityType {
+  DOCUMENT
+  SPACE
+  SNAPSHOT
+  SHARE_LINK
+  MEMBER
+}
+
+// ==================== 最近访问模型（独立优化表） ====================
+model DocumentVisit {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  spaceId    String   // 冗余存储，方便查询
+  visitCount Int      @default(1)
+  lastVisitAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  // 关系
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([userId, lastVisitAt(sort: Desc)])
+  @@index([spaceId])
+  @@map("document_visits")
+}
+
 // ==================== 版本历史快照模型 ====================
 model DocumentSnapshot {
   id        String   @id @default(cuid())
@@ -183,4 +254,44 @@ model DocumentSnapshot {
 
   @@index([docId, createdAt])
   @@map("document_snapshots")
+}
+
+// ==================== 文档模板模型 ====================
+model DocumentTemplate {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  content     String           @db.Text
+  icon        String           @default("📄")
+  category    TemplateCategory @default(OTHER)
+  scope       TemplateScope    @default(SYSTEM)
+  spaceId     String?
+  createdBy   String
+  sortOrder   Int              @default(0)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  creator User   @relation(fields: [createdBy], references: [id])
+  space   Space? @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([scope, category])
+  @@index([spaceId])
+  @@index([createdBy])
+  @@map("document_templates")
+}
+
+enum TemplateScope {
+  SYSTEM
+  SPACE
+  USER
+}
+
+enum TemplateCategory {
+  MEETING
+  TECH
+  REPORT
+  REQUIREMENT
+  GUIDE
+  OTHER
 }

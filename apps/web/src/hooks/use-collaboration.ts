@@ -70,6 +70,11 @@ export function useCollaboration(
       name: ydocKey,
       token: token ?? '',
 
+      // Reconnection strategy: exponential backoff with jitter to avoid
+      // connection storms when the server restarts or network recovers.
+      delay: 1000,
+      maxAttempts: 30,
+
       onStatus({ status: s }) {
         if (s === 'connected') setStatus('connected');
         else if (s === 'disconnected') setStatus('disconnected');

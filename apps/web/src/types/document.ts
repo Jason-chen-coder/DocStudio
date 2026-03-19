@@ -47,7 +47,8 @@ export interface MoveDocumentDto {
 export interface DocumentSnapshot {
   id: string;
   docId: string;
-  content: string; // Tiptap JSON content
+  content: string; // Tiptap JSON string or plain text (stored in DB)
+  contentJson?: object | null; // Decoded Tiptap ProseMirror JSON (returned by findOne API)
   message?: string | null;
   createdBy: string;
   createdAt: string;

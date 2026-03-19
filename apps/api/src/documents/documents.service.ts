@@ -8,12 +8,15 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { MoveDocumentDto } from './dto/move-document.dto';
 import { SnapshotsService } from '../snapshots/snapshots.service';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, EntityType } from '@prisma/client';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private snapshotsService: SnapshotsService,
+    private activityService: ActivityService,
   ) {}
 
   async create(
@@ -42,7 +45,7 @@ export class DocumentsService {
     // Generate a unique Yjs document key for collaboration (Stage 4)
     const ydocKey = `doc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    return this.prisma.document.create({
+    const doc = await this.prisma.document.create({
       data: {
         title: createDocumentDto.title,
         content: createDocumentDto.content || '',
@@ -60,8 +63,24 @@ export class DocumentsService {
             avatarUrl: true,
           },
         },
+        space: {
+          select: { name: true },
+        },
       },
     });
+
+    // 记录活动日志
+    this.activityService.log({
+      userId,
+      action: ActivityAction.CREATE,
+      entityType: EntityType.DOCUMENT,
+      entityId: doc.id,
+      entityName: doc.title,
+      spaceId,
+      spaceName: doc.space.name,
+    });
+
+    return doc;
   }
 
 
@@ -80,7 +99,13 @@ export class DocumentsService {
     return docs;
   }
 
-  async findOne(id: string) {
+  /** Lightweight existence check — no side effects, no relations loaded */
+  async exists(id: string): Promise<boolean> {
+    const count = await this.prisma.document.count({ where: { id } });
+    return count > 0;
+  }
+
+  async findOne(id: string, userId?: string) {
     const doc = await this.prisma.document.findUnique({
       where: { id },
       include: {
@@ -98,6 +123,11 @@ export class DocumentsService {
       throw new NotFoundException(`Document with ID ${id} not found`);
     }
 
+    // 记录访问（fire-and-forget）
+    if (userId) {
+      this.activityService.recordDocumentVisit(userId, doc.id, doc.spaceId);
+    }
+
     return doc;
   }
 
@@ -111,16 +141,58 @@ export class DocumentsService {
       await this.snapshotsService.autoSnapshot(id, userId);
     }
 
-    return this.prisma.document.update({
+    const doc = await this.prisma.document.update({
       where: { id },
       data: updateDocumentDto,
+      include: {
+        space: { select: { name: true } },
+      },
     });
+
+    // 记录活动日志（仅标题或内容变更时记录，避免噪声）
+    const changedFields = Object.keys(updateDocumentDto).filter(
+      (k) => k !== 'commentsData',
+    );
+    if (changedFields.length > 0) {
+      this.activityService.log({
+        userId,
+        action: ActivityAction.UPDATE,
+        entityType: EntityType.DOCUMENT,
+        entityId: doc.id,
+        entityName: doc.title,
+        spaceId: doc.spaceId,
+        spaceName: doc.space.name,
+        metadata: { changedFields },
+      });
+    }
+
+    return doc;
   }
 
-  async remove(id: string) {
-    return this.prisma.document.delete({
+  async remove(id: string, userId?: string) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      include: { space: { select: { name: true } } },
+    });
+
+    const result = await this.prisma.document.delete({
       where: { id },
     });
+
+    // 记录删除活动
+    if (userId && doc) {
+      this.activityService.log({
+        userId,
+        action: ActivityAction.DELETE,
+        entityType: EntityType.DOCUMENT,
+        entityId: id,
+        entityName: doc.title,
+        spaceId: doc.spaceId,
+        spaceName: doc.space.name,
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -142,7 +214,7 @@ export class DocumentsService {
     }
 
     // 3. 更新
-    return this.prisma.document.update({
+    const result = await this.prisma.document.update({
       where: { id },
       data: {
         parentId: parentId ?? null,
@@ -153,9 +225,12 @@ export class DocumentsService {
         title: true,
         parentId: true,
         order: true,
+        spaceId: true,
         updatedAt: true,
       },
     });
+
+    return result;
   }
 
   /**

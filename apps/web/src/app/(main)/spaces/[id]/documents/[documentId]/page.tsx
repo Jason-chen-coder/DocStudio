@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { documentService } from '@/services/document-service';
 import { spaceService } from '@/services/space-service';
 import { Document } from '@/types/document';
@@ -10,7 +10,8 @@ import { Editor } from '@/components/editor/editor';
 import { ShareDialog } from '@/components/share/share-dialog';
 import { OnlineUsers } from '@/components/editor/online-users';
 import { VersionHistoryPanel } from '@/components/editor/version-history-panel';
-import { History } from 'lucide-react';
+import { History, BookTemplate } from 'lucide-react';
+import { SaveAsTemplateDialog } from '@/components/template/save-as-template-dialog';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -48,9 +49,13 @@ function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: num
 export default function DocumentPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: authUser } = useAuth();
   const documentId = params.documentId as string;
   const spaceId = params.id as string;
+
+  // 从活动日志进入时强制只读
+  const isReadOnlyFromQuery = searchParams.get('readonly') === 'true';
 
   const [document, setDocument] = useState<Document | null>(null);
   const [space, setSpace] = useState<Space | null>(null);
@@ -58,13 +63,14 @@ export default function DocumentPage() {
   const [title, setTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [initialCommentThreads, setInitialCommentThreads] = useState<CommentThread[]>([]);
 
   // Status for auto-save (title only in collab mode)
   const [status, setStatus] = useState<'saved' | 'saving' | 'error' | 'pending'>('saved');
 
-  // Permissions
-  const isReadOnly = space?.myRole === 'VIEWER';
+  // Permissions: VIEWER 角色 或 从活动日志进入时强制只读
+  const isReadOnly = space?.myRole === 'VIEWER' || isReadOnlyFromQuery;
 
   // Build the current user object for collaboration
   const collabUser: CollabUser | null = authUser
@@ -93,8 +99,13 @@ export default function DocumentPage() {
 
   const [isEditorReady, setIsEditorReady] = useState(false);
 
+  // Prevent React Strict Mode double-fire from issuing duplicate requests
+  const loadingRef = useRef(false);
+
   useEffect(() => {
     async function loadData() {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
       try {
         setLoading(true);
         const [docData, spaceData] = await Promise.all([
@@ -111,6 +122,7 @@ export default function DocumentPage() {
         toast.error('无法加载文档');
       } finally {
         setLoading(false);
+        loadingRef.current = false;
       }
     }
 
@@ -285,6 +297,27 @@ export default function DocumentPage() {
 
           {!isReadOnly && (
             <button
+              onClick={() => setShowSaveAsTemplate(true)}
+              className="p-2 text-gray-500 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm text-sm"
+              title="另存为模板"
+            >
+              <BookTemplate className="w-4 h-4" />
+              <span className="hidden sm:inline">存为模板</span>
+            </button>
+          )}
+
+          {/* 从活动日志进入的只读模式：显示"进入编辑"按钮（前提是有编辑权限） */}
+          {isReadOnlyFromQuery && space?.myRole !== 'VIEWER' && (
+            <button
+              onClick={() => router.replace(`/spaces/${spaceId}/documents/${documentId}`)}
+              className="px-4 py-2 text-sm font-medium rounded-md transition-colors text-white bg-blue-600 border border-blue-600 hover:bg-blue-700"
+            >
+              进入编辑
+            </button>
+          )}
+
+          {!isReadOnly && (
+            <button
               onClick={() => setIsPreview(!isPreview)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${isPreview
                 ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
@@ -329,6 +362,25 @@ export default function DocumentPage() {
           onReady={(editor) => {
             editorRef.current = editor;
             setIsEditorReady(true);
+
+            // In collab mode, Yjs manages content. But for a brand-new document
+            // created from a template, ydocData is null so Yjs starts empty.
+            // Detect this case and inject the template content from DB once.
+            if (isCollabReady && document.content) {
+              // Wait a tick for Yjs sync to settle
+              setTimeout(() => {
+                if (editor.isDestroyed) return;
+                const isEmpty = editor.state.doc.textContent.trim() === '';
+                if (isEmpty && document.content?.trim().startsWith('{')) {
+                  try {
+                    const json = JSON.parse(document.content);
+                    editor.commands.setContent(json);
+                  } catch {
+                    // content is not JSON, skip
+                  }
+                }
+              }, 500);
+            }
           }}
         />
       </div>
@@ -338,9 +390,25 @@ export default function DocumentPage() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         onRestore={() => {
-          // Reload page to reflect restored version or fetch document contents
-          window.location.reload();
+          // Clear IndexedDB cache to prevent stale Y.Doc from overwriting restored state.
+          // y-indexeddb creates a database named after the ydocKey.
+          if (ydocKey) {
+            const req = indexedDB.deleteDatabase(ydocKey);
+            req.onsuccess = () => window.location.reload();
+            req.onerror = () => window.location.reload();
+            req.onblocked = () => window.location.reload();
+          } else {
+            window.location.reload();
+          }
         }}
+      />
+
+      <SaveAsTemplateDialog
+        open={showSaveAsTemplate}
+        onOpenChange={setShowSaveAsTemplate}
+        documentId={documentId}
+        documentTitle={title}
+        editorContent={editorRef.current ? JSON.stringify(editorRef.current.getJSON()) : undefined}
       />
     </div>
   );

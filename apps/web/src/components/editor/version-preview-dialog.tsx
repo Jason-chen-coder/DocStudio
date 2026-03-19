@@ -12,8 +12,8 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { all, createLowlight } from 'lowlight';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { X, RotateCcw } from 'lucide-react';
-import { useEffect } from 'react';
+import { X, RotateCcw, FileX } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 
 const lowlight = createLowlight(all);
 
@@ -25,6 +25,45 @@ interface VersionPreviewDialogProps {
     restoring: boolean;
 }
 
+/**
+ * Resolve the best available Tiptap content from a snapshot.
+ *
+ * Priority:
+ *  1. contentJson  — decoded Tiptap ProseMirror JSON returned by the API (from ydocData)
+ *  2. content      — stored string: try JSON.parse first, then wrap plain text
+ *  3. empty string — render nothing (editor shows blank)
+ */
+function resolveContent(snapshot: DocumentSnapshot): object | string {
+    // 1. Prefer the pre-decoded JSON from the API
+    if (snapshot.contentJson && typeof snapshot.contentJson === 'object') {
+        return snapshot.contentJson;
+    }
+
+    // 2. Try the stored content string
+    if (snapshot.content) {
+        try {
+            const parsed = JSON.parse(snapshot.content) as unknown;
+            if (typeof parsed === 'object' && parsed !== null) {
+                return parsed as object;
+            }
+        } catch {
+            // plain text fallback — wrap each line in a paragraph
+            const lines = snapshot.content.split('\n').filter((l) => l.trim());
+            if (lines.length > 0) {
+                return {
+                    type: 'doc',
+                    content: lines.map((line) => ({
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: line }],
+                    })),
+                };
+            }
+        }
+    }
+
+    return '';
+}
+
 export function VersionPreviewDialog({
     snapshot,
     isOpen,
@@ -32,6 +71,12 @@ export function VersionPreviewDialog({
     onRestore,
     restoring,
 }: VersionPreviewDialogProps) {
+    const initialContent = useMemo(
+        () => (snapshot ? resolveContent(snapshot) : ''),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [snapshot?.id],
+    );
+
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -45,18 +90,21 @@ export function VersionPreviewDialog({
             ImageUploadNode,
             CodeBlockLowlight.configure({ lowlight }),
         ],
-        content: snapshot?.content ? JSON.parse(snapshot.content) : '',
+        content: initialContent,
         editable: false,
         immediatelyRender: false,
     });
 
+    // Update editor content whenever the snapshot changes
     useEffect(() => {
-        if (editor && snapshot?.content) {
-            editor.commands.setContent(JSON.parse(snapshot.content));
-        }
+        if (!editor || !snapshot) return;
+        const content = resolveContent(snapshot);
+        editor.commands.setContent(content || '');
     }, [editor, snapshot]);
 
     if (!isOpen || !snapshot) return null;
+
+    const hasContent = !!(snapshot.contentJson || snapshot.content);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm">
@@ -73,7 +121,11 @@ export function VersionPreviewDialog({
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             创建于 {format(new Date(snapshot.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: zhCN })}
-                            {snapshot.message && <span className="ml-2 py-0.5 px-2 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-md">备注: {snapshot.message}</span>}
+                            {snapshot.message && (
+                                <span className="ml-2 py-0.5 px-2 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-md">
+                                    备注: {snapshot.message}
+                                </span>
+                            )}
                         </p>
                     </div>
 
@@ -99,9 +151,19 @@ export function VersionPreviewDialog({
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-8 sm:p-12 bg-[#F9FBFD] dark:bg-[#0B1120]">
                     <div className="max-w-3xl mx-auto bg-white dark:bg-[#111827] shadow-sm border border-gray-100 dark:border-gray-800 rounded-xl min-h-full p-8 sm:p-12">
-                        <div className="prose prose-blue dark:prose-invert max-w-none prose-img:rounded-lg">
-                            <EditorContent editor={editor} />
-                        </div>
+                        {hasContent ? (
+                            <div className="prose prose-blue dark:prose-invert max-w-none prose-img:rounded-lg">
+                                <EditorContent editor={editor} />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600">
+                                <FileX className="w-12 h-12 mb-3" />
+                                <p className="text-sm">此版本暂无可预览内容</p>
+                                <p className="text-xs mt-1 text-gray-300 dark:text-gray-700">
+                                    该快照创建时文档内容尚未写入
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

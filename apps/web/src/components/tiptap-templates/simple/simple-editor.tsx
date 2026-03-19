@@ -466,18 +466,26 @@ export function SimpleEditor({
   }, [isMobile, mobileView])
 
   useEffect(() => {
-    if (editor && content !== undefined) {
-      // Prevent cursor jumping if content is same (though strictly likely different ref strings)
-      // For read-only/share view this is safer.
-      if (editor.getHTML() !== content) {
-        // Defer content update to avoid flushSync error during render cycle
-        setTimeout(() => {
-          if (editor.isDestroyed) return;
-          editor.commands.setContent(content);
-        }, 0);
+    // Only update content in non-collab mode (collab mode is driven by Yjs)
+    if (editor && !isCollabMode && content !== undefined) {
+      // Parse content: may be a Tiptap JSON string or an HTML string
+      // We cast to unknown first to satisfy strict typing when passing parsed JSON
+      let parsed: unknown = content;
+      if (content && content.trimStart().startsWith('{')) {
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          // not valid JSON — treat as HTML string
+        }
       }
+      // Defer to avoid flushSync error during render cycle
+      setTimeout(() => {
+        if (editor.isDestroyed) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        editor.commands.setContent(parsed as any);
+      }, 0);
     }
-  }, [editor, content])
+  }, [editor, content, isCollabMode])
 
   useEffect(() => {
     if (editor && editable !== undefined) {

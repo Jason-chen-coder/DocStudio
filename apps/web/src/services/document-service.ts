@@ -11,6 +11,16 @@ export const documentService = {
     return apiRequest<Document>(`/documents/${id}`);
   },
 
+  /** Lightweight existence check — returns true if exists, false if 404 */
+  async checkExists(id: string): Promise<boolean> {
+    try {
+      await apiRequest(`/documents/${id}/exists`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   async createDocument(data: CreateDocumentDto): Promise<Document> {
     return apiRequest<Document>('/documents', {
       method: 'POST',

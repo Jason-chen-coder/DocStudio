@@ -7,6 +7,7 @@ import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
 import { CreateSpaceModal } from '@/components/space/create-space-modal';
 import { Tabs, Box } from '@radix-ui/themes';
+import { Crown, User } from 'lucide-react';
 
 export default function SpacesPage() {
   const { user } = useAuth();
@@ -148,7 +149,7 @@ export default function SpacesPage() {
                       </p>
                       <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-4">
                         <span className="flex items-center gap-1">
-                          👑 所有者
+                          <Crown className="w-3 h-3" /> 所有者
                         </span>
                         <span>{new Date(space.updatedAt).toLocaleDateString()} 更新</span>
                       </div>
@@ -205,7 +206,7 @@ export default function SpacesPage() {
                       </p>
                       <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-4">
                         <span className="flex items-center gap-1">
-                          👤 成员
+                          <User className="w-3 h-3" /> 成员
                         </span>
                         <span>{new Date(space.updatedAt).toLocaleDateString()} 更新</span>
                       </div>

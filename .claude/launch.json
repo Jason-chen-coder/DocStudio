@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "DocStudio Web (Next.js)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:web"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "DocStudio API (NestJS)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:api"],
+      "port": 3001
+    }
+  ]
+}

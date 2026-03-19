@@ -86,11 +86,10 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
     // 2. Cursor Plugin (replaces @tiptap/extension-collaboration-cursor)
     if (this.options.provider && this.options.user) {
       const awareness = this.options.provider.awareness
-      
+
       if (awareness) {
-        // Setup awareness state
-        awareness.setLocalStateField('user', this.options.user)
-        
+        // Awareness state is already set in use-collaboration.ts hook,
+        // no need to set it again here — just register the cursor plugin.
         plugins.push(
           yCursorPlugin(awareness, {
             cursorBuilder: (user: any) => {

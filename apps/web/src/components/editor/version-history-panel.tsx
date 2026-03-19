@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { documentService } from '@/services/document-service';
 import { DocumentSnapshot } from '@/types/document';
-import { History, User, RotateCcw, X } from 'lucide-react';
+import { History, User, RotateCcw, X, Plus, Check } from 'lucide-react';
 import Image from 'next/image';
 import { getCdnUrl } from '@/lib/cdn';
 import { VersionPreviewDialog } from './version-preview-dialog';
@@ -22,6 +22,13 @@ export function VersionHistoryPanel({ documentId, isOpen, onClose, onRestore }: 
     const [loading, setLoading] = useState(false);
     const [previewSnapshot, setPreviewSnapshot] = useState<DocumentSnapshot | null>(null);
     const [restoring, setRestoring] = useState(false);
+    const [loadingPreview, setLoadingPreview] = useState(false);
+
+    // Manual save state
+    const [savingManual, setSavingManual] = useState(false);
+    const [showMessageInput, setShowMessageInput] = useState(false);
+    const [manualMessage, setManualMessage] = useState('');
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     const loadSnapshots = useCallback(async () => {
         try {
@@ -40,8 +47,42 @@ export function VersionHistoryPanel({ documentId, isOpen, onClose, onRestore }: 
             loadSnapshots();
         } else {
             setPreviewSnapshot(null); // Reset preview when closed
+            setShowMessageInput(false);
+            setManualMessage('');
+            setSaveSuccess(false);
         }
     }, [isOpen, documentId, loadSnapshots]);
+
+    async function handleManualSave() {
+        try {
+            setSavingManual(true);
+            await documentService.createSnapshot(documentId, manualMessage.trim() || undefined);
+            setSaveSuccess(true);
+            setShowMessageInput(false);
+            setManualMessage('');
+            await loadSnapshots();
+            setTimeout(() => setSaveSuccess(false), 2000);
+        } catch (error) {
+            console.error('Failed to create snapshot:', error);
+            alert('保存版本失败，请稍后重试');
+        } finally {
+            setSavingManual(false);
+        }
+    }
+
+    async function handlePreview(snapshot: DocumentSnapshot) {
+        try {
+            setLoadingPreview(true);
+            // 获取完整的快照内容（包括 content 字段）
+            const fullSnapshot = await documentService.getSnapshot(documentId, snapshot.id);
+            setPreviewSnapshot(fullSnapshot);
+        } catch (error) {
+            console.error('Failed to load snapshot:', error);
+            alert('加载历史版本失败，请稍后重试');
+        } finally {
+            setLoadingPreview(false);
+        }
+    }
 
     async function handleRestore(snapshotId: string) {
         if (!confirm('确定要将文档恢复到此历史版本吗？这将会覆盖当前内容。')) {
@@ -80,13 +121,67 @@ export function VersionHistoryPanel({ documentId, isOpen, onClose, onRestore }: 
                         <History className="w-5 h-5 text-gray-500" />
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">版本历史</h2>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* Manual Save Button */}
+                        <button
+                            onClick={() => {
+                                if (showMessageInput) {
+                                    setShowMessageInput(false);
+                                    setManualMessage('');
+                                } else {
+                                    setShowMessageInput(true);
+                                }
+                            }}
+                            disabled={savingManual}
+                            title="保存当前版本"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                                saveSuccess
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                            }`}
+                        >
+                            {saveSuccess ? (
+                                <><Check className="w-3.5 h-3.5" /> 已保存</>
+                            ) : (
+                                <><Plus className="w-3.5 h-3.5" /> 保存版本</>
+                            )}
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
+
+                {/* Manual Save Input Area */}
+                {showMessageInput && (
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">为此版本添加备注（可选）</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={manualMessage}
+                                onChange={(e) => setManualMessage(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') void handleManualSave();
+                                    if (e.key === 'Escape') { setShowMessageInput(false); setManualMessage(''); }
+                                }}
+                                placeholder="例如：完成第一章初稿"
+                                autoFocus
+                                className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                                onClick={() => void handleManualSave()}
+                                disabled={savingManual}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                            >
+                                {savingManual ? '保存中...' : '确认保存'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -110,17 +205,27 @@ export function VersionHistoryPanel({ documentId, isOpen, onClose, onRestore }: 
                                 {snapshots.map((snapshot, index) => {
                                     const creatorAvatar = snapshot.creator?.avatarUrl ? getCdnUrl(snapshot.creator.avatarUrl) : null;
                                     const isLatest = index === 0;
+                                    const isManual = !!snapshot.message && snapshot.message !== '自动保存' && snapshot.message !== '恢复前自动备份';
 
                                     return (
                                         <li key={snapshot.id} className="relative pl-8">
                                             {/* Timeline Dot */}
-                                            <div className={`absolute left-0 top-1.5 w-[7px] h-[7px] rounded-full border-2 border-white dark:border-gray-800 ${isLatest ? 'bg-blue-500 ring-2 ring-blue-200 dark:ring-blue-900' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                                            <div className={`absolute left-0 top-1.5 w-[7px] h-[7px] rounded-full border-2 border-white dark:border-gray-800 ${
+                                                isLatest ? 'bg-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
+                                                : isManual ? 'bg-green-500 ring-2 ring-green-200 dark:ring-green-900'
+                                                : 'bg-gray-300 dark:bg-gray-600'
+                                            }`} />
 
-                                            <div className={`bg-white dark:bg-gray-800 border ${isLatest ? 'border-blue-200 dark:border-blue-800 shadow-sm' : 'border-gray-200 dark:border-gray-700'} rounded-xl p-4 transition-all hover:border-blue-300 dark:hover:border-blue-700`}>
+                                            <div className={`bg-white dark:bg-gray-800 border ${
+                                                isLatest ? 'border-blue-200 dark:border-blue-800 shadow-sm'
+                                                : isManual ? 'border-green-200 dark:border-green-800'
+                                                : 'border-gray-200 dark:border-gray-700'
+                                            } rounded-xl p-4 transition-all hover:border-blue-300 dark:hover:border-blue-700`}>
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                                                         {format(new Date(snapshot.createdAt), 'MM月dd日 HH:mm', { locale: zhCN })}
                                                         {isLatest && <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 px-1.5 py-0.5 rounded leading-none ml-1">当前</span>}
+                                                        {isManual && !isLatest && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1.5 py-0.5 rounded leading-none ml-1">手动</span>}
                                                     </span>
                                                 </div>
 
@@ -142,10 +247,11 @@ export function VersionHistoryPanel({ documentId, isOpen, onClose, onRestore }: 
 
                                                     <div className="flex items-center gap-2">
                                                         <button
-                                                            onClick={() => setPreviewSnapshot(snapshot)}
-                                                            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                                                            onClick={() => handlePreview(snapshot)}
+                                                            disabled={loadingPreview}
+                                                            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer disabled:opacity-50"
                                                         >
-                                                            预览
+                                                            {loadingPreview ? '加载中...' : '预览'}
                                                         </button>
                                                         {!isLatest && (
                                                             <>

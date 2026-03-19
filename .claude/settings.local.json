@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(ls /Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\\\\\(main\\\\\\)/spaces/[id]/documents/[documentId\\\\\\)/)",
+      "Bash(ls /Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\\\\\(main\\\\\\)/spaces/[id]/documents/[documentId]/)",
+      "Bash(cat \"/Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\(main\\)/spaces/[id]/documents/[documentId]/page.tsx\")",
+      "Bash(npx tsc:*)",
+      "Bash(ls /Users/jasonchen/Desktop/self/doc_studio/node_modules/@hocuspocus/server/dist/*.d.ts)",
+      "Bash(find /Users/jasonchen/Desktop/self/doc_studio/node_modules/@hocuspocus/server -name *.d.ts -o -name *.d.mts)",
+      "Bash(find /Users/jasonchen/Desktop/self/doc_studio/node_modules/@hocuspocus -maxdepth 3 -name *.js -o -name *.mjs)",
+      "Bash(ls /Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\\\\\(main\\\\\\)/spaces/[id]/)",
+      "mcp__Claude_Preview__preview_start",
+      "Read(//Users/jasonchen/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.0.1/**)",
+      "Bash(python3 skills/ui-ux-pro-max/scripts/search.py \"productivity documentation SaaS workspace dashboard modern minimal\" --design-system -p \"DocStudio\")",
+      "Bash(python3 src/ui-ux-pro-max/scripts/search.py \"productivity documentation SaaS workspace modern\" --design-system -p \"DocStudio\")",
+      "WebFetch(domain:www.reactbits.dev)"
+    ]
+  }
+}

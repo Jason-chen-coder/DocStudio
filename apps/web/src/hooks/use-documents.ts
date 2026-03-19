@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Document, CreateDocumentDto, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
 import { documentService } from '@/services/document-service';
 import { toast } from 'sonner';
@@ -11,9 +11,17 @@ export function useDocuments(spaceId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Dedup: prevent Strict Mode double-fire from issuing two identical requests
+  const fetchingRef = useRef(false);
+
   const fetchDocuments = useCallback(async (background = false) => {
     if (!spaceId) return;
+
+    // Skip if an identical request is already in-flight
+    if (fetchingRef.current && !background) return;
+
     try {
+      fetchingRef.current = true;
       if (!background) {
         setLoading(true);
       }
@@ -25,6 +33,7 @@ export function useDocuments(spaceId: string) {
       setError(err as Error);
       toast.error('获取文档列表失败');
     } finally {
+      fetchingRef.current = false;
       if (!background) {
         setLoading(false);
       }

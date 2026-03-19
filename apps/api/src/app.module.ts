@@ -15,6 +15,9 @@ import { CollaborationModule } from './collaboration/collaboration.module';
 import { FilesModule } from './files/files.module';
 
 import { SnapshotsModule } from './snapshots/snapshots.module';
+import { SearchModule } from './search/search.module';
+import { ActivityModule } from './activity/activity.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { SnapshotsModule } from './snapshots/snapshots.module';
     CollaborationModule,
     FilesModule,
     SnapshotsModule,
+    SearchModule,
+    ActivityModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [

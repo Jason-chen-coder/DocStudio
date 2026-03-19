@@ -14,6 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { UpdateSpaceDto } from './dto/update-space.dto';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, EntityType } from '@prisma/client';
 
 export interface SpaceMember {
   userId: string;
@@ -26,12 +28,15 @@ export interface SpaceMember {
 
 @Injectable()
 export class SpacesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityService: ActivityService,
+  ) {}
 
   async create(userId: string, createSpaceDto: CreateSpaceDto): Promise<Space> {
     // Transaction to create space and assign owner permission
-    return this.prisma.$transaction(async (tx) => {
-      const space = await tx.space.create({
+    const space = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.space.create({
         data: {
           ...createSpaceDto,
           owner: { connect: { id: userId } },
@@ -42,13 +47,26 @@ export class SpacesService {
       await tx.spacePermission.create({
         data: {
           userId,
-          spaceId: space.id,
+          spaceId: s.id,
           role: Role.OWNER,
         },
       });
 
-      return space;
+      return s;
     });
+
+    // 记录活动日志
+    this.activityService.log({
+      userId,
+      action: ActivityAction.CREATE,
+      entityType: EntityType.SPACE,
+      entityId: space.id,
+      entityName: space.name,
+      spaceId: space.id,
+      spaceName: space.name,
+    });
+
+    return space;
   }
 
   async findAll(userId: string): Promise<
@@ -254,10 +272,23 @@ export class SpacesService {
       throw new ForbiddenException('Cannot change role of the Space Owner');
     }
 
-    return this.prisma.spacePermission.update({
+    const result = await this.prisma.spacePermission.update({
       where: { userId_spaceId: { userId: targetUserId, spaceId } },
       data: { role },
     });
+
+    // 记录角色变更活动
+    this.activityService.log({
+      userId: currentUserId,
+      action: ActivityAction.ROLE_CHANGE,
+      entityType: EntityType.MEMBER,
+      entityId: targetUserId,
+      spaceId,
+      spaceName: space.name,
+      metadata: { targetUserId, newRole: role },
+    });
+
+    return result;
   }
   async removeMember(
     spaceId: string,
@@ -293,9 +324,22 @@ export class SpacesService {
       }
     }
 
-    return this.prisma.spacePermission.delete({
+    const result = await this.prisma.spacePermission.delete({
       where: { userId_spaceId: { userId: targetUserId, spaceId } },
     });
+
+    // 记录移除成员活动
+    this.activityService.log({
+      userId: currentUserId,
+      action: ActivityAction.LEAVE,
+      entityType: EntityType.MEMBER,
+      entityId: targetUserId,
+      spaceId,
+      spaceName: space.name,
+      metadata: { removedUserId: targetUserId },
+    });
+
+    return result;
   }
 
   async createInvitation(
@@ -333,7 +377,7 @@ export class SpacesService {
       }
     }
 
-    return this.prisma.spaceInvitation.create({
+    const invitation = await this.prisma.spaceInvitation.create({
       data: {
         spaceId,
         email,
@@ -343,6 +387,23 @@ export class SpacesService {
         expiresAt,
       },
     });
+
+    // 记录邀请活动
+    const space = await this.prisma.space.findUnique({
+      where: { id: spaceId },
+      select: { name: true },
+    });
+    this.activityService.log({
+      userId: currentUserId,
+      action: ActivityAction.INVITE,
+      entityType: EntityType.MEMBER,
+      entityId: invitation.id,
+      spaceId,
+      spaceName: space?.name,
+      metadata: { email, role },
+    });
+
+    return invitation;
   }
 
   async joinSpace(
@@ -398,6 +459,17 @@ export class SpacesService {
         data: { status: InvitationStatus.ACCEPTED },
       }),
     ]);
+
+    // 记录加入活动
+    this.activityService.log({
+      userId,
+      action: ActivityAction.JOIN,
+      entityType: EntityType.SPACE,
+      entityId: invitation.spaceId,
+      entityName: invitation.space.name,
+      spaceId: invitation.spaceId,
+      spaceName: invitation.space.name,
+    });
 
     return { message: 'Joined successfully', spaceId: invitation.spaceId };
   }
