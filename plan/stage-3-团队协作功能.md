@@ -1,8 +1,11 @@
 # Stage 3: 团队协作功能
 
-**状态**: ✅ 基本完成（部分安全增强功能待补充）
+**状态**: ✅ 已完成
+**更新时间**: 2026-03-20
 **预计时间**: 3-4 周
 **目标**: 支持团队内部协作和私密分享
+
+> **全部完成**: 权限管理（OWNER/ADMIN/EDITOR/VIEWER 四角色 + Guard）、成员邀请与管理（邀请链接/加入/角色修改/移除）、私密分享（PUBLIC/PASSWORD + bcrypt + JWT 短效 token + 有效期）、分享列表查询与删除 API、Rate Limiting 防暴力破解（@nestjs/throttler）
 
 ---
 
@@ -208,15 +211,17 @@ enum ShareType {
 - 响应：title、content、createdAt、updatedAt、creator 信息
 - 副作用：自动递增 viewCount
 
-**GET /docs/:docId/shares** ❌ 未实现
+**GET /share/doc/:docId/list** ✅
 
 - 功能：查询某文档的所有分享链接
-- 待补充
+- 权限：已登录用户（需对文档所在空间有访问权限）
+- 响应：分享链接数组（含 id/token/type/expiresAt/viewCount/isActive/isExpired/createdAt）
 
-**DELETE /share/:shareId** ❌ 未实现
+**DELETE /share/:shareId** ✅
 
-- 功能：删除/停用分享链接
-- 待补充
+- 功能：删除分享链接
+- 权限：已登录用户（需对文档所在空间有访问权限）
+- 响应：`{ message: "Share link deleted successfully" }`
 
 #### 前端功能
 
@@ -231,8 +236,8 @@ enum ShareType {
 - 密码输入框（密码模式下显示）
 - 有效期选择：永久 / 1小时 / 1天 / 7天
 - 生成链接后展示 URL + 一键复制
-- ❌ 无分享列表管理（待后端接口实现后补充）
-- ❌ 无删除分享链接功能（待后端接口实现后补充）
+- ✅ 分享列表管理（列表视图展示所有分享链接，含类型/有效期/查看次数/状态）
+- ✅ 删除分享链接（每条链接提供删除按钮，即时生效）
 - ⚠️ 暂不支持"分享整个工作空间"选项
 
 **分享链接访问页** (`/share/:token`) ✅
@@ -248,9 +253,9 @@ enum ShareType {
 | Token 随机性 | ✅ | 使用 `cuid()` 生成，不可预测 |
 | 密码 bcrypt 加密 | ✅ | salt rounds: 10 |
 | 访问 Token 短效 | ✅ | JWT 1h 有效期 |
-| Rate Limiting | ❌ | 待实现，可用 `@nestjs/throttler` |
-| 密码错误延迟响应 | ❌ | 待实现 |
-| 连续错误 IP 封禁 | ❌ | 待实现 |
+| Rate Limiting | ✅ | `@nestjs/throttler` 全局 60次/分钟 + 密码验证 5次/5分钟 |
+| Fastify 适配 | ✅ | 自定义 `FastifyThrottlerGuard` 适配 Fastify req.ip |
+| 连续错误 IP 封禁 | ⚠️ | 通过 Rate Limiting 间接实现，未独立 IP 黑名单 |
 
 ---
 
@@ -316,20 +321,23 @@ User                  Server
 - ✅ 可以设置有效期
 - ✅ 密码验证正确工作（bcrypt 比对 + 短效 JWT）
 - ✅ 过期链接无法访问（前后端均返回错误页）
-- ❌ 分享链接列表查询接口待实现
-- ❌ 删除分享链接接口待实现
-- ❌ 防暴力破解机制待实现（Rate Limiting / 错误延迟 / IP 封禁）
+- ✅ 分享链接列表查询（`GET /share/doc/:docId/list`）
+- ✅ 删除分享链接（`DELETE /share/:shareId`）
+- ✅ 防暴力破解（`@nestjs/throttler` 全局限流 + 密码验证 5次/5分钟/IP）
+- ✅ 前端分享管理 UI（列表视图 + 创建 + 复制链接 + 删除）
 
 ---
 
-## 待补充功能
+## 已补充完成的功能
 
-以下功能在当前实现中缺失，后续迭代可补充：
+1. ✅ **分享链接列表查询** — `GET /share/doc/:docId/list` 接口 + 前端 ShareDialog 列表视图
+2. ✅ **删除分享链接** — `DELETE /share/:shareId` 接口 + 前端删除按钮
+3. ✅ **Rate Limiting 防暴力破解** — `@nestjs/throttler` 全局 60次/分钟，密码验证 5次/5分钟/IP，自定义 `FastifyThrottlerGuard`
 
-1. **删除分享链接** — 新增 `DELETE /share/:shareId` 接口，前端分享弹窗中增加删除按钮
-2. **分享列表查询** — 新增 `GET /docs/:docId/shares` 接口，前端展示当前文档的所有分享链接
-3. **Rate Limiting 防暴力破解** — 使用 `@nestjs/throttler` 对 `POST /share/:token/verify` 限流（建议 5次/5分钟/IP）
-4. **Space 级分享** — 当前仅支持文档分享，如需分享整个 Space，需扩展 `ShareLink` 模型增加 `spaceId` 字段
+## 后续可扩展
+
+1. **Space 级分享** — 当前仅支持文档分享，如需分享整个 Space，需扩展 `ShareLink` 模型增加 `spaceId` 字段
+2. **独立 IP 黑名单** — 超过阈值自动封禁 IP（当前通过 Rate Limiting 间接实现）
 
 ---
 

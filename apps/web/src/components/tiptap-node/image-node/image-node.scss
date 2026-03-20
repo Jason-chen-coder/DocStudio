@@ -12,7 +12,7 @@
   > img:not([data-type="emoji"] img) {
     margin: 2rem 0;
     outline: 0.125rem solid transparent;
-    border-radius: var(--tt-radius-xs, 0.25rem);
+    border-radius: 0;
   }
 
   img:not([data-type="emoji"] img).ProseMirror-selectednode {
@@ -25,7 +25,7 @@
 
     img {
       outline: 0.125rem solid transparent;
-      border-radius: var(--tt-radius-xs, 0.25rem);
+      border-radius: 0;
     }
   }
 

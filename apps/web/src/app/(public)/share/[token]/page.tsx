@@ -1,13 +1,25 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { Loader2, Lock, User, CalendarDays, RefreshCw } from 'lucide-react';
+import {
+  Loader2,
+  Lock,
+  User,
+  CalendarDays,
+  RefreshCw,
+  FileText,
+  AlertTriangle,
+  Eye,
+  Share2,
+  Copy,
+  Check,
+} from 'lucide-react';
 import Image from 'next/image';
 import { getCdnUrl } from '@/lib/cdn';
 
@@ -21,7 +33,7 @@ interface ShareInfo {
 
 interface DocMeta {
   title: string;
-  content: string;
+  content: string | object;
   createdAt: string;
   updatedAt: string;
   creator: {
@@ -41,54 +53,300 @@ function formatDate(iso: string) {
   });
 }
 
-/** 分享页底部文档元数据栏 */
+function formatRelativeDate(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return '刚刚';
+  if (diffMins < 60) return `${diffMins} 分钟前`;
+  if (diffHours < 24) return `${diffHours} 小时前`;
+  if (diffDays < 7) return `${diffDays} 天前`;
+  return formatDate(iso);
+}
+
+/* ─────────────────────────────────────────────────────────
+   Top Navigation Bar
+   ───────────────────────────────────────────────────────── */
+function ShareHeader({ title }: { title?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl">
+      <div className="mx-auto max-w-4xl flex items-center justify-between h-14 px-4 sm:px-6">
+        {/* Left: brand + title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <a
+            href="/"
+            className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+            title="返回首页"
+          >
+            <Image
+              src="/docStudio_icon.png"
+              alt="DocStudio"
+              width={28}
+              height={28}
+              className="rounded-lg shadow-sm"
+              unoptimized
+            />
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 hidden sm:block">
+              DocStudio
+            </span>
+          </a>
+
+          {title && (
+            <>
+              <span className="text-gray-300 dark:text-gray-600 hidden sm:block">/</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px] sm:max-w-[300px]">
+                {title}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mr-2">
+            <Eye className="w-3.5 h-3.5" />
+            <span>只读</span>
+          </div>
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
+              text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800
+              transition-colors cursor-pointer"
+            title="复制链接"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-green-500" />
+                <span className="text-green-600 dark:text-green-400">已复制</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">分享</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Author Card + Document Metadata
+   ───────────────────────────────────────────────────────── */
 function DocMetaFooter({ meta }: { meta: DocMeta }) {
   const avatarUrl = getCdnUrl(meta.creator?.avatarUrl);
 
   return (
-    <footer className="border-t border-gray-100 dark:border-gray-800 mt-8 pt-6 pb-10 px-4 max-w-3xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-        {/* 作者 */}
-        <div className="flex items-center gap-2 min-w-0">
+    <footer className="mt-16 mb-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Divider */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+          <FileText className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+        </div>
+
+        {/* Author card */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-5 rounded-xl
+          bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800">
+          {/* Avatar */}
           {avatarUrl ? (
             <Image
               src={avatarUrl}
               alt={meta.creator!.name}
-              width={24}
-              height={24}
+              width={48}
+              height={48}
               unoptimized
-              className="rounded-full flex-shrink-0"
+              className="rounded-full ring-2 ring-white dark:ring-gray-800 shadow-sm flex-shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
-              <User className="w-3.5 h-3.5 text-blue-500 dark:text-blue-300" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500
+              flex items-center justify-center flex-shrink-0 ring-2 ring-white dark:ring-gray-800 shadow-sm">
+              <User className="w-5 h-5 text-white" />
             </div>
           )}
-          <span className="truncate">
-            {meta.creator?.name ?? '匿名'}
-          </span>
+
+          <div className="flex flex-col items-center sm:items-start gap-1.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                {meta.creator?.name ?? '匿名用户'}
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30
+                text-blue-600 dark:text-blue-400 font-medium">
+                作者
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
+              <div className="flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" />
+                <span>创建于 {formatDate(meta.createdAt)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" />
+                <span>更新于 {formatRelativeDate(meta.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <span className="hidden sm:block text-gray-300 dark:text-gray-600">·</span>
-
-        {/* 创建时间 */}
-        <div className="flex items-center gap-1.5">
-          <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>创建于 {formatDate(meta.createdAt)}</span>
-        </div>
-
-        <span className="hidden sm:block text-gray-300 dark:text-gray-600">·</span>
-
-        {/* 最近更新 */}
-        <div className="flex items-center gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>更新于 {formatDate(meta.updatedAt)}</span>
+        {/* Bottom branding */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-gray-300 dark:text-gray-600">
+            由 DocStudio 提供支持
+          </p>
         </div>
       </div>
     </footer>
   );
 }
 
+/* ─────────────────────────────────────────────────────────
+   Loading Skeleton
+   ───────────────────────────────────────────────────────── */
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      <ShareHeader />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 animate-pulse">
+        {/* Title skeleton */}
+        <div className="h-8 w-2/3 bg-gray-100 dark:bg-gray-800 rounded-lg mb-8" />
+
+        {/* Content skeleton lines */}
+        <div className="space-y-4">
+          <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-5/6 bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-4/5 bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-20 w-full bg-gray-50 dark:bg-gray-900 rounded-lg mt-6" />
+          <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-800 rounded mt-4" />
+          <div className="h-4 w-5/6 bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-2/3 bg-gray-100 dark:bg-gray-800 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Error State
+   ───────────────────────────────────────────────────────── */
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
+      <ShareHeader />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20
+            flex items-center justify-center">
+            <AlertTriangle className="w-7 h-7 text-red-500 dark:text-red-400" />
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            无法访问文档
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            {message}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
+              text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20
+              hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+            重新加载
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Password Gate
+   ───────────────────────────────────────────────────────── */
+function PasswordGate({
+  title,
+  password,
+  setPassword,
+  verifying,
+  onSubmit,
+}: {
+  title: string;
+  password: string;
+  setPassword: (v: string) => void;
+  verifying: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+}) {
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
+      <ShareHeader title={title} />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          {/* Lock icon */}
+          <div className="text-center mb-8">
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl
+              bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20
+              border border-blue-100 dark:border-blue-800/30
+              flex items-center justify-center">
+              <Lock className="w-7 h-7 text-blue-500 dark:text-blue-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              需要密码访问
+            </h2>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+              此文档受密码保护，请输入密码以查看内容
+            </p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="password"
+                placeholder="请输入访问密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full h-11 text-sm rounded-xl border-gray-200 dark:border-gray-700
+                  focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+                  transition-shadow"
+                autoFocus
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11 rounded-xl text-sm font-medium
+                bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
+                shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+              disabled={verifying || !password}
+            >
+              {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              验证并访问
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Main Share Page
+   ───────────────────────────────────────────────────────── */
 export default function SharePage() {
   const params = useParams();
   const token = params.token as string;
@@ -176,79 +434,44 @@ export default function SharePage() {
   };
 
   // ─── Loading ───
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
+  if (loading || contentLoading || (shareInfo?.type === 'PUBLIC' && !docMeta && !error)) {
+    return <LoadingSkeleton />;
   }
 
   // ─── Error ───
   if (error) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-50 p-4 text-center">
-        <div className="mb-4 rounded-full bg-red-100 p-3">
-          <span className="text-2xl">⚠️</span>
-        </div>
-        <h1 className="mb-2 text-xl font-semibold text-gray-900">无法访问文档</h1>
-        <p className="text-gray-500">{error}</p>
-      </div>
-    );
+    return <ErrorState message={error} />;
   }
 
   // ─── Password gate ───
   if (shareInfo?.type === 'PASSWORD' && !accessToken) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Lock className="h-6 w-6 text-blue-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">请输入访问密码</h2>
-            <p className="mt-2 text-sm text-gray-500">
-              此文档受密码保护，请输入密码继续访问。
-            </p>
-          </div>
-
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <Input
-              type="password"
-              placeholder="输入密码"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full"
-              autoFocus
-            />
-            <Button type="submit" className="w-full" disabled={verifying || !password}>
-              {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              验证并访问
-            </Button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── 内容加载中 ───
-  if (contentLoading || !docMeta) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
-
-  // ─── 正文 + 底部元数据 ───
-  return (
-    <div className="editor-container bg-white" style={{ height: '100vh' }}>
-      <SimpleEditor
-        content={docMeta.content}
-        editable={false}
-        footer={<DocMetaFooter meta={docMeta} />}
+      <PasswordGate
+        title={shareInfo.documentTitle}
+        password={password}
+        setPassword={setPassword}
+        verifying={verifying}
+        onSubmit={handlePasswordSubmit}
       />
+    );
+  }
+
+  // ─── Content not loaded yet ───
+  if (!docMeta) {
+    return <LoadingSkeleton />;
+  }
+
+  // ─── Document View ───
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      <ShareHeader title={docMeta.title} />
+      <main className="editor-container" style={{ height: 'calc(100vh - 57px)' }}>
+        <SimpleEditor
+          content={docMeta.content}
+          editable={false}
+          footer={<DocMetaFooter meta={docMeta} />}
+        />
+      </main>
     </div>
   );
 }
-

@@ -56,13 +56,11 @@ export function CommentBubbleMenu({
       editor={editor}
       options={{
         placement: "top",
-        animation: "shift-away",
-        duration: [150, 100],
         onHide: () => {
           setIsInputOpen(false)
           setInputValue("")
         },
-      }}
+      } as any}
       shouldShow={({ editor, state }) => {
         const { selection } = state
         const { empty } = selection

@@ -8,6 +8,7 @@ import { TemplateCard, BlankDocumentCard } from './template-card';
 import { TemplatePreviewDialog } from './template-preview-dialog';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AnimatedModal } from '@/components/ui/animated-modal';
 
 interface TemplatePickerModalProps {
   open: boolean;
@@ -90,19 +91,10 @@ export function TemplatePickerModal({
     onOpenChange(false);
   }, [onSelect, onOpenChange]);
 
-  if (!open) return null;
-
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Overlay */}
-        <div
-          className="absolute inset-0 bg-black/50"
-          onClick={() => onOpenChange(false)}
-        />
-
-        {/* Modal */}
-        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+      <AnimatedModal open={open} onClose={() => onOpenChange(false)} className="w-full max-w-2xl mx-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-h-[80vh] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -261,7 +253,7 @@ export function TemplatePickerModal({
             )}
           </div>
         </div>
-      </div>
+      </AnimatedModal>
 
       {/* Template Preview Dialog (rendered on top with higher z-index) */}
       <TemplatePreviewDialog

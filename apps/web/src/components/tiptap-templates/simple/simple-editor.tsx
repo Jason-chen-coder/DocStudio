@@ -1,6 +1,6 @@
 "use client"
 
-import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
+import { CSSProperties, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { type Editor, EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Collaboration ---
@@ -12,6 +12,14 @@ import type { CollabUser } from "@/hooks/use-collaboration"
 
 // --- Comment Extensions ---
 import { CommentMark } from "@/components/tiptap-extension/comment-mark-extension"
+import { SlashCommands, slashCommandsSuggestion } from "@/components/tiptap-extension/slash-commands"
+import { CalloutExtension } from "@/components/tiptap-node/callout-node"
+import { MathExtension } from "@/components/tiptap-node/math-node"
+import { DrawingExtension } from "@/components/tiptap-node/drawing-node"
+import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import Mention from "@tiptap/extension-mention"
+import { createMentionSuggestion } from "@/components/tiptap-extension/mention"
+import { spaceService } from "@/services/space-service"
 import { useComments } from "@/hooks/use-comments"
 import type { CommentThread } from "@/hooks/use-comments"
 import { CommentBubbleMenu } from "@/components/editor/comment-bubble-menu"
@@ -19,7 +27,7 @@ import { CommentPanel } from "@/components/editor/comment-panel"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import { CodeBlockWithLanguageSelector } from "@/components/tiptap-node/code-block-node"
 import { ImageExtension } from "@/components/tiptap-node/image-node/image-extension"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
@@ -29,38 +37,19 @@ import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 
-// Lowlight: eagerly import only the most common languages to keep initial bundle small.
-// Rare languages (rust, go, kotlin, swift, scala, …) are loaded on demand via
-// the dynamic import inside the createLowlight configuration below.
-import { createLowlight } from "lowlight"
-import langJs from "highlight.js/lib/languages/javascript"
-import langTs from "highlight.js/lib/languages/typescript"
-import langPython from "highlight.js/lib/languages/python"
-import langCss from "highlight.js/lib/languages/css"
-import langHtml from "highlight.js/lib/languages/xml"   // xml covers html
-import langJson from "highlight.js/lib/languages/json"
-import langBash from "highlight.js/lib/languages/bash"
-import langSql from "highlight.js/lib/languages/sql"
+// Lowlight: register all languages so the language switcher works for every option.
+import { all, createLowlight } from "lowlight"
 
-const lowlight = createLowlight()
-lowlight.register("javascript", langJs)
-lowlight.register("js", langJs)
-lowlight.register("typescript", langTs)
-lowlight.register("ts", langTs)
-lowlight.register("python", langPython)
-lowlight.register("py", langPython)
-lowlight.register("css", langCss)
-lowlight.register("html", langHtml)
-lowlight.register("xml", langHtml)
-lowlight.register("json", langJson)
-lowlight.register("bash", langBash)
-lowlight.register("sh", langBash)
-lowlight.register("sql", langSql)
+const lowlight = createLowlight(all)
 
 import {
   TableOfContents,
   getHierarchicalIndexes,
 } from "@tiptap/extension-table-of-contents"
+import { Table } from "@tiptap/extension-table"
+import { TableRow } from "@tiptap/extension-table-row"
+import { TableCell } from "@tiptap/extension-table-cell"
+import { TableHeader } from "@tiptap/extension-table-header"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -88,6 +77,9 @@ import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
 import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
+import { TablePopover } from "@/components/tiptap-ui/table-popover"
+import { EmojiPopover } from "@/components/tiptap-ui/emoji-popover"
+import { BlockMenu } from "@/components/tiptap-extension/block-menu"
 import {
   ColorHighlightPopover,
   ColorHighlightPopoverContent,
@@ -100,13 +92,15 @@ import {
 } from "@/components/tiptap-ui/link-popover"
 import { MarkButton } from "@/components/tiptap-ui/mark-button"
 import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
-import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
+// UndoRedoButton replaced by SmartUndoRedoButton below (collab compat)
+// import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
+import { Undo2, Redo2 } from "lucide-react"
 
 // --- Icons ---
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
-import { Pin, PinOff } from "lucide-react"
+import { Pin, PinOff, Minus } from "lucide-react"
 
 // --- Hooks ---
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
@@ -124,6 +118,82 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 
 // import content from "@/components/tiptap-templates/simple/data/content.json"
 
+/** Simple toolbar button for inserting horizontal rule */
+function HorizontalRuleButton() {
+  const { editor } = useTiptapEditor()
+  if (!editor) return null
+  return (
+    <button
+      type="button"
+      onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      className="tiptap-button flex items-center gap-1 px-2 py-1.5 rounded-md text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+      title="分割线"
+      aria-label="插入分割线"
+    >
+      <Minus className="w-4 h-4" />
+    </button>
+  )
+}
+
+/**
+ * Undo/Redo button that works in BOTH collab (Yjs) and non-collab modes.
+ *
+ * The key insight: CustomCollaboration.addCommands() registers undo/redo
+ * commands that properly handle Tiptap's dry-run (dispatch=undefined) check.
+ * So we just use the standard editor.can().undo() / editor.commands.undo() API.
+ * No need to import y-prosemirror here — all handled in custom-collaboration.ts.
+ */
+function SmartUndoRedoButton({ action }: { action: "undo" | "redo" }) {
+  const { editor } = useTiptapEditor()
+  const [canDo, setCanDo] = useState(false)
+
+  useEffect(() => {
+    if (!editor) return
+
+    const check = () => {
+      if (!editor.isEditable) { setCanDo(false); return }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const can = editor.can() as any
+        const possible = action === "undo" ? !!can.undo() : !!can.redo()
+        setCanDo(possible)
+      } catch {
+        setCanDo(false)
+      }
+    }
+
+    check()
+    editor.on("transaction", check)
+    return () => {
+      editor.off("transaction", check)
+    }
+  }, [editor, action])
+
+  const handleClick = useCallback(() => {
+    if (!editor) return
+    try {
+      if (action === "undo") editor.chain().focus().undo().run()
+      else editor.chain().focus().redo().run()
+    } catch { /* noop */ }
+  }, [editor, action])
+
+  const Icon = action === "undo" ? Undo2 : Redo2
+  const label = action === "undo" ? "Undo" : "Redo"
+
+  return (
+    <button
+      type="button"
+      disabled={!canDo}
+      onClick={handleClick}
+      className="tiptap-button flex items-center gap-1 px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent"
+      title={label}
+      aria-label={label}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  )
+}
+
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
@@ -138,20 +208,21 @@ const MainToolbarContent = ({
       <Spacer />
 
       <ToolbarGroup>
-        <UndoRedoButton action="undo" />
-        <UndoRedoButton action="redo" />
+        <SmartUndoRedoButton action="undo" />
+        <SmartUndoRedoButton action="redo" />
       </ToolbarGroup>
 
       <ToolbarSeparator />
 
       <ToolbarGroup>
-        <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal={isMobile} />
+        <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal />
         <ListDropdownMenu
           types={["bulletList", "orderedList", "taskList"]}
-          portal={isMobile}
+          portal
         />
         <BlockquoteButton />
         <CodeBlockButton />
+        <HorizontalRuleButton />
       </ToolbarGroup>
 
       <ToolbarSeparator />
@@ -189,6 +260,8 @@ const MainToolbarContent = ({
       <ToolbarSeparator />
 
       <ToolbarGroup>
+        <TablePopover />
+        <EmojiPopover />
         <ImageUploadButton text="Add" />
       </ToolbarGroup>
 
@@ -233,7 +306,7 @@ const MobileToolbarContent = ({
 )
 
 export interface SimpleEditorProps {
-  content?: string
+  content?: string | object
   onUpdate?: (props: { editor: Editor }) => void
   editable?: boolean
   showTableOfContents?: boolean
@@ -250,6 +323,8 @@ export interface SimpleEditorProps {
   initialCommentThreads?: CommentThread[]
   /** Called whenever comment threads change, for persistence */
   onCommentsChange?: (threads: CommentThread[]) => void
+  /** Space ID for @mention member lookup */
+  spaceId?: string
 }
 
 type TableOfContentsItem = {
@@ -271,6 +346,7 @@ export function SimpleEditor({
   onReady,
   initialCommentThreads,
   onCommentsChange,
+  spaceId,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
@@ -280,7 +356,7 @@ export function SimpleEditor({
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false)
   const { threads, addThread, replyToThread, resolveThread, deleteThread } =
-    useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl)
+    useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl ?? undefined)
   const [tableOfContentsItems, setTableOfContentsItems] = useState<
     TableOfContentsItem[]
   >([])
@@ -296,6 +372,11 @@ export function SimpleEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    // ── React Performance Optimization ─────────────────────────────────────
+    // Prevent React re-renders on every transaction (cursor move, remote sync, etc.)
+    // Toolbar/UI state that depends on selection is handled via useEditorState hook
+    // in child components, so the parent SimpleEditor doesn't need to re-render.
+    shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
         autocomplete: "off",
@@ -319,10 +400,9 @@ export function SimpleEditor({
       // Replaces StarterKit's plain codeBlock. We eagerly registered only the
       // most common 8 languages above; any other language selected by the user
       // is loaded lazily on first use without any bundle hit at startup.
-      CodeBlockLowlight.configure({
+      CodeBlockWithLanguageSelector.configure({
         lowlight,
         defaultLanguage: 'javascript',
-        // lazy-register unknown languages at parse time
         languageClassPrefix: 'language-',
       }),
       HorizontalRule,
@@ -377,6 +457,56 @@ export function SimpleEditor({
         limit: 3,
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
+      }),
+      // Table (rows, cells, headers)
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      // Callout blocks (info/warning/error/success)
+      CalloutExtension,
+      // Math blocks (KaTeX)
+      MathExtension,
+      // Drawing canvas (SVG + D3)
+      DrawingExtension,
+      // @Mention — type @ to search and tag space members
+      ...(spaceId
+        ? [
+          Mention.configure({
+            HTMLAttributes: {
+              class: 'mention-tag',
+            },
+            suggestion: createMentionSuggestion(async (query) => {
+              try {
+                const members = await spaceService.getMembers(spaceId);
+                const q = query.toLowerCase();
+                return members
+                  .filter(
+                    (m) =>
+                      !q ||
+                      m.name.toLowerCase().includes(q) ||
+                      (m.email && m.email.toLowerCase().includes(q)),
+                  )
+                  .slice(0, 8)
+                  .map((m) => ({
+                    id: m.userId,
+                    name: m.name,
+                    email: m.email,
+                    avatarUrl: m.avatarUrl ?? null,
+                  }));
+              } catch {
+                return [];
+              }
+            }),
+          }),
+        ]
+        : []),
+      // Slash Commands (/ menu)
+      SlashCommands.configure({
+        suggestion: {
+          ...SlashCommands.options.suggestion,
+          render: slashCommandsSuggestion,
+        },
       }),
       // Collaboration extensions (only when provider + ydoc are present)
       ...(isCollabMode
@@ -468,10 +598,9 @@ export function SimpleEditor({
   useEffect(() => {
     // Only update content in non-collab mode (collab mode is driven by Yjs)
     if (editor && !isCollabMode && content !== undefined) {
-      // Parse content: may be a Tiptap JSON string or an HTML string
-      // We cast to unknown first to satisfy strict typing when passing parsed JSON
+      // Content may be: a Tiptap JSON object, a JSON string, or an HTML string
       let parsed: unknown = content;
-      if (content && content.trimStart().startsWith('{')) {
+      if (typeof content === 'string' && content.trimStart().startsWith('{')) {
         try {
           parsed = JSON.parse(content);
         } catch {
@@ -582,7 +711,8 @@ export function SimpleEditor({
         )}
 
         <div className="simple-editor-main">
-          <div className="simple-editor-content" ref={contentRef}>
+          <div className="simple-editor-content relative" ref={contentRef}>
+            {editable && editor && <BlockMenu editor={editor} />}
             <EditorContent editor={editor} role="presentation" />
             {footer}
           </div>

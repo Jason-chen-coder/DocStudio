@@ -212,7 +212,7 @@ export function DashboardStats() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: number, n: string) => [`${v}`, n]}
+                  formatter={(v: any, n: any) => [`${v}`, n]}
                   contentStyle={{
                     fontSize: 12,
                     borderRadius: 8,

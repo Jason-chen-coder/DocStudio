@@ -6,6 +6,7 @@ import type { TemplateCategory, TemplateScope } from '@/types/template';
 import { CATEGORY_LABELS, ALL_CATEGORIES, SCOPE_LABELS } from '@/types/template';
 import { X, Loader2, BookTemplate } from 'lucide-react';
 import { toast } from 'sonner';
+import { AnimatedModal } from '@/components/ui/animated-modal';
 
 interface SaveAsTemplateDialogProps {
   open: boolean;
@@ -72,9 +73,8 @@ export function SaveAsTemplateDialog({
   const COMMON_ICONS = ['📄', '📋', '📊', '📐', '📖', '🏗️', '💡', '🎯', '📝', '🔧', '📌', '⚡'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50" onClick={() => handleOpenChange(false)} />
+    <AnimatedModal open={open} onClose={() => handleOpenChange(false)} className="w-full max-w-md mx-4">
+      <div className="hidden" />
 
       {/* Modal */}
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4">
@@ -215,6 +215,6 @@ export function SaveAsTemplateDialog({
           </button>
         </div>
       </div>
-    </div>
+    </AnimatedModal>
   );
 }

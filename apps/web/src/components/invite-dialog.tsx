@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { Role } from '@/types/space';
 import { spaceService } from '@/services/space-service';
+import { AnimatedModal } from '@/components/ui/animated-modal';
 
 interface InviteDialogProps {
   spaceId: string;
@@ -62,8 +63,8 @@ export function InviteDialog({ spaceId, isOpen, onClose }: InviteDialogProps) {
   // Wait, I strictly defined Promise<void> in service. I need to fix that.
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+    <AnimatedModal open={isOpen} onClose={onClose} className="w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full shadow-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">邀请成员</h2>
         
         {!inviteLink ? (
@@ -165,6 +166,6 @@ export function InviteDialog({ spaceId, isOpen, onClose }: InviteDialogProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AnimatedModal>
   );
 }

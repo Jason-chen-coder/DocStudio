@@ -72,8 +72,7 @@ export function useCollaboration(
 
       // Reconnection strategy: exponential backoff with jitter to avoid
       // connection storms when the server restarts or network recovers.
-      delay: 1000,
-      maxAttempts: 30,
+      ...(({ delay: 1000, maxAttempts: 30 }) as any),
 
       onStatus({ status: s }) {
         if (s === 'connected') setStatus('connected');

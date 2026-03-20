@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { CreateShareDto } from './dto/share.dto';
 import { ShareType } from '@prisma/client';
+import { ydocUpdateToTiptapJson } from '../common/ydoc-utils';
 
 @Injectable()
 export class ShareService {
@@ -157,14 +158,111 @@ export class ShareService {
       }
     }
 
-    // Return content with document metadata
+    // Prefer structured Tiptap JSON from ydocData (preserves drawings, callouts, etc.)
+    // Fall back to plain-text content field if ydocData is unavailable
+    let content: string | object = share.document.content;
+    if (share.document.ydocData) {
+      const tiptapJson = ydocUpdateToTiptapJson(
+        new Uint8Array(share.document.ydocData),
+      );
+      if (tiptapJson) {
+        content = tiptapJson;
+      }
+    }
+
     return {
       title: share.document.title,
-      content: share.document.content,
+      content,
       createdAt: share.document.createdAt,
       updatedAt: share.document.updatedAt,
       creator: share.document.creator,
     };
+  }
+
+  /**
+   * 获取某文档的所有分享链接
+   */
+  async getSharesByDocument(documentId: string, userId: string) {
+    // 验证文档存在且用户有权限（需要对文档所在 space 有访问权限）
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId },
+      include: {
+        space: {
+          include: {
+            permissions: {
+              where: { userId },
+            },
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    // 检查用户是否为空间成员
+    if (document.space.permissions.length === 0) {
+      throw new ForbiddenException('No permission to view shares for this document');
+    }
+
+    const shares = await this.prisma.shareLink.findMany({
+      where: { documentId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        token: true,
+        type: true,
+        expiresAt: true,
+        viewCount: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+
+    // 标记已过期的链接
+    return shares.map((share) => ({
+      ...share,
+      isExpired: share.expiresAt ? new Date() > share.expiresAt : false,
+    }));
+  }
+
+  /**
+   * 删除/停用分享链接
+   */
+  async deleteShare(shareId: string, userId: string) {
+    const share = await this.prisma.shareLink.findUnique({
+      where: { id: shareId },
+      include: {
+        document: {
+          include: {
+            space: {
+              include: {
+                permissions: {
+                  where: { userId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!share) {
+      throw new NotFoundException('Share link not found');
+    }
+
+    // 检查用户是否为空间成员（EDITOR 及以上可删除分享）
+    const permission = share.document.space.permissions[0];
+    if (!permission) {
+      throw new ForbiddenException('No permission to delete this share link');
+    }
+
+    await this.prisma.shareLink.delete({
+      where: { id: shareId },
+    });
+
+    return { message: 'Share link deleted successfully' };
   }
 
   private generateToken(shareId: string) {

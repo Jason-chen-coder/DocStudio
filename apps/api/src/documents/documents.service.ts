@@ -93,7 +93,15 @@ export class DocumentsService {
         title: true,
         parentId: true,
         order: true,
+        createdAt: true,
         updatedAt: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
     return docs;

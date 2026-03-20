@@ -300,7 +300,7 @@ body {
   border-radius: 0.75rem;
 }
 
-/* Toast Animations & Styles - User Provided Override */
+/* Toast Animations & Styles */
 @keyframes toast-hide {
   from { opacity: 1; }
   to { opacity: 0; }

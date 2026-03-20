@@ -30,12 +30,20 @@ async function fetchPublic(endpoint: string, options: RequestInit = {}) {
 }
 
 export const publicService = {
-  async getPublicSpaces(page: number = 1, limit: number = 20, search?: string): Promise<{ data: Space[]; total: number; page: number; limit: number; totalPages: number }> {
+  async getPublicSpaces(
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    sort?: string,
+    order?: string,
+  ): Promise<{ data: Space[]; total: number; page: number; limit: number; totalPages: number }> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
     if (search) params.append('search', search);
+    if (sort) params.append('sort', sort);
+    if (order) params.append('order', order);
 
     return fetchPublic(`/public/spaces?${params.toString()}`);
   },

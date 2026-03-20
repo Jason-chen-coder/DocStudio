@@ -39,6 +39,7 @@
     "@nestjs/platform-fastify": "^11.0.1",
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/swagger": "^11.2.5",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "5.22.0",
     "@types/minio": "^7.1.1",
     "bcryptjs": "^3.0.3",
@@ -53,6 +54,7 @@
     "prisma": "5.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.34.5",
     "yjs": "^13.6.29"
   },
   "devDependencies": {
@@ -67,6 +69,7 @@
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
+    "@types/sharp": "^0.32.0",
     "@types/supertest": "^6.0.2",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.18.0",

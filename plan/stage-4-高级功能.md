@@ -1,8 +1,10 @@
 # Stage 4: 高级功能
 
-**状态**: ⚡ 进行中  
-**预计时间**: 4-6 周  
+**状态**: ✅ 已完成
+**更新时间**: 2026-03-20
 **目标**: 提升协作体验和产品完整度
+
+> **全部完成**: 实时协作（Yjs + Hocuspocus）、文件上传（MinIO + Sharp 图片处理 + 通用附件）、版本历史（自动/手动快照 + 恢复）、全文搜索、活动日志与最近访问
 
 ---
 
@@ -14,7 +16,26 @@ Stage 4 是产品的高级功能阶段，将实现实时多人协作、文件上
 
 ## 功能清单
 
-### 1. 实时协作（Yjs + Hocuspocus）
+### 1. 实时协作（Yjs + Hocuspocus）✅ 已完成
+
+#### 实现状态
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| Hocuspocus Server | ✅ | `apps/api/src/collaboration/collaboration.service.ts` |
+| Yjs 文档持久化（ydocKey + ydocData） | ✅ | Prisma schema + Hocuspocus Database extension |
+| WebSocket JWT 鉴权 | ✅ | `onAuthenticate` hook 验证 JWT + 空间权限 + 禁用状态 |
+| VIEWER 只读模式 | ✅ | WebSocket 鉴权返回 readOnly 标志 |
+| 前端协作接入 | ✅ | `use-collaboration.ts` hook + `HocuspocusProvider` |
+| 协作光标（yCursorPlugin） | ✅ | `custom-collaboration.ts` + y-prosemirror plugins |
+| 在线用户头像栈 | ✅ | `online-users.tsx`（最多 5 个 + "+N"溢出） |
+| 用户颜色生成 | ✅ | `generateUserColor()` 10 色板 hash 映射 |
+| IndexedDB 离线缓存 | ✅ | `y-indexeddb` persistence |
+| 断线重连 | ✅ | 指数退避策略（delay: 1000, maxAttempts: 30） |
+| WebSocket 压缩 | ✅ | perMessageDeflate (Zlib) |
+| 保存节流 | ✅ | debounce 2s, maxDebounce 30s |
+
+> **注**: 未实现 `YjsUpdate` 增量更新表（计划中有），实际采用直接存储 `ydocData` 完整二进制的方式，效果等价且更简洁。
 
 #### 技术架构
 
@@ -44,111 +65,6 @@ model Document {
   ydocKey   String   @unique // Yjs document key
   ydocData  Bytes?   // Yjs 文档二进制数据
 }
-
-model YjsUpdate {
-  id        String   @id @default(cuid())
-  docId     String
-  document  Document @relation(fields: [docId], references: [id], onDelete: Cascade)
-  update    Bytes    // Yjs 增量更新
-  createdAt DateTime @default(now())
-
-  @@index([docId, createdAt])
-}
-```
-
-#### Hocuspocus 服务器配置
-
-```typescript
-import { Server } from '@hocuspocus/server';
-import { Database } from '@hocuspocus/extension-database';
-
-const server = Server.configure({
-  port: 1234,
-
-  extensions: [
-    new Database({
-      fetch: async ({ documentName }) => {
-        // 从数据库加载文档
-        const doc = await prisma.document.findUnique({
-          where: { ydocKey: documentName },
-        });
-        return doc?.ydocData || null;
-      },
-
-      store: async ({ documentName, state }) => {
-        // 保存文档到数据库
-        await prisma.document.update({
-          where: { ydocKey: documentName },
-          data: { ydocData: state },
-        });
-      },
-    }),
-  ],
-
-  // 权限验证
-  async onAuthenticate({ token, documentName }) {
-    // 验证 JWT token
-    const user = await verifyJWT(token);
-
-    // 检查用户是否有权限访问此文档
-    const doc = await prisma.document.findUnique({
-      where: { ydocKey: documentName },
-      include: { space: true },
-    });
-
-    const hasPermission = await checkPermission(user.id, doc.spaceId);
-
-    if (!hasPermission) {
-      throw new Error('Unauthorized');
-    }
-
-    return { user };
-  },
-});
-```
-
-#### 前端实现
-
-**安装依赖**
-
-```bash
-npm install @tiptap/extension-collaboration @tiptap/extension-collaboration-cursor yjs y-websocket
-```
-
-**编辑器配置**
-
-```typescript
-import { useEditor } from '@tiptap/react';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
-
-const ydoc = new Y.Doc();
-
-const provider = new WebsocketProvider('ws://localhost:1234', docId, ydoc, {
-  params: {
-    token: authToken, // JWT token
-  },
-});
-
-const editor = useEditor({
-  extensions: [
-    StarterKit.configure({
-      history: false, // 禁用默认历史，使用 Yjs 的历史
-    }),
-    Collaboration.configure({
-      document: ydoc,
-    }),
-    CollaborationCursor.configure({
-      provider: provider,
-      user: {
-        name: currentUser.name,
-        color: generateUserColor(currentUser.id),
-      },
-    }),
-  ],
-});
 ```
 
 #### 在线用户显示
@@ -160,62 +76,37 @@ const editor = useEditor({
 - 最多显示 5 个，超过显示 "+N"
 - 鼠标悬停显示所有在线用户
 
-**UI 设计**
-
-```
-┌────────────────────────────────────┐
-│ 📄 文档标题    [👤][👤][👤] +2  💾 已保存 │
-└────────────────────────────────────┘
-```
-
-**实现**
-
-```typescript
-const onlineUsers = provider.awareness.getStates();
-const users = Array.from(onlineUsers.values())
-  .map((state) => state.user)
-  .filter((user) => user.id !== currentUser.id);
-```
-
 #### 光标位置提示
 
 **功能**
 
 - 显示其他用户的光标位置
 - 光标旁边显示用户名
-- 每个用户有独特的颜色
-- 鼠标悬停显示用户详情
-
-**效果**
-
-```
-文档内容 [张三的光标] 更多内容 [李四的光标]
-```
-
-**颜色生成**
-
-```typescript
-function generateUserColor(userId: string): string {
-  const colors = [
-    '#FF6B6B',
-    '#4ECDC4',
-    '#45B7D1',
-    '#FFA07A',
-    '#98D8C8',
-    '#F7DC6F',
-    '#BB8FCE',
-    '#85C1E2',
-  ];
-  const hash = userId.split('').reduce((acc, char) => {
-    return char.charCodeAt(0) + ((acc << 5) - acc);
-  }, 0);
-  return colors[Math.abs(hash) % colors.length];
-}
-```
+- 每个用户有独特的颜色（10 色板 hash 映射）
 
 ---
 
-### 2. 文件上传与图像处理
+### 2. 文件上传与图像处理 ✅ 已完成
+
+#### 实现状态
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| MinIO 对象存储 | ✅ | `apps/api/src/common/minio/minio.service.ts` |
+| Docker Compose MinIO 服务 | ✅ | `docker-compose.yml`（端口 9000/9001） |
+| Bucket 自动创建 + 公开读策略 | ✅ | MinioService 初始化逻辑 |
+| POST /files/upload API | ✅ | `apps/api/src/files/files.controller.ts` |
+| POST /files/upload-attachment API | ✅ | 通用附件上传（pdf/doc/xlsx/zip 等，20MB 限制） |
+| 文件类型校验（jpg/png/gif/webp/svg） | ✅ | Controller 内白名单校验 |
+| 文件大小限制（图片 5MB / 附件 20MB） | ✅ | Controller 内校验 + Fastify 全局 20MB |
+| 前端图片粘贴上传 | ✅ | `image-extension.ts` PasteHandler plugin |
+| 前端图片拖拽上传 | ✅ | `image-extension.ts` DropHandler plugin |
+| 上传进度条 | ✅ | `image-upload-node` 组件 |
+| 取消上传（AbortController） | ✅ | `image-upload-node` 组件 |
+| **Sharp 图片压缩** | ✅ | `image-processing.service.ts`（最大 2560px，WebP quality 82） |
+| **缩略图生成** | ✅ | 200×200 cover 缩略图，WebP quality 70 |
+| **WebP 自动转换** | ✅ | jpg/png/webp → WebP，GIF/SVG 保持原格式 |
+| **通用附件上传（pdf/doc/zip）** | ✅ | 13 种 MIME 类型，20MB 限制 |
 
 #### MinIO 对象存储
 
@@ -236,161 +127,30 @@ services:
       - minio_data:/data
 ```
 
-**NestJS 集成**
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import * as Minio from 'minio';
-
-@Injectable()
-export class MinioService {
-  private client: Minio.Client;
-
-  constructor() {
-    this.client = new Minio.Client({
-      endPoint: 'localhost',
-      port: 9000,
-      useSSL: false,
-      accessKey: 'minioadmin',
-      secretKey: 'minioadmin',
-    });
-  }
-
-  async uploadFile(bucket: string, filename: string, file: Buffer) {
-    await this.client.putObject(bucket, filename, file);
-    return this.client.presignedGetObject(bucket, filename, 24 * 60 * 60);
-  }
-}
-```
-
-#### 图像处理（Sharp）
-
-**安装**
-
-```bash
-npm install sharp
-```
-
-**图片压缩和格式转换**
-
-```typescript
-import sharp from 'sharp';
-
-async processImage(buffer: Buffer, options: {
-  width?: number;
-  height?: number;
-  quality?: number;
-}) {
-  return sharp(buffer)
-    .resize(options.width, options.height, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .webp({ quality: options.quality || 80 })
-    .toBuffer();
-}
-
-// 生成缩略图
-async generateThumbnail(buffer: Buffer) {
-  return sharp(buffer)
-    .resize(200, 200, { fit: 'cover' })
-    .webp({ quality: 70 })
-    .toBuffer();
-}
-```
-
-#### API 接口
-
-**POST /upload/image**
-
-- 功能：上传图片
-- 权限：需要登录
-- 请求：multipart/form-data
-- 业务逻辑：
-  1. 验证文件类型（jpg, png, gif, webp）
-  2. 验证文件大小（< 5MB）
-  3. 图片压缩和格式转换
-  4. 生成缩略图
-  5. 上传到 MinIO
-  6. 返回 URL
-- 响应：
-  ```json
-  {
-    "url": "https://cdn.docstudio.com/images/xxx.webp",
-    "thumbnail": "https://cdn.docstudio.com/images/xxx_thumb.webp",
-    "size": 125678,
-    "width": 1920,
-    "height": 1080
-  }
-  ```
-
-**POST /upload/file**
-
-- 功能：上传附件
-- 支持类型：pdf, doc, docx, xls, xlsx, zip 等
-- 文件大小限制：< 20MB
-
 #### 前端实现
 
-**Tiptap 图片扩展**
-
-```typescript
-import Image from '@tiptap/extension-image';
-
-const editor = useEditor({
-  extensions: [
-    Image.configure({
-      inline: true,
-      allowBase64: false,
-    }),
-  ],
-});
-
-// 插入图片
-const insertImage = async (file: File) => {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  const { url } = await uploadImage(formData);
-
-  editor.chain().focus().setImage({ src: url }).run();
-};
-```
-
-**拖拽上传**
-
-```typescript
-const handleDrop = (event: DragEvent) => {
-  const files = event.dataTransfer?.files;
-  if (!files) return;
-
-  Array.from(files).forEach((file) => {
-    if (file.type.startsWith('image/')) {
-      insertImage(file);
-    }
-  });
-};
-```
-
-**粘贴上传**
-
-```typescript
-const handlePaste = (event: ClipboardEvent) => {
-  const items = event.clipboardData?.items;
-  if (!items) return;
-
-  Array.from(items).forEach((item) => {
-    if (item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      if (file) insertImage(file);
-    }
-  });
-};
-```
+- Tiptap 图片扩展：`ImageExtension` 自定义 plugin（粘贴 + 拖拽）
+- 图片上传节点：`ImageUploadNode` React NodeView（进度条 + 取消按钮）
+- 图片缩放：编辑器内拖拽调整图片大小
 
 ---
 
-### 3. 版本历史与快照
+### 3. 版本历史与快照 ✅ 已完成
+
+#### 实现状态
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| DocumentSnapshot 数据模型 | ✅ | Prisma schema（含 ydocData 二进制字段） |
+| GET /documents/:docId/snapshots | ✅ | `snapshots.controller.ts` |
+| POST /documents/:docId/snapshots | ✅ | 手动快照 + 版本说明 |
+| GET /documents/:docId/snapshots/:id | ✅ | 快照内容预览（Yjs 二进制解码 → Tiptap JSON） |
+| POST /documents/:docId/snapshots/:id/restore | ✅ | 恢复 + 连接锁机制 |
+| 自动快照 | ✅ | 30 分钟间隔，每文档最多 50 个，自动裁剪 |
+| 恢复锁（Restore Lock） | ✅ | Mutex-like Set 防止 Hocuspocus 覆盖恢复数据 |
+| 前端版本历史面板 | ✅ | `version-history-panel` 组件 |
+| 快照预览弹窗 | ✅ | 只读模式展示快照内容 |
+| 恢复确认对话框 | ✅ | 恢复前确认 + toast 提示 |
 
 #### 数据模型
 
@@ -399,8 +159,9 @@ model DocumentSnapshot {
   id        String   @id @default(cuid())
   docId     String
   document  Document @relation(fields: [docId], references: [id], onDelete: Cascade)
-  content   String   @db.Text // 快照内容
-  message   String?  // 版本说明（可选）
+  content   String   @db.Text
+  ydocData  Bytes?
+  message   String?
   createdBy String
   creator   User     @relation(fields: [createdBy], references: [id])
   createdAt DateTime @default(now())
@@ -413,86 +174,21 @@ model DocumentSnapshot {
 
 **自动快照**
 
-- 每次保存文档时检查
-- 如果距离上次快照超过 1 小时，创建新快照
+- 每次 Hocuspocus store 时检查
+- 距离上次快照超过 30 分钟则创建新快照
 - 每个文档最多保留 50 个快照（超过删除最旧的）
+- 异步 fire-and-forget，不阻塞保存
 
 **手动快照**
 
 - 用户可以手动创建快照
 - 可以添加版本说明
 
-#### API 接口
+**恢复机制**
 
-**GET /docs/:id/snapshots**
-
-- 功能：获取文档的版本历史
-- 权限：Space 成员
-- 响应：
-  ```json
-  [
-    {
-      "id": "snapshot_id",
-      "message": "添加了 API 文档章节",
-      "creator": {
-        "id": "user_id",
-        "name": "张三"
-      },
-      "createdAt": "2026-02-03T10:00:00.000Z"
-    }
-  ]
-  ```
-
-**POST /docs/:id/snapshots**
-
-- 功能：手动创建快照
-- 权限：Space Editor/Owner
-- 请求体：
-  ```json
-  {
-    "message": "版本 1.0 发布"
-  }
-  ```
-
-**GET /docs/:id/snapshots/:snapshotId**
-
-- 功能：获取快照内容（预览）
-- 权限：Space 成员
-- 响应：快照的完整内容
-
-**POST /docs/:id/restore/:snapshotId**
-
-- 功能：恢复到指定版本
-- 权限：Space Owner
-- 业务逻辑：
-  1. 创建当前版本的快照（自动）
-  2. 将文档内容恢复到快照版本
-  3. 记录恢复操作
-
-#### 前端功能
-
-**版本历史侧边栏**
-
-- 位置：文档编辑页右侧
-- 触发：点击"版本历史"按钮
-- 展示：时间线式列表
-  - 快照时间
-  - 创建者
-  - 版本说明
-  - 操作按钮（预览、恢复）
-
-**版本预览**
-
-- 模态窗口展示快照内容
-- 只读模式
-- 显示差异对比（可选，使用 diff 库）
-- "恢复此版本"按钮
-
-**版本对比**（可选）
-
-- 选择两个版本进行对比
-- 高亮显示差异
-- 类似 Git diff 的视图
+- 恢复前自动创建当前版本快照
+- Mutex 锁定文档 5 秒，防止 Hocuspocus 内存覆盖
+- 强制卸载内存文档，下次连接从 DB 加载最新数据
 
 ---
 
@@ -500,26 +196,22 @@ model DocumentSnapshot {
 
 ### Yjs 文档持久化
 
-```typescript
-// 定期保存 Yjs 文档
-setInterval(async () => {
-  const state = Y.encodeStateAsUpdate(ydoc);
-  await saveYdocState(docId, state);
-}, 30000); // 每 30 秒保存一次
-```
+- Hocuspocus Database extension 自动管理 fetch/store
+- debounce 2s + maxDebounce 30s 批量写入
+- WebSocket 级压缩减少带宽
 
-### 文件上传性能优化
+### 文件上传
 
-- 客户端压缩（浏览器端使用 Canvas API）
-- 分片上传（大文件）
-- 并行上传（多文件）
-- 上传进度显示
+- Fastify multipart 原生处理（非 Express multer）
+- MinIO 公开读策略，前端直接访问图片 URL
+- 前端通过 CDN URL 映射（开发: localhost:9000, 生产: Nginx 反代）
 
 ### 快照性能优化
 
 - 异步创建快照（不阻塞保存）
-- 压缩快照内容（gzip）
-- 定期清理旧快照
+- Yjs 二进制快照（`Y.encodeSnapshot`）紧凑存储
+- 定期清理旧快照（max 50 per doc）
+- 恢复锁防止数据竞争
 
 ---
 
@@ -529,7 +221,7 @@ setInterval(async () => {
 
 - ✅ 多个用户可以同时编辑同一文档
 - ✅ 编辑内容实时同步
-- ✅ 没有冲突问题
+- ✅ 没有冲突问题（CRDT）
 - ✅ 在线用户列表正确显示
 - ✅ 光标位置提示正常工作
 - ✅ 断线重连后数据不丢失
@@ -537,19 +229,104 @@ setInterval(async () => {
 ### 文件上传
 
 - ✅ 可以上传图片到文档
-- ✅ 图片自动压缩和格式转换
+- ✅ 图片自动压缩和 WebP 转换（Sharp, max 2560px, quality 82）
+- ✅ 自动生成 200×200 封面缩略图
 - ✅ 支持拖拽和粘贴上传
 - ✅ 上传进度显示
-- ✅ 可以上传附件
+- ✅ 可以上传附件（pdf/doc/xlsx/ppt/zip 等 13 种类型，20MB 限制）
 
 ### 版本历史
 
-- ✅ 自动创建快照
+- ✅ 自动创建快照（30 分钟间隔）
 - ✅ 可以手动创建快照
 - ✅ 可以查看版本历史
 - ✅ 可以预览历史版本
 - ✅ 可以恢复到历史版本
-- ✅ 恢复操作可以撤销
+- ✅ 恢复前自动保存当前版本（可回退）
+
+---
+
+## 补充功能（已在独立 plan 文件中）
+
+以下功能属于 Stage 4 范畴，已单独成文并完成：
+
+- **全文搜索** ✅ — `SearchModule` + 全局搜索 UI（⌘K），见 `stage-4` 相关说明
+- **活动日志与最近访问** ✅ — `ActivityModule` + Dashboard 最近访问/活动时间线，见 `stage-4-活动日志与最近访问.md`
+- **文档模板系统** ✅ — 三级作用域模板（SYSTEM/SPACE/USER），见 `stage-4-文档模板.md`
+
+---
+
+## Phase: 代码块增强（语法高亮 + 语言选择器）✅ 已完成
+
+**完成时间**: 2026-03-19
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| CodeBlockLowlight + createLowlight(all) 全语言高亮 | ✅ | `simple-editor.tsx` |
+| GitHub Light / Dark 语法高亮 CSS（全 hljs token） | ✅ | `code-block-node/code-block-node.scss` |
+| ReactNodeViewRenderer 自定义代码块 NodeView | ✅ | `code-block-node/code-block-extension.ts` |
+| 语言选择器下拉菜单（26 种常用语言 + 搜索 + 键盘导航） | ✅ | `code-block-node/code-block-node-view.tsx` |
+| 代码块复制按钮（clipboard 反馈） | ✅ | `code-block-node/code-block-node-view.tsx` |
+| 只读模式隐藏下拉箭头、禁用切换 | ✅ | `code-block-node/code-block-node-view.tsx` |
+| 修复下拉菜单被 overflow:hidden 裁剪 | ✅ | `code-block-node/code-block-node.scss` |
+
+---
+
+## Phase: 编辑器性能优化 + 协作样式增强 ✅ 已完成
+
+**完成时间**: 2026-03-19
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| `shouldRerenderOnTransaction: false` 减少重渲染 | ✅ | `simple-editor.tsx` |
+| 远程协作光标样式（闪烁 + 出现动画 + 用户名标签 2.5s） | ✅ | `simple-editor.scss` |
+| 远程用户选区高亮（selectionBuilder + DecorationAttrs） | ✅ | `custom-collaboration.ts` |
+| hexToRgba 工具函数 | ✅ | `custom-collaboration.ts` |
+
+---
+
+## Phase: 分享页面 UI 重设计 ✅ 已完成
+
+**完成时间**: 2026-03-19
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| 顶部导航栏（应用图标 + 标题面包屑 + 分享/复制 + 只读徽章） | ✅ | `share/[token]/page.tsx` |
+| 骨架屏加载状态 | ✅ | `share/[token]/page.tsx` |
+| 错误状态卡片（AlertTriangle + 重试） | ✅ | `share/[token]/page.tsx` |
+| 密码门重设计（锁图标 + 渐变按钮） | ✅ | `share/[token]/page.tsx` |
+| 作者信息卡片（头像光环 + 渐变分割线 + 相对时间 + 品牌水印） | ✅ | `share/[token]/page.tsx` |
+| 左上角 Logo 点击跳转首页 | ✅ | `share/[token]/page.tsx` |
+
+---
+
+## Phase: 分享页面内容渲染修复 ✅ 已完成
+
+**完成时间**: 2026-03-19
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| 修复 tagToTiptapType camelCase 问题（bulletList/taskItem 等） | ✅ | `apps/api/src/common/ydoc-utils.ts` |
+
+> Yjs 存储 camelCase 节点名，之前错误地全部小写化导致 Tiptap 无法识别。改为先查 HTML 标签映射表，未命中则直接透传 camelCase 名称。
+
+---
+
+## Phase: 空间首页优化（文档列表 + 布局重构）✅ 已完成
+
+**完成时间**: 2026-03-20
+
+| 功能 | 状态 | 实现位置 |
+|------|------|---------|
+| 文档列表改为可排序表格（名称/所有者/更新时间/创建时间/操作） | ✅ | `spaces/[id]/page.tsx` |
+| 按名称/更新时间/创建时间排序（升序/降序） | ✅ | `spaces/[id]/page.tsx` |
+| 响应式列隐藏（sm/md/lg 断点） | ✅ | `spaces/[id]/page.tsx` |
+| API findAll 补充返回 createdAt + creator 字段 | ✅ | `documents.service.ts` |
+| 固定头部卡片 + 文档表格占满剩余空间独立滚动 | ✅ | `spaces/[id]/page.tsx` |
+| 头部卡片（空间名/标签/描述/统计/快捷操作） | ✅ | `spaces/[id]/page.tsx` |
+| 表头 sticky + backdrop-blur 毛玻璃 | ✅ | `spaces/[id]/page.tsx` |
+| 操作列始终显示 | ✅ | `spaces/[id]/page.tsx` |
+| 空状态引导 + 骨架屏加载态 | ✅ | `spaces/[id]/page.tsx` |
 
 ---
 
@@ -564,7 +341,10 @@ setInterval(async () => {
 - ✅ 团队权限管理
 - ✅ 私密分享
 - ✅ 实时多人协作
-- ✅ 文件上传
+- ✅ 文件上传（图片 Sharp 压缩/缩略图/WebP + 通用附件）
 - ✅ 版本历史
+- ✅ 全文搜索
+- ✅ 活动日志与最近访问
+- ✅ 文档模板系统
 
 可以开始内测和用户反馈收集，准备下一个版本的规划。

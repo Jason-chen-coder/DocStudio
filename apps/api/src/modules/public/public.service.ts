@@ -9,7 +9,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class PublicService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllSpaces(page: number = 1, limit: number = 20, search?: string) {
+  async findAllSpaces(
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    sort?: string,
+    order?: string,
+  ) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = { isPublic: true };
@@ -20,12 +26,31 @@ export class PublicService {
       ];
     }
 
+    // Build orderBy clause
+    const direction = order === 'asc' ? 'asc' : 'desc';
+    let orderBy: any;
+    switch (sort) {
+      case 'createdAt':
+        orderBy = { createdAt: direction };
+        break;
+      case 'name':
+        orderBy = { name: direction };
+        break;
+      case 'documents':
+        orderBy = { documents: { _count: direction } };
+        break;
+      case 'updatedAt':
+      default:
+        orderBy = { updatedAt: direction };
+        break;
+    }
+
     const [spaces, total] = await Promise.all([
       this.prisma.space.findMany({
         where: whereClause,
         skip,
         take: limit,
-        orderBy: { updatedAt: 'desc' },
+        orderBy,
         include: {
           owner: {
             select: { id: true, name: true, avatarUrl: true },

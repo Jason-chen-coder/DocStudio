@@ -9,6 +9,33 @@ import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 // --- Lib ---
 import { isNodeTypeSelected } from "@/lib/tiptap-utils"
 
+// --- Yjs undo plugin state helper ---
+// Scans the ProseMirror editor state object for the Yjs undo plugin state.
+// ProseMirror stores plugin states as `state[plugin.key]` where key is a
+// generated string like "y-undo$" or "y-undo$1". We check all state keys.
+function getYjsUndoState(editor: Editor): any {
+  try {
+    const state = editor.view.state as any
+    // Scan all string keys on the state object for one that looks like y-undo plugin state
+    for (const key of Object.keys(state)) {
+      if (key.startsWith("y-undo")) {
+        const val = state[key]
+        if (val && val.undoManager) return val
+      }
+    }
+    // Fallback: scan all plugins and try getState
+    for (const plugin of state.plugins) {
+      try {
+        const val = plugin.getState(state)
+        if (val && val.undoManager && typeof val.hasUndoOps === "boolean") {
+          return val
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
 // --- Icons ---
 import { Redo2Icon } from "@/components/tiptap-icons/redo2-icon"
 import { Undo2Icon } from "@/components/tiptap-icons/undo2-icon"
@@ -64,10 +91,14 @@ export function canExecuteUndoRedoAction(
   if (isNodeTypeSelected(editor, ["image"])) return false
 
   try {
-    // Tiptap v3 UndoRedo uses 'historyUndo' / 'historyRedo' commands.
-    // Tiptap v2 History used 'undo' / 'redo'.
-    // Use bracket notation to avoid TypeScript CanCommands type constraints
-    // while still being safe at runtime via the typeof guard.
+    // 1. Check Yjs UndoManager (collab mode) by finding plugin at runtime
+    const yState = getYjsUndoState(editor)
+    if (yState?.undoManager) {
+      if (action === "undo") return yState.hasUndoOps === true || yState.undoManager.undoStack.length > 0
+      return yState.hasRedoOps === true || yState.undoManager.redoStack.length > 0
+    }
+
+    // 2. Tiptap v3 UndoRedo / v2 History fallback (non-collab mode)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const can = editor.can() as Record<string, any>
     if (action === "undo") {
@@ -98,10 +129,23 @@ export function executeUndoRedoAction(
   if (!editor || !editor.isEditable) return false
   if (!canExecuteUndoRedoAction(editor, action)) return false
 
-  const chain = editor.chain().focus()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const c = chain as Record<string, any>
   try {
+    // 1. Try Yjs undo/redo first (collab mode)
+    const yState = getYjsUndoState(editor)
+    if (yState?.undoManager) {
+      editor.view.focus()
+      if (action === "undo") {
+        yState.undoManager.undo()
+      } else {
+        yState.undoManager.redo()
+      }
+      return true
+    }
+
+    // 2. Tiptap commands fallback (non-collab mode)
+    const chain = editor.chain().focus()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = chain as Record<string, any>
     if (action === "undo") {
       return typeof c["historyUndo"] === "function"
         ? c["historyUndo"]().run()
@@ -181,21 +225,31 @@ export function useUndoRedo(config: UseUndoRedoConfig) {
 
   const { editor } = useTiptapEditor(providedEditor)
   const [isVisible, setIsVisible] = useState<boolean>(true)
-  const canExecute = canExecuteUndoRedoAction(editor, action)
+  const [canExecute, setCanExecute] = useState<boolean>(false)
 
   useEffect(() => {
     if (!editor) return
 
     const handleUpdate = () => {
       setIsVisible(shouldShowButton({ editor, hideWhenUnavailable, action }))
+      setCanExecute(canExecuteUndoRedoAction(editor, action))
     }
 
     handleUpdate()
 
     editor.on("transaction", handleUpdate)
 
+    // Also listen for Yjs UndoManager stack changes (collab mode).
+    // Yjs stack changes don't always trigger ProseMirror transactions,
+    // so we poll briefly after each transaction to catch async updates.
+    const intervalId = setInterval(() => {
+      const newCan = canExecuteUndoRedoAction(editor, action)
+      setCanExecute(prev => prev !== newCan ? newCan : prev)
+    }, 500)
+
     return () => {
       editor.off("transaction", handleUpdate)
+      clearInterval(intervalId)
     }
   }, [editor, hideWhenUnavailable, action])
 

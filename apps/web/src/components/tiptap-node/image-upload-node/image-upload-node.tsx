@@ -437,6 +437,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const { accept, limit, maxSize } = props.node.attrs
   const inputRef = useRef<HTMLInputElement>(null)
   const extension = props.extension
+  const isEditable = props.editor.isEditable
 
   const uploadOptions: UploadOptions = {
     maxSize,
@@ -447,8 +448,20 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
     onError: extension.options.onError,
   }
 
+  // All hooks must be called before any conditional return
   const { fileItems, uploadFiles, removeFileItem, clearAllFiles } =
     useFileUpload(uploadOptions)
+
+  // In read-only / preview mode, hide the upload placeholder entirely
+  if (!isEditable) {
+    return (
+      <NodeViewWrapper className="tiptap-image-upload-readonly">
+        <div className="flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+          <span>图片未上传</span>
+        </div>
+      </NodeViewWrapper>
+    )
+  }
 
   const handleUpload = async (files: File[]) => {
     const urls = await uploadFiles(files)

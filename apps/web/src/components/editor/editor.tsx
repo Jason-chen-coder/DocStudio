@@ -18,6 +18,8 @@ interface EditorProps {
   // Comment persistence
   initialCommentThreads?: CommentThread[];
   onCommentsChange?: (threads: CommentThread[]) => void;
+  // Space ID for @mention member lookup
+  spaceId?: string;
 }
 
 export function Editor({
@@ -30,6 +32,7 @@ export function Editor({
   onReady,
   initialCommentThreads,
   onCommentsChange,
+  spaceId,
 }: EditorProps) {
   return (
     <div className="editor-container h-full">
@@ -43,6 +46,7 @@ export function Editor({
         onReady={onReady}
         initialCommentThreads={initialCommentThreads}
         onCommentsChange={onCommentsChange}
+        spaceId={spaceId}
       />
     </div>
   );

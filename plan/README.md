@@ -10,9 +10,9 @@
 | ----- | ---------------- | --------- | -------- | ---------------------------------------------------- |
 | 0     | 基础设施         | ✅ 已完成 | -        | 项目架构搭建、用户认证系统                           |
 | 1     | 核心基础功能     | ✅ 已完成 | 4-6周    | 工作空间、文档CRUD、编辑器、文档树                   |
-| 2     | 公开访问层       | 🌐 待开发 | 2-3周    | 项目首页、公开内容展示、SEO优化                      |
-| 3     | 团队协作功能     | 👥 待开发 | 3-4周    | 权限管理、私密分享                                   |
-| 4     | 高级功能         | ✅ 已完成 | 4-6周    | 实时协作、文件上传、版本历史、全文搜索、活动日志与最近访问 |
+| 2     | 公开访问层       | ✅ 已完成 | 2-3周    | 首页、探索页、公开空间/文档浏览、SEO（sitemap/robots/JSON-LD/OG Tags） |
+| 3     | 团队协作功能     | ✅ 已完成 | 3-4周    | 权限/成员/邀请/分享/分享管理/Rate Limiting 全部完成 |
+| 4     | 高级功能         | ✅ 已完成 | 4-6周    | 实时协作、文件上传（Sharp 压缩+缩略图+附件）、版本历史、全文搜索、活动日志 |
 | 5     | 超级管理员系统   | ✅ 已完成 | 2-3周    | 平台级管理控制台、用户管理、账号禁用删除             |
 | 6     | 数据与洞察(Post) | 💡 规划中 | 3-4周    | 文档访问统计、PV/UV、热门文档、仪表盘看板            |
 
@@ -23,12 +23,12 @@
 ## 📁 文档列表
 
 - [Stage 0: 基础设施](./stage-0-基础设施.md) ✅
-- [Stage 1: 核心基础功能](./stage-1-核心基础功能.md)
-- [Stage 2: 公开访问层](./stage-2-公开访问层.md)
-- [Stage 3: 团队协作功能](./stage-3-团队协作功能.md)
-- [Stage 4: 高级功能](./stage-4-高级功能.md)
+- [Stage 1: 核心基础功能](./stage-1-核心基础功能.md) ✅
+- [Stage 2: 公开访问层](./stage-2-公开访问层.md) ✅
+- [Stage 3: 团队协作功能](./stage-3-团队协作功能.md) ✅
+- [Stage 4: 高级功能](./stage-4-高级功能.md) ✅
 - [Stage 4 补充: 活动日志与最近访问](./stage-4-活动日志与最近访问.md) ✅
-- [Stage 4 补充: 文档模板系统](./stage-4-文档模板.md) 📋
+- [Stage 4 补充: 文档模板系统](./stage-4-文档模板.md) ✅
 - [Stage 5: 超级管理员系统](./stage-5-超级管理员.md) ✅
 - [Stage 6: 数据与洞察 (Post-MVP)](./stage-6-数据与洞察.md) 💡
 
@@ -80,29 +80,33 @@ DocStudio 是一个**实时协作的知识管理平台**，具有两种使用模
 - 富文本编辑器 ✅
 - 文档树导航 ✅
 
-### 🎯 Milestone 2: 公开展示（Stage 2）
+### 🎯 Milestone 2: 公开展示（Stage 2）✅
 
 **目标**: 产品具备对外展示能力，支持知识分享
 
-- 项目首页
-- 公开工作空间展示
-- 公开内容浏览
-- SEO 优化
+- 项目首页 ✅
+- 公开工作空间展示 ✅（探索页 + 公开空间详情页）
+- 公开内容浏览 ✅（公开文档只读阅读）
+- SEO 优化 ✅（sitemap.xml / robots.txt / JSON-LD / OG & Twitter Cards）
 
-### 🎯 Milestone 3: 团队协作（Stage 3）
+### 🎯 Milestone 3: 团队协作（Stage 3）✅
 
 **目标**: 支持团队内部协作和安全分享
 
-- 权限管理系统
-- 成员邀请和管理
-- 私密分享链接
+- 权限管理系统 ✅
+- 成员邀请和管理 ✅
+- 私密分享链接 ✅
+- 分享列表查询 API（`GET /share/doc/:docId/list`）✅
+- 删除分享链接 API（`DELETE /share/:shareId`）✅
+- 安全加固（`@nestjs/throttler` Rate Limiting + FastifyThrottlerGuard）✅
+- 前端分享管理 UI（列表 + 创建 + 删除）✅
 
-### 🎯 Milestone 4: 企业级（Stage 4）
+### 🎯 Milestone 4: 企业级（Stage 4）✅
 
 **目标**: 功能完整的企业级文档协作平台
 
-- 实时多人协作
-- 文件和图片上传 ✅
+- 实时多人协作 ✅
+- 文件和图片上传 ✅（Sharp 压缩 + 缩略图 + WebP 转换 + 通用附件）
 - 版本历史和恢复 ✅
 - 全文搜索 ✅
 - 活动日志 / 最近访问 ✅
@@ -183,6 +187,16 @@ DocStudio 是一个**实时协作的知识管理平台**，具有两种使用模
   - 后端：SearchModule 全文搜索 API
   - 前端：全局搜索 UI，支持文档标题和内容搜索
   - 搜索结果高亮与跳转
+- **2026-03-19**: Plan 审计与状态同步
+  - Stage 2 更新为 ⚠️ 部分完成（首页/探索/公开浏览已完成，SEO 待补）
+  - Stage 3 更新为 ⚠️ 部分完成（核心权限/邀请/分享已完成，管理 API 和安全加固待补）
+  - Stage 4 高级功能更新为 ✅ 已完成
+  - Stage 4 文档模板更新为 ✅ 已完成
+  - 仪表盘/空间首页 UI 大幅升级（Hero Banner、动画、CountUp、卡片式布局）
+  - 全局弹窗统一 AnimatedModal 动画
+  - 侧边栏文档树 UI 升级
+  - 用户菜单、Dropdown 组件优化（去黑边、圆角、图标容器）
+  - 编辑器功能补全：Slash Commands、表格、Callout、@提及、图片上传+缩放
 - **2026-03-17**: 活动日志与最近访问功能（Stage 4 补充）已完成
   - 数据库：ActivityLog（活动日志）+ DocumentVisit（最近访问）两表设计
   - 后端：ActivityModule（全局模块），3 个 API（最近文档/个人活动/空间活动）
@@ -190,6 +204,21 @@ DocStudio 是一个**实时协作的知识管理平台**，具有两种使用模
   - 前端：Dashboard 最近访问卡片 + 活动时间线、空间活动日志页面
   - 已删除文档保护：点击前验证存在性，toast 提示不跳转
   - 活动日志查看文档进入只读模式，提供"进入编辑"按钮
+
+- **2026-03-20**: Stage 3 团队协作功能全部完成
+  - 后端：`GET /share/doc/:docId/list`（分享列表查询）+ `DELETE /share/:shareId`（删除分享）
+  - 安全加固：`@nestjs/throttler` 全局限流（60次/分钟）+ 密码验证限流（5次/5分钟/IP）
+  - Fastify 适配：自定义 `FastifyThrottlerGuard` 正确获取客户端 IP
+  - 前端 `ShareDialog` 升级：双视图（列表管理 + 创建链接），支持查看/复制/删除分享链接
+
+- **2026-03-20**: Stage 2 SEO 补全 + Stage 4 文件上传补全
+  - Stage 2 SEO 全部完成：`sitemap.xml` 动态生成、`robots.txt`、JSON-LD 结构化数据（WebSite/CollectionPage/Space/Article/Breadcrumb）、完整 OG/Twitter Card meta 标签
+  - 探索页增强：排序选择器（最近更新/创建时间/文档数/名称）、每页数量选择（12/24/48）、页码分页器、后端 sort/order 参数
+  - 公开文档工具栏：复制链接 / 导出 HTML / 打印
+  - Stage 4 文件上传补全：Sharp 图片压缩（max 2560px, WebP quality 82）、200×200 缩略图生成、WebP 自动转换、通用附件上传（13 种 MIME 类型, 20MB）
+  - 新增 `ImageProcessingService`、`POST /files/upload-attachment` 端点
+  - 全局站点配置 `site-config.ts`（URL/SEO/keywords 统一管理）
+  - 修复 4 个 TypeScript 编译错误（dashboard-stats / comment-bubble-menu / search-dialog / simple-editor / use-collaboration）
 
 ---
 

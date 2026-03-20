@@ -24,6 +24,7 @@ import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { DashboardStats } from '@/components/activity/dashboard-stats';
 import CountUp from '@/components/ui/count-up';
 import { FadeIn } from '@/components/ui/fade-in';
+import { AnimatedModal } from '@/components/ui/animated-modal';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -343,12 +344,8 @@ function FullListModal({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+    <AnimatedModal open onClose={onClose} className="w-full max-w-2xl mx-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between px-7 py-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center`}>
@@ -369,6 +366,6 @@ function FullListModal({
           {children}
         </div>
       </div>
-    </div>
+    </AnimatedModal>
   );
 }

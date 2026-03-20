@@ -31,9 +31,10 @@ async function bootstrap() {
   await app.register(compression, { encodings: ['gzip', 'deflate'] });
 
   // 注册 @fastify/multipart 用于文件上传
+  // 全局限制 20MB（附件上传），各 endpoint 内部各自校验更严格的限制
   await app.register(multipart, {
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: 20 * 1024 * 1024, // 20MB
     },
   });
 

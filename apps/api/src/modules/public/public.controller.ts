@@ -10,10 +10,12 @@ export class PublicController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('sort') sort?: string,
+    @Query('order') order?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.publicService.findAllSpaces(pageNum, limitNum, search);
+    return this.publicService.findAllSpaces(pageNum, limitNum, search, sort, order);
   }
 
   @Get('spaces/:id')

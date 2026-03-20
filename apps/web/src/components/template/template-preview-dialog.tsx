@@ -6,6 +6,7 @@ import type { DocumentTemplate } from '@/types/template';
 import { CATEGORY_LABELS, SCOPE_LABELS } from '@/types/template';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AnimatedModal } from '@/components/ui/animated-modal';
 
 // Minimal Tiptap JSON → HTML renderer (no editor dependency)
 function renderTiptapJson(node: any): string {
@@ -100,13 +101,9 @@ export function TemplatePreviewDialog({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col mx-4">
+    <AnimatedModal open={open} onClose={() => onOpenChange(false)} className="w-full max-w-2xl mx-4" zIndex="z-[60]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -198,6 +195,6 @@ export function TemplatePreviewDialog({
         .dark .template-preview blockquote { border-left-color: #4b5563; color: #9ca3af; }
         .dark .template-preview hr { border-top-color: #374151; }
       `}</style>
-    </div>
+    </AnimatedModal>
   );
 }

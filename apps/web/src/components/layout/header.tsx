@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getCdnUrl } from '@/lib/cdn';
-import { LogOut, UserCircle, Search } from 'lucide-react';
+import { LogOut, UserCircle, Search, Moon, Sun, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,42 +54,81 @@ export function Header() {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow shadow-sm hover:shadow-md h-9 w-9">
+                <button className="rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 h-10 w-10">
                   {avatarUrl ? (
                     <Image
                       src={avatarUrl}
                       alt={user.name || 'User'}
-                      width={36}
-                      height={36}
+                      width={40}
+                      height={40}
                       unoptimized
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm select-none">
+                    <div className="w-full h-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm select-none">
                       {(user.name || 'U').charAt(0).toUpperCase()}
                     </div>
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
-                <DropdownMenuLabel className="font-normal py-3">
-                  <div className="flex flex-col space-y-1.5">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+              <DropdownMenuContent align="end" className="w-64" sideOffset={8}>
+                {/* User info header */}
+                <div className="px-3 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm flex-shrink-0">
+                      {avatarUrl ? (
+                        <Image
+                          src={avatarUrl}
+                          alt={user.name || 'User'}
+                          width={40}
+                          height={40}
+                          unoptimized
+                          className="object-cover w-full h-full rounded-xl"
+                        />
+                      ) : (
+                        (user.name || 'U').charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{user.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer py-2.5">
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    <span>个人资料</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => logout()} className="cursor-pointer py-2.5 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 dark:focus:bg-red-900/10 focus:bg-red-50">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>退出登录</span>
-                </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-700" />
+                <div className="p-1">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer py-2.5 gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        <UserCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium">个人资料</span>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">编辑头像和个人信息</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/spaces" className="cursor-pointer py-2.5 gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium">工作空间</span>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">管理你的工作空间</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-700" />
+                <div className="p-1">
+                  <DropdownMenuItem onClick={() => logout()} className="cursor-pointer py-2.5 gap-3 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 dark:focus:bg-red-900/10 focus:bg-red-50">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-medium">退出登录</span>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

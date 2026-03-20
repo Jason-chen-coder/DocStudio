@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core'
-import { ySyncPlugin, yCursorPlugin, yUndoPlugin, undo, redo } from 'y-prosemirror'
+import { ySyncPlugin, yCursorPlugin, yUndoPlugin, undo, redo, ySyncPluginKey, yUndoPluginKey } from 'y-prosemirror'
+import { UndoManager } from 'yjs'
 import type * as Y from 'yjs'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 
@@ -29,6 +30,12 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
     }
   },
 
+  addStorage() {
+    return {
+      undoManager: null as UndoManager | null,
+    }
+  },
+
   addProseMirrorPlugins() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const plugins: any[] = []
@@ -39,13 +46,10 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
 
     // 1. Sync Plugin (replaces @tiptap/extension-collaboration)
     const fragment = this.options.document.getXmlFragment(this.options.field)
-    plugins.push(ySyncPlugin(fragment))
+    const syncPlugin = ySyncPlugin(fragment)
+    plugins.push(syncPlugin)
 
     // ── Update Batching (50ms debounce) ─────────────────────────────────────
-    // y-prosemirror's ySyncPlugin sends a WebSocket frame on EVERY transaction.
-    // We intercept the Yjs document's 'update' event and debounce it so that
-    // bursts of keystrokes within 50ms window are coalesced into a single frame
-    // before being forwarded to the Hocuspocus provider.
     if (this.options.provider) {
       const provider = this.options.provider
       const ydoc = this.options.document
@@ -53,9 +57,6 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
 
       const flushBatch = () => {
         batchTimer = null
-        // Trigger Hocuspocus to broadcast any pending updates to the server.
-        // The provider tracks which updates have been acknowledged; calling
-        // forceSync resends any un-acked state without duplicating data.
         if (provider.document) {
           const pendingUpdate = provider.unsyncedChanges
           if (pendingUpdate && pendingUpdate > 0) {
@@ -73,10 +74,8 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
         batchTimer = setTimeout(flushBatch, 50)
       }
 
-      // Listen at the Yjs document level (after ySyncPlugin applied the update)
       ydoc.on('update', batchedUpdateHandler)
 
-      // Cleanup when the extension is destroyed
       this.options.document.on('destroy', () => {
         if (batchTimer !== null) clearTimeout(batchTimer)
         ydoc.off('update', batchedUpdateHandler)
@@ -88,9 +87,15 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
       const awareness = this.options.provider.awareness
 
       if (awareness) {
-        // Awareness state is already set in use-collaboration.ts hook,
-        // no need to set it again here — just register the cursor plugin.
-        plugins.push(
+        // Generate a semi-transparent version of the user color for selection highlight
+      const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16)
+        const g = parseInt(hex.slice(3, 5), 16)
+        const b = parseInt(hex.slice(5, 7), 16)
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`
+      }
+
+      plugins.push(
           yCursorPlugin(awareness, {
             cursorBuilder: (user: any) => {
               const cursor = document.createElement('span')
@@ -105,15 +110,53 @@ export const CustomCollaboration = Extension.create<CustomCollaborationOptions>(
               cursor.insertBefore(label, null)
               return cursor
             },
+            // Remote selection decoration: use the user's color at 25% opacity
+            selectionBuilder: (user: any) => {
+              return {
+                class: 'yjs-cursor-selection',
+                style: `--yjs-selection-color: ${hexToRgba(user.color || '#6495ED', 0.25)}`,
+              }
+            },
           })
         )
       }
     }
 
-    // 3. Undo/Redo Plugin (Yjs specific history)
-    plugins.push(yUndoPlugin())
+    // 3. Undo/Redo Plugin — create UndoManager manually to guarantee
+    //    trackedOrigins matches the actual syncPlugin instance.
+    //    This avoids the PluginKey instance mismatch that occurs when
+    //    bundlers create multiple copies of y-prosemirror.
+    const undoManager = new UndoManager(fragment, {
+      trackedOrigins: new Set([ySyncPluginKey, syncPlugin]),
+      captureTransaction: (tr: any) => tr.meta.get('addToHistory') !== false,
+    })
+    this.storage.undoManager = undoManager
+    plugins.push(yUndoPlugin({ undoManager }))
 
     return plugins
+  },
+
+  addCommands() {
+    return {
+      undo: () => ({ state, dispatch }: { state: any; dispatch: any }) => {
+        if (!dispatch) {
+          // Dry-run for can() check
+          return this.storage.undoManager
+            ? this.storage.undoManager.undoStack.length > 0
+            : false
+        }
+        return undo(state)
+      },
+      redo: () => ({ state, dispatch }: { state: any; dispatch: any }) => {
+        if (!dispatch) {
+          // Dry-run for can() check
+          return this.storage.undoManager
+            ? this.storage.undoManager.redoStack.length > 0
+            : false
+        }
+        return redo(state)
+      },
+    }
   },
 
   addKeyboardShortcuts() {
