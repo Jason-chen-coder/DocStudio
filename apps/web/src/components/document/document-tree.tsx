@@ -26,14 +26,12 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronRight,
-  ChevronDown,
   FileText,
-  Plus,
   Trash2,
   GripVertical,
   PenLine,
-  Link,
-  FolderPlus,
+  Link2,
+  FolderOpen,
 } from 'lucide-react';
 import { useDocuments } from '@/hooks/use-documents';
 import { Document } from '@/types/document';
@@ -41,7 +39,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // ─── 常量 ─────────────────────────────────────────────
-const INDENT_WIDTH = 16; // px per depth level
+const INDENT_WIDTH = 20; // px per depth level
 
 // ─── 类型 ────────────────────────────────────────────
 interface TreeNode extends Document {
@@ -114,7 +112,7 @@ function calcOrder(prev: number | undefined, next: number | undefined): number {
 // ─── 主组件 ─────────────────────────────────────────────
 
 export function DocumentTree({ spaceId, className }: { spaceId: string; className?: string }) {
-  const { documents, loading, createDocument, deleteDocument, moveDocument } = useDocuments(spaceId);
+  const { documents, loading, deleteDocument, moveDocument } = useDocuments(spaceId);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -135,7 +133,7 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
     })
   );
 
-  // ─── Projection 算法：根据水平偏移量计算目标 depth 和 parentId ───
+  // ─── Projection 算法 ───
   const getProjection = useCallback(
     (
       items: TreeNode[],
@@ -156,7 +154,6 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
       const maxDepth = previousItem ? previousItem.depth + 1 : 0;
       const depth = Math.min(Math.max(dragDepth + activeItem.depth, minDepth), maxDepth);
 
-      // 根据投影 depth 确定 parentId
       let parentId: string | null = null;
       if (depth > 0 && previousItem) {
         if (previousItem.depth === depth) {
@@ -164,7 +161,6 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
         } else if (previousItem.depth < depth) {
           parentId = previousItem.id;
         } else {
-          // depth 减小时，沿祖先链向上找合适的父节点
           let ancestor = previousItem;
           while (ancestor.depth > depth - 1 && ancestor.parentId) {
             const found = items.find(({ id }) => id === ancestor.parentId);
@@ -213,7 +209,6 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
     const reordered = arrayMove(flatItems, activeIndex, overIndex);
     const newIndex = reordered.findIndex(({ id }) => id === active.id);
 
-    // 用前后同 parentId 的兄弟节点计算新 order（小数位法）
     const prevSibling = reordered
       .slice(0, newIndex)
       .reverse()
@@ -247,17 +242,6 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // const handleCreate = async (parentId?: string, e?: React.MouseEvent) => {
-  //   e?.stopPropagation();
-  //   try {
-  //     const newDoc = await createDocument({ title: '无标题文档', spaceId, parentId });
-  //     if (parentId) setExpanded((prev) => ({ ...prev, [parentId]: true }));
-  //     router.push(`/spaces/${spaceId}/documents/${newDoc.id}`);
-  //   } catch {
-  //     // toast handled in hook
-  //   }
-  // };
-
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -282,11 +266,11 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
 
   if (loading) {
     return (
-      <div className="space-y-1.5 px-1">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="flex items-center gap-2.5 py-2 px-2 animate-pulse">
-            <div className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0" />
-            <div className="h-3.5 rounded bg-gray-100 dark:bg-gray-700 flex-1" style={{ width: `${50 + i * 10}%` }} />
+      <div className="space-y-0.5 px-1">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex items-center gap-2 h-9 px-2 animate-pulse">
+            <div className="w-[18px] h-[18px] rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0" />
+            <div className="h-3.5 rounded bg-gray-100 dark:bg-gray-700" style={{ width: `${40 + i * 12}%` }} />
           </div>
         ))}
       </div>
@@ -295,7 +279,6 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
 
   return (
     <div className={cn('', className)}>
-      {/* 拖拽树 */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -307,14 +290,14 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={flatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-0.5">
+          <div className="space-y-px">
             {flatItems.length === 0 ? (
-              <div className="flex flex-col items-center py-8 text-center">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2.5">
-                  <FileText className="w-5 h-5 text-gray-300 dark:text-gray-500" />
+              <div className="flex flex-col items-center py-10 text-center">
+                <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-3 ring-1 ring-gray-100 dark:ring-gray-700">
+                  <FolderOpen className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                 </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">暂无文档</p>
-                <p className="text-[11px] text-gray-300 dark:text-gray-600 mt-0.5">点击右上角 + 创建</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">还没有文档</p>
+                <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">点击上方 + 开始创建</p>
               </div>
             ) : (
               flatItems.map((item) => (
@@ -341,17 +324,15 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
           </div>
         </SortableContext>
 
-        {/* 拖拽时的浮动卡片预览 */}
+        {/* 拖拽浮动预览 */}
         <DragOverlay dropAnimation={null}>
           {activeItem ? (
             <div
-              className="flex items-center py-1.5 px-3 text-[13px] font-medium bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 pointer-events-none"
-              style={{ paddingLeft: `${activeItem.depth * INDENT_WIDTH + 12}px` }}
+              className="flex items-center h-9 px-3 text-[14.5px] font-medium bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 pointer-events-none"
+              style={{ paddingLeft: `${activeItem.depth * INDENT_WIDTH + 10}px` }}
             >
-              <GripVertical className="w-3 h-3 text-blue-400 mr-1.5 flex-shrink-0" />
-              <div className="w-5 h-5 rounded bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center mr-2 flex-shrink-0">
-                <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              </div>
+              <GripVertical className="w-3.5 h-3.5 text-blue-400 mr-1.5 flex-shrink-0" />
+              <FileText className="w-[18px] h-[18px] text-blue-500 dark:text-blue-400 mr-2 flex-shrink-0" />
               <span className="truncate">{activeItem.title}</span>
             </div>
           ) : null}
@@ -372,8 +353,10 @@ function SortableTreeItem({
   projection,
   activeId,
   pathname,
+  onToggle,
   onDelete,
   onStartRename,
+  onCopyLink,
   setRenamingId,
   setRenameValue,
   router,
@@ -411,7 +394,6 @@ function SortableTreeItem({
   };
 
   const isActive = activeId === item.id;
-  // 拖拽时用 projection 的 depth，否则用节点本身的 depth
   const effectiveDepth = isActive && projection ? projection.depth : item.depth;
   const isCurrentDoc = pathname === `/spaces/${spaceId}/documents/${item.id}`;
   const hasChildren = item.children.length > 0;
@@ -448,41 +430,49 @@ function SortableTreeItem({
           if (e.key === 'Enter' && !isRenaming) router.push(`/spaces/${spaceId}/documents/${item.id}`);
         }}
         className={cn(
-          'group flex items-center py-1.5 pr-2 text-[13px] rounded-lg transition-all relative cursor-pointer select-none',
+          'group flex items-center h-9 pr-1.5 text-[14.5px] rounded-lg transition-all duration-150 cursor-pointer select-none',
           isCurrentDoc
-            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200',
-          isActive && 'opacity-40'
+            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/40',
+          isActive && 'opacity-30'
         )}
         style={{ paddingLeft: `${effectiveDepth * INDENT_WIDTH + 6}px` }}
       >
-        {/* 拖拽手柄（hover 显示） */}
-        <button
+        {/* 拖拽手柄 — 固定宽度，hover 时显示图标，不影响布局 */}
+        <div
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 mr-0.5 cursor-grab active:cursor-grabbing transition-opacity flex-shrink-0"
+          className="w-5 h-5 flex items-center justify-center flex-shrink-0 cursor-grab active:cursor-grabbing rounded hover:bg-gray-200 dark:hover:bg-gray-600"
           title="拖拽排序"
-          tabIndex={-1}
           aria-label="拖拽排序"
         >
-          <GripVertical className="w-3 h-3 text-gray-400" />
-        </button>
-
-        <div className={cn(
-          'w-5 h-5 rounded flex items-center justify-center mr-2 flex-shrink-0 transition-colors',
-          isCurrentDoc
-            ? 'bg-blue-100 dark:bg-blue-800/30'
-            : 'bg-gray-100 dark:bg-gray-700/50 group-hover:bg-gray-200 dark:group-hover:bg-gray-600/50'
-        )}>
-          <FileText className={cn(
-            'w-3 h-3',
-            isCurrentDoc
-              ? 'text-blue-600 dark:text-blue-400'
-              : 'text-gray-400 dark:text-gray-500'
-          )} />
+          <GripVertical className="w-3.5 h-3.5 text-transparent group-hover:text-gray-400 transition-colors" />
         </div>
 
-        {/* 标题 / 内联重命名输入框 */}
+        {/* 展开/折叠箭头 */}
+        {hasChildren ? (
+          <button
+            onClick={(e) => onToggle(item.id, e)}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-600 flex-shrink-0 transition-colors"
+          >
+            <ChevronRight className={cn(
+              'w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform duration-200',
+              isExpanded && 'rotate-90'
+            )} />
+          </button>
+        ) : (
+          <span className="w-1 flex-shrink-0" />
+        )}
+
+        {/* 文档图标 — 直接用图标，不加背景方块 */}
+        <FileText className={cn(
+          'w-[18px] h-[18px] mr-2 flex-shrink-0',
+          isCurrentDoc
+            ? 'text-blue-500 dark:text-blue-400'
+            : 'text-gray-400 dark:text-gray-500'
+        )} />
+
+        {/* 标题 / 重命名输入框 */}
         {isRenaming ? (
           <input
             ref={renameInputRef}
@@ -496,38 +486,46 @@ function SortableTreeItem({
               e.stopPropagation();
             }}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 bg-transparent outline-none border-b border-blue-400 text-sm text-gray-900 dark:text-gray-100 min-w-0"
+            className="flex-1 bg-transparent outline-none border-b-2 border-blue-400 text-[14.5px] text-gray-900 dark:text-gray-100 min-w-0"
           />
         ) : (
-          <span className="truncate flex-1">{item.title}</span>
+          <span className="truncate flex-1 min-w-0">{item.title}</span>
         )}
 
-        {/* Hover 操作菜单（重命名时隐藏） */}
+        {/* Hover 操作按钮 — 只显示一个更多按钮，减少遮挡 */}
         {!isRenaming && (
-          <div className="hidden group-hover:flex items-center gap-0.5 absolute right-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm rounded-lg px-0.5 py-0.5">
+          <div className="hidden group-hover:flex items-center flex-shrink-0 ml-auto pl-1">
+            <button
+              onClick={(e) => onCopyLink(item, e)}
+              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              title="复制链接"
+              aria-label="复制链接"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={(e) => onStartRename(item, e)}
-              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
+              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               title="重命名"
               aria-label="重命名"
             >
-              <PenLine className="w-3 h-3" />
+              <PenLine className="w-3.5 h-3.5" />
             </button>
             <AlertDialog.Root>
               <AlertDialog.Trigger>
                 <button
                   onClick={(e) => e.stopPropagation()}
-                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-red-500 hover:text-red-600"
-                  title="删除"
-                  aria-label="删除"
+                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                  title="移至回收站"
+                  aria-label="移至回收站"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
               </AlertDialog.Trigger>
               <AlertDialog.Content maxWidth="450px" onClick={(e) => e.stopPropagation()}>
-                <AlertDialog.Title>确认删除文档</AlertDialog.Title>
+                <AlertDialog.Title>移至回收站</AlertDialog.Title>
                 <AlertDialog.Description size="2">
-                  确定要删除此文档 <span className="font-semibold text-gray-900 dark:text-gray-100">{item.title}</span> 吗？该操作不可恢复。
+                  确定要将文档 <span className="font-semibold text-gray-900 dark:text-gray-100">{item.title}</span> 移至回收站吗？你可以随时从回收站恢复。
                 </AlertDialog.Description>
                 <Flex gap="3" mt="4" justify="end">
                   <AlertDialog.Cancel>
@@ -537,7 +535,7 @@ function SortableTreeItem({
                   </AlertDialog.Cancel>
                   <AlertDialog.Action>
                     <Button variant="solid" color="red" onClick={(e) => onDelete(item.id, e)}>
-                      确认删除
+                      移至回收站
                     </Button>
                   </AlertDialog.Action>
                 </Flex>

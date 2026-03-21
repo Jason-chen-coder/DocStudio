@@ -65,7 +65,19 @@
       "Bash(find /Users/jasonchen/Desktop/self/doc_studio/node_modules -path */highlight.js/styles -type d)",
       "Bash(python3 /Users/jasonchen/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.0.1/.claude/skills/ui-ux-pro-max/scripts/search.py \"document viewer shared reading content-first minimal elegant\" --design-system -p \"DocStudio Share Page\")",
       "Bash(python3 /Users/jasonchen/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.0.1/.claude/skills/ui-ux-pro-max/scripts/search.py \"content reader document elegant minimal\" --domain style -n 3)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "mcp__Desktop_Commander__list_directory",
+      "mcp__Desktop_Commander__read_file",
+      "Bash(find /Users/jasonchen/Desktop/self/doc_studio/apps/web -type f \\\\\\(-name *sidebar* -o -name *navigation* \\\\\\))",
+      "Bash(ls -la /Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\\\\\(main\\\\\\)/dashboard/)",
+      "Bash(ls -la /Users/jasonchen/Desktop/self/doc_studio/apps/web/src/app/\\\\\\(main\\\\\\)/spaces/[id]/)",
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/docStudio_dev?schema=public\" npx prisma migrate dev --name add-soft-delete-and-favorites --schema=apps/api/prisma/schema.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/docStudio_dev?schema=public\" pnpm --filter api exec prisma generate)",
+      "Bash(lsof -ti:3000)",
+      "mcp__Desktop_Commander__start_search",
+      "mcp__Desktop_Commander__stop_search",
+      "mcp__Desktop_Commander__get_file_info"
     ]
   }
 }

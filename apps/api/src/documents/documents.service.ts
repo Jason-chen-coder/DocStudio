@@ -86,7 +86,7 @@ export class DocumentsService {
 
   async findAll(spaceId: string) {
     const docs = await this.prisma.document.findMany({
-      where: { spaceId },
+      where: { spaceId, deletedAt: null },
       orderBy: { order: 'asc' },
       select: {
         id: true,
@@ -109,7 +109,7 @@ export class DocumentsService {
 
   /** Lightweight existence check — no side effects, no relations loaded */
   async exists(id: string): Promise<boolean> {
-    const count = await this.prisma.document.count({ where: { id } });
+    const count = await this.prisma.document.count({ where: { id, deletedAt: null } });
     return count > 0;
   }
 
@@ -177,18 +177,33 @@ export class DocumentsService {
     return doc;
   }
 
+  /** 软删除：将文档移至回收站 */
   async remove(id: string, userId?: string) {
     const doc = await this.prisma.document.findUnique({
       where: { id },
       include: { space: { select: { name: true } } },
     });
 
-    const result = await this.prisma.document.delete({
-      where: { id },
-    });
+    if (!doc) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    // 软删除：设置 deletedAt，同时将子文档一并软删除
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.document.update({
+        where: { id },
+        data: { deletedAt: now },
+      }),
+      // 子文档也一并移入回收站
+      this.prisma.document.updateMany({
+        where: { parentId: id, deletedAt: null },
+        data: { deletedAt: now },
+      }),
+    ]);
 
     // 记录删除活动
-    if (userId && doc) {
+    if (userId) {
       this.activityService.log({
         userId,
         action: ActivityAction.DELETE,
@@ -200,7 +215,158 @@ export class DocumentsService {
       });
     }
 
-    return result;
+    return { success: true };
+  }
+
+  /** 获取空间回收站列表 */
+  async findTrash(spaceId: string) {
+    return this.prisma.document.findMany({
+      where: {
+        spaceId,
+        deletedAt: { not: null },
+      },
+      orderBy: { deletedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        parentId: true,
+        deletedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  /** 恢复文档（从回收站） */
+  async restore(id: string, userId?: string) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      include: { space: { select: { name: true } } },
+    });
+
+    if (!doc) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+    if (!doc.deletedAt) {
+      throw new BadRequestException('Document is not in trash');
+    }
+
+    // 恢复文档及其子文档
+    await this.prisma.$transaction([
+      this.prisma.document.update({
+        where: { id },
+        data: { deletedAt: null },
+      }),
+      this.prisma.document.updateMany({
+        where: { parentId: id, deletedAt: doc.deletedAt },
+        data: { deletedAt: null },
+      }),
+    ]);
+
+    // 记录恢复活动
+    if (userId) {
+      this.activityService.log({
+        userId,
+        action: ActivityAction.RESTORE,
+        entityType: EntityType.DOCUMENT,
+        entityId: id,
+        entityName: doc.title,
+        spaceId: doc.spaceId,
+        spaceName: doc.space.name,
+      });
+    }
+
+    return { success: true };
+  }
+
+  /** 永久删除（从回收站彻底删除） */
+  async permanentlyDelete(id: string) {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+    if (!doc.deletedAt) {
+      throw new BadRequestException(
+        'Document must be in trash before permanent deletion',
+      );
+    }
+
+    return this.prisma.document.delete({ where: { id } });
+  }
+
+  // ─── 收藏功能 ───────────────────────────────────────────
+
+  /** 收藏文档 */
+  async favorite(documentId: string, userId: string) {
+    // upsert 避免重复
+    return this.prisma.documentFavorite.upsert({
+      where: { userId_documentId: { userId, documentId } },
+      create: { userId, documentId },
+      update: {},
+    });
+  }
+
+  /** 取消收藏 */
+  async unfavorite(documentId: string, userId: string) {
+    return this.prisma.documentFavorite
+      .delete({
+        where: { userId_documentId: { userId, documentId } },
+      })
+      .catch(() => {
+        // 不存在也不报错
+        return null;
+      });
+  }
+
+  /** 获取收藏列表 */
+  async getFavorites(userId: string) {
+    const favorites = await this.prisma.documentFavorite.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        document: {
+          select: {
+            id: true,
+            title: true,
+            spaceId: true,
+            updatedAt: true,
+            deletedAt: true,
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 过滤掉已删除的文档
+    return favorites
+      .filter((f) => f.document.deletedAt === null)
+      .map((f) => ({
+        id: f.id,
+        documentId: f.documentId,
+        createdAt: f.createdAt,
+        document: f.document,
+      }));
+  }
+
+  /** 检查是否已收藏 */
+  async isFavorited(documentId: string, userId: string): Promise<boolean> {
+    const count = await this.prisma.documentFavorite.count({
+      where: { userId, documentId },
+    });
+    return count > 0;
   }
 
   /**

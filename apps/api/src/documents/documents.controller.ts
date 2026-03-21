@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Head,
   Post,
   Body,
   Patch,
@@ -10,6 +9,7 @@ import {
   UseGuards,
   Req,
   HttpCode,
+  Query,
   NotFoundException,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
@@ -22,6 +22,24 @@ import { SpacePermissionGuard } from '../common/guards/space-permission.guard';
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
+
+  // ─── 收藏功能（放在 :id 路由之前，避免路由冲突） ───
+
+  @UseGuards(JwtAuthGuard)
+  @Get('favorites')
+  getFavorites(@Req() req: any) {
+    return this.documentsService.getFavorites(req.user.id);
+  }
+
+  // ─── 回收站（放在 :id 路由之前） ───
+
+  @UseGuards(JwtAuthGuard, SpacePermissionGuard)
+  @Get('trash')
+  findTrash(@Query('spaceId') spaceId: string) {
+    return this.documentsService.findTrash(spaceId);
+  }
+
+  // ─── CRUD ───
 
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Post()
@@ -73,9 +91,38 @@ export class DocumentsController {
     return this.documentsService.move(id, moveDocumentDto);
   }
 
+  /** 软删除（移至回收站） */
   @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
     return this.documentsService.remove(id, req.user.id);
+  }
+
+  /** 恢复文档 */
+  @UseGuards(JwtAuthGuard, SpacePermissionGuard)
+  @Post(':id/restore')
+  restore(@Param('id') id: string, @Req() req: any) {
+    return this.documentsService.restore(id, req.user.id);
+  }
+
+  /** 永久删除 */
+  @UseGuards(JwtAuthGuard, SpacePermissionGuard)
+  @Delete(':id/permanent')
+  permanentlyDelete(@Param('id') id: string) {
+    return this.documentsService.permanentlyDelete(id);
+  }
+
+  // ─── 收藏操作 ───
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/favorite')
+  favorite(@Param('id') id: string, @Req() req: any) {
+    return this.documentsService.favorite(id, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/favorite')
+  unfavorite(@Param('id') id: string, @Req() req: any) {
+    return this.documentsService.unfavorite(id, req.user.id);
   }
 }

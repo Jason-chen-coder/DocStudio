@@ -113,7 +113,28 @@ export function useDocuments(spaceId: string) {
     try {
       await documentService.deleteDocument(id);
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
-      toast.success('文档删除成功');
+      toast.success('已移至回收站', {
+        action: {
+          label: '撤销',
+          onClick: async () => {
+            try {
+              await documentService.restoreDocument(id);
+              fetchDocuments(true);
+              toast.success('文档已恢复');
+            } catch {
+              toast.error('恢复失败');
+            }
+          },
+        },
+        actionButtonStyle: {
+          backgroundColor: '#3b82f6',
+          color: '#fff',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: '500',
+          padding: '4px 12px',
+        },
+      });
 
       // If the deleted document is the current one, redirect to space home
       if (params?.documentId === id) {

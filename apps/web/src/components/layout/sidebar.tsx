@@ -6,8 +6,9 @@ import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
-import { ChevronLeft, Plus, LayoutDashboard, FolderOpen, Users } from 'lucide-react';
+import { ChevronLeft, Plus, LayoutDashboard, FolderOpen, Users, Trash2, Star } from 'lucide-react';
 import { DocumentTree } from '@/components/document/document-tree';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { useDocuments } from '@/hooks/use-documents';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,6 +83,7 @@ export function Sidebar() {
   const mainLinks = [
     { href: '/dashboard', label: '仪表盘', Icon: LayoutDashboard },
     { href: '/spaces', label: '工作空间', Icon: FolderOpen },
+    { href: '/favorites', label: '我的收藏', Icon: Star },
   ];
 
   return (
@@ -105,9 +107,10 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
-              className="absolute inset-0 p-4 space-y-6 overflow-y-auto bg-white dark:bg-gray-800"
+              className="absolute inset-0 flex flex-col bg-white dark:bg-gray-800"
             >
-              <div className="space-y-4">
+              {/* 顶部固定区域：返回 + 空间信息 + 文档标签 */}
+              <div className="flex-shrink-0 p-4 pb-0 space-y-4">
                 {/* Space header */}
                 <div className="flex items-center justify-between">
                   <Link
@@ -148,9 +151,27 @@ export function Sidebar() {
                   <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">文档</span>
                   <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
                 </div>
+              </div>
 
-                {/* Document tree */}
+              {/* 文档树 — 占满剩余空间，独立滚动 */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2">
                 <DocumentTree spaceId={spaceId} />
+              </div>
+
+              {/* 回收站 — 固定在底部 */}
+              <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 dark:border-gray-700/50">
+                <Link
+                  href={`/spaces/${spaceId}/trash`}
+                  className={cn(
+                    'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors',
+                    pathname === `/spaces/${spaceId}/trash`
+                      ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-300'
+                  )}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  回收站
+                </Link>
               </div>
             </motion.nav>
           ) : (

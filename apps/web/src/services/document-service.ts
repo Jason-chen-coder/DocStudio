@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api';
-import { CreateDocumentDto, Document, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
+import { CreateDocumentDto, Document, DocumentFavorite, MoveDocumentDto, UpdateDocumentDto } from '@/types/document';
 import pako from 'pako';
 
 export const documentService = {
@@ -59,6 +59,42 @@ export const documentService = {
 
   async deleteDocument(id: string): Promise<void> {
     return apiRequest<void>(`/documents/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ─── 回收站 ───
+
+  async getTrash(spaceId: string): Promise<Document[]> {
+    return apiRequest<Document[]>(`/documents/trash?spaceId=${spaceId}`, { cache: 'no-store' });
+  },
+
+  async restoreDocument(id: string): Promise<void> {
+    return apiRequest<void>(`/documents/${id}/restore`, {
+      method: 'POST',
+    });
+  },
+
+  async permanentlyDeleteDocument(id: string): Promise<void> {
+    return apiRequest<void>(`/documents/${id}/permanent`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ─── 收藏 ───
+
+  async getFavorites(): Promise<DocumentFavorite[]> {
+    return apiRequest<DocumentFavorite[]>('/documents/favorites', { cache: 'no-store' });
+  },
+
+  async favoriteDocument(id: string): Promise<void> {
+    return apiRequest<void>(`/documents/${id}/favorite`, {
+      method: 'POST',
+    });
+  },
+
+  async unfavoriteDocument(id: string): Promise<void> {
+    return apiRequest<void>(`/documents/${id}/favorite`, {
       method: 'DELETE',
     });
   },

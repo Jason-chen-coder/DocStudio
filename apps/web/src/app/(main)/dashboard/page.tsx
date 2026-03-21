@@ -16,6 +16,7 @@ import {
   Sparkles,
   X,
   TrendingUp,
+  Star,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -25,6 +26,9 @@ import { DashboardStats } from '@/components/activity/dashboard-stats';
 import CountUp from '@/components/ui/count-up';
 import { FadeIn } from '@/components/ui/fade-in';
 import { AnimatedModal } from '@/components/ui/animated-modal';
+import { documentService } from '@/services/document-service';
+import { DocumentFavorite } from '@/types/document';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -34,6 +38,7 @@ export default function DashboardPage() {
 
   const [showRecentModal, setShowRecentModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
+  const [favorites, setFavorites] = useState<DocumentFavorite[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -42,6 +47,8 @@ export default function DashboardPage() {
         .then(setSpaces)
         .catch(console.error)
         .finally(() => setLoading(false));
+
+      documentService.getFavorites().then(setFavorites).catch(console.error);
     }
   }, [user]);
 
@@ -142,6 +149,44 @@ export default function DashboardPage() {
       <FadeIn delay={0.15} y={30}>
       <DashboardStats />
       </FadeIn>
+
+      {/* ═══════ Favorites ═══════ */}
+      {favorites.length > 0 && (
+        <FadeIn delay={0.2} y={30}>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-7">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                收藏文档
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">快速访问你收藏的文档</p>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {favorites.slice(0, 6).map((fav) => (
+              <Link
+                key={fav.id}
+                href={`/spaces/${fav.document.spaceId}/documents/${fav.document.id}`}
+                className="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-amber-200 dark:hover:border-amber-800 hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-all"
+              >
+                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                    {fav.document.title || '无标题文档'}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    {fav.document.creator?.name || '未知'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+        </FadeIn>
+      )}
 
       {/* ═══════ Recent Documents + Activity ═══════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

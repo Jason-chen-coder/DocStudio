@@ -15,11 +15,29 @@ export interface Document {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  deletedAt?: string | null; // 软删除时间（回收站）
   children?: Document[]; // For tree structure
   creator?: {
     id: string;
     name: string;
     avatarUrl?: string;
+  };
+}
+
+export interface DocumentFavorite {
+  id: string;
+  documentId: string;
+  createdAt: string;
+  document: {
+    id: string;
+    title: string;
+    spaceId: string;
+    updatedAt: string;
+    creator?: {
+      id: string;
+      name: string;
+      avatarUrl?: string;
+    };
   };
 }
 

@@ -22,7 +22,13 @@ import {
   ArrowDown,
   FolderOpen,
   ExternalLink,
+  Trash2,
+  Star,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { documentService } from '@/services/document-service';
+import { toast } from 'sonner';
 import { TemplatePickerModal } from '@/components/template/template-picker-modal';
 import { FadeIn } from '@/components/ui/fade-in';
 import type { Document } from '@/types/document';
@@ -65,13 +71,55 @@ function DocumentTable({
   documents,
   spaceId,
   currentUserId,
+  onDelete,
 }: {
   documents: Document[];
   spaceId: string;
   currentUserId?: string;
+  onDelete?: (id: string) => void;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Load favorites on mount
+  useEffect(() => {
+    documentService.getFavorites().then((favs) => {
+      setFavoriteIds(new Set(favs.map((f) => f.documentId)));
+    }).catch(console.error);
+  }, []);
+
+  const toggleFavorite = async (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isFav = favoriteIds.has(docId);
+    // Optimistic update
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(docId);
+      else next.add(docId);
+      return next;
+    });
+    try {
+      if (isFav) {
+        await documentService.unfavoriteDocument(docId);
+      } else {
+        await documentService.favoriteDocument(docId);
+        toast.success('已收藏');
+      }
+    } catch {
+      // Revert on error
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(docId);
+        else next.delete(docId);
+        return next;
+      });
+      toast.error(isFav ? '取消收藏失败' : '收藏失败');
+    }
+  };
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -96,6 +144,11 @@ function DocumentTable({
     });
   }, [documents, sortKey, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  // 当数据变化后如果当前页越界，自动回到第一页
+  const safePage = Math.min(page, totalPages);
+  const paginatedDocs = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return null;
     return sortDir === 'asc'
@@ -103,113 +156,167 @@ function DocumentTable({
       : <ArrowDown className="w-3 h-3 ml-1 inline" />;
   };
 
-  const thClass = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap select-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors";
+  const thBase = "px-5 py-3.5 text-left text-sm font-medium whitespace-nowrap select-none transition-colors";
+  const thSortable = `${thBase} cursor-pointer text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300`;
+  const thStatic = `${thBase} text-gray-400 dark:text-gray-500`;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Table container — scrolls internally */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm">
-            <tr className="border-b border-gray-100 dark:border-gray-800">
-              <th className={thClass} onClick={() => toggleSort('title')}>
-                名称 <SortIcon col="title" />
+      {/* ─── Fixed Header ─── */}
+      <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className={thSortable} onClick={() => toggleSort('title')}>
+                <span className="inline-flex items-center gap-1">
+                  名称 <SortIcon col="title" />
+                </span>
               </th>
-              <th className={`${thClass} hidden md:table-cell`}>
+              <th className={`${thStatic} hidden md:table-cell`}>
                 所有者
               </th>
               <th
-                className={`${thClass} hidden sm:table-cell`}
+                className={`${thSortable} hidden sm:table-cell`}
                 onClick={() => toggleSort('updatedAt')}
               >
-                最近更新 <SortIcon col="updatedAt" />
+                <span className="inline-flex items-center gap-1">
+                  更新时间 <SortIcon col="updatedAt" />
+                </span>
               </th>
               <th
-                className={`${thClass} hidden lg:table-cell`}
+                className={`${thSortable} hidden lg:table-cell`}
                 onClick={() => toggleSort('createdAt')}
               >
-                创建时间 <SortIcon col="createdAt" />
+                <span className="inline-flex items-center gap-1">
+                  创建时间 <SortIcon col="createdAt" />
+                </span>
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap w-16">
+              <th className={`${thStatic} w-24 text-right pr-5`}>
                 操作
               </th>
             </tr>
           </thead>
-          <tbody>
-            {sorted.map((doc) => {
+        </table>
+      </div>
+
+      {/* ─── Scrollable Body ─── */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <table className="w-full">
+          <tbody className="divide-y divide-gray-100/80 dark:divide-gray-800/60">
+            {paginatedDocs.map((doc) => {
               const avatarUrl = getCdnUrl(doc.creator?.avatarUrl);
               const isOwner = doc.creator?.id === currentUserId;
+              const isFav = favoriteIds.has(doc.id);
               return (
                 <tr
                   key={doc.id}
-                  className="group border-b border-gray-50 dark:border-gray-800/50 last:border-b-0
-                    hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+                  className="group hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors duration-150"
                 >
-                  {/* Name */}
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/spaces/${spaceId}/documents/${doc.id}`}
-                      className="flex items-center gap-3 min-w-0"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0
-                        group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-colors">
-                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate
-                        group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-                        {doc.title || '无标题文档'}
-                      </span>
-                    </Link>
+                  {/* ── Name ── */}
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Favorite star */}
+                      <button
+                        onClick={(e) => toggleFavorite(doc.id, e)}
+                        className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-150 hover:scale-110 active:scale-95"
+                        title={isFav ? '取消收藏' : '收藏'}
+                      >
+                        <Star className={`w-3.5 h-3.5 transition-all duration-200 ${
+                          isFav
+                            ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.4)]'
+                            : 'text-gray-300 dark:text-gray-600 group-hover:text-gray-400 dark:group-hover:text-gray-500 hover:!text-amber-400'
+                        }`} />
+                      </button>
+
+                      {/* Doc icon + title */}
+                      <Link
+                        href={`/spaces/${spaceId}/documents/${doc.id}`}
+                        className="flex items-center gap-3 min-w-0 flex-1"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center flex-shrink-0
+                          ring-1 ring-blue-200/50 dark:ring-blue-700/30
+                          group-hover:from-blue-100 group-hover:to-blue-150 dark:group-hover:from-blue-900/40 dark:group-hover:to-blue-800/30 group-hover:ring-blue-300/60 dark:group-hover:ring-blue-600/40
+                          transition-all duration-200">
+                          <FileText className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate
+                            group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                            {doc.title || '无标题文档'}
+                          </p>
+                          {/* 移动端：所有者 + 更新时间 显示在标题下方 */}
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 sm:hidden truncate">
+                            {isOwner ? '我' : (doc.creator?.name || '未知')} · {timeAgo(doc.updatedAt)}
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
                   </td>
 
-                  {/* Owner */}
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <div className="flex items-center gap-2">
+                  {/* ── Owner ── */}
+                  <td className="px-5 py-3 hidden md:table-cell">
+                    <div className="flex items-center gap-2.5">
                       {avatarUrl ? (
                         <Image
                           src={avatarUrl}
                           alt={doc.creator?.name || ''}
-                          width={20}
-                          height={20}
+                          width={24}
+                          height={24}
                           unoptimized
-                          className="rounded-full flex-shrink-0"
+                          className="rounded-full flex-shrink-0 ring-1 ring-gray-200 dark:ring-gray-600"
                         />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                          <Users className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center flex-shrink-0 ring-1 ring-gray-200/60 dark:ring-gray-600/40">
+                          <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                            {(doc.creator?.name || '?').charAt(0).toUpperCase()}
+                          </span>
                         </div>
                       )}
-                      <span className="text-gray-600 dark:text-gray-400 text-xs truncate max-w-[120px]">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px]">
                         {isOwner ? '我' : (doc.creator?.name || '未知')}
                       </span>
                     </div>
                   </td>
 
-                  {/* Updated At */}
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                      {formatShortDate(doc.updatedAt)}
+                  {/* ── Updated At ── */}
+                  <td className="px-5 py-3 hidden sm:table-cell">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+                      {timeAgo(doc.updatedAt)}
                     </span>
                   </td>
 
-                  {/* Created At */}
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {/* ── Created At ── */}
+                  <td className="px-5 py-3 hidden lg:table-cell">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
                       {formatShortDate(doc.createdAt || doc.updatedAt)}
                     </span>
                   </td>
 
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/spaces/${spaceId}/documents/${doc.id}`}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg
-                        text-gray-400 hover:text-blue-600 dark:hover:text-blue-400
-                        hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                      title="打开文档"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+                  {/* ── Actions ── */}
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/spaces/${spaceId}/documents/${doc.id}`}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg
+                          text-gray-400 hover:text-blue-600 dark:hover:text-blue-400
+                          hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-150"
+                        title="打开文档"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                      {onDelete && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg
+                            text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400
+                            hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-150
+                            opacity-0 group-hover:opacity-100"
+                          title="移至回收站"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -217,6 +324,48 @@ function DocumentTable({
           </tbody>
         </table>
       </div>
+
+      {/* ─── Pagination Footer ─── */}
+      {sorted.length > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+          {/* Left: total count + page size */}
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+            <span>共 <span className="font-medium text-gray-700 dark:text-gray-300">{sorted.length}</span> 篇文档</span>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors cursor-pointer"
+            >
+              {[10, 20, 50].map((n) => (
+                <option key={n} value={n}>{n} 条/页</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Right: page navigation */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              第 <span className="font-medium text-gray-700 dark:text-gray-300">{safePage}</span> / {totalPages} 页
+            </span>
+            <div className="flex items-center gap-1 ml-2">
+              <button
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage <= 1}
+                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage >= totalPages}
+                className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -232,7 +381,7 @@ export default function SpaceDetailPage() {
   const [spaceLoading, setSpaceLoading] = useState(true);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
-  const { documents, loading: docsLoading, createDocument } = useDocuments(id);
+  const { documents, loading: docsLoading, createDocument, deleteDocument } = useDocuments(id);
 
   useEffect(() => {
     async function loadSpace() {
@@ -453,6 +602,7 @@ export default function SpaceDetailPage() {
             documents={documents}
             spaceId={space.id}
             currentUserId={user?.id}
+            onDelete={deleteDocument}
           />
         )}
       </div>
