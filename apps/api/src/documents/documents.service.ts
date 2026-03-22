@@ -9,7 +9,13 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { MoveDocumentDto } from './dto/move-document.dto';
 import { SnapshotsService } from '../snapshots/snapshots.service';
 import { ActivityService } from '../activity/activity.service';
-import { ActivityAction, EntityType } from '@prisma/client';
+import {
+  ActivityAction,
+  EntityType,
+  NotificationType,
+  DocumentAccessLevel,
+} from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class DocumentsService {
@@ -17,7 +23,54 @@ export class DocumentsService {
     private prisma: PrismaService,
     private snapshotsService: SnapshotsService,
     private activityService: ActivityService,
+    private notificationsService: NotificationsService,
   ) {}
+
+  /**
+   * 评论通知：当有人在文档中添加评论或回复时，通知文档创建者和其他评论参与者
+   */
+  async notifyComment(params: {
+    documentId: string;
+    actorId: string;
+    actorName: string;
+    commentText: string;
+    threadParticipantIds?: string[]; // 该评论线程中的其他参与者 userId
+  }): Promise<void> {
+    const doc = await this.prisma.document.findUnique({
+      where: { id: params.documentId },
+      select: { id: true, title: true, spaceId: true, createdBy: true },
+    });
+
+    if (!doc) return;
+
+    // 收集需要通知的用户：文档创建者 + 线程参与者
+    const recipientIds = new Set<string>();
+    recipientIds.add(doc.createdBy);
+    params.threadParticipantIds?.forEach((id) => recipientIds.add(id));
+
+    // 排除评论发起者自己
+    recipientIds.delete(params.actorId);
+
+    const truncatedText =
+      params.commentText.length > 50
+        ? params.commentText.slice(0, 50) + '...'
+        : params.commentText;
+
+    for (const recipientId of recipientIds) {
+      this.notificationsService.notify({
+        recipientId,
+        type: NotificationType.DOCUMENT_COMMENTED,
+        title: `${params.actorName} 在「${doc.title}」中发表了评论`,
+        content: truncatedText,
+        entityType: EntityType.DOCUMENT,
+        entityId: doc.id,
+        spaceId: doc.spaceId,
+        actorId: params.actorId,
+        actorName: params.actorName,
+        metadata: { documentTitle: doc.title },
+      });
+    }
+  }
 
   async create(
     spaceId: string,
@@ -424,5 +477,88 @@ export class DocumentsService {
     if (parent?.parentId) {
       await this.ensureNoCircularRef(movingId, parent.parentId);
     }
+  }
+
+  // ─── 文档权限管理 ──────────────────────────────────────
+
+  /** 启用/关闭文档级权限 */
+  async setRestricted(id: string, isRestricted: boolean) {
+    return this.prisma.document.update({
+      where: { id },
+      data: { isRestricted },
+      select: { id: true, isRestricted: true },
+    });
+  }
+
+  /** 获取文档权限列表 */
+  async getDocumentPermissions(documentId: string) {
+    return this.prisma.documentPermission.findMany({
+      where: { documentId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /** 设置用户文档权限（upsert） */
+  async setDocumentPermission(
+    documentId: string,
+    targetUserId: string,
+    permission: DocumentAccessLevel,
+    actorId: string,
+  ) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id: documentId },
+      select: { title: true, spaceId: true },
+    });
+
+    const result = await this.prisma.documentPermission.upsert({
+      where: {
+        documentId_userId: { documentId, userId: targetUserId },
+      },
+      update: { permission },
+      create: { documentId, userId: targetUserId, permission },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+      },
+    });
+
+    // 通知被设置权限的用户
+    if (doc && actorId !== targetUserId) {
+      const actor = await this.prisma.user.findUnique({
+        where: { id: actorId },
+        select: { name: true },
+      });
+      const permLabel = permission === 'EDITOR' ? '编辑' : '只读';
+      this.notificationsService.notify({
+        recipientId: targetUserId,
+        type: NotificationType.DOCUMENT_SHARED,
+        title: `${actor?.name || '某人'} 将「${doc.title}」的权限设为${permLabel}`,
+        entityType: EntityType.DOCUMENT,
+        entityId: documentId,
+        spaceId: doc.spaceId,
+        actorId,
+        actorName: actor?.name,
+        metadata: { permission, documentTitle: doc.title },
+      });
+    }
+
+    return result;
+  }
+
+  /** 移除用户文档权限 */
+  async removeDocumentPermission(documentId: string, targetUserId: string) {
+    return this.prisma.documentPermission
+      .delete({
+        where: {
+          documentId_userId: { documentId, userId: targetUserId },
+        },
+      })
+      .catch(() => null);
   }
 }

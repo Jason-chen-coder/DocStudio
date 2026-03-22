@@ -159,7 +159,14 @@ export default function FavoritesPage() {
             <>
               {/* Fixed Header */}
               <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <table className="w-full">
+                <table className="w-full" style={{ tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '40%' }} />
+                    <col className="hidden md:table-column" style={{ width: '15%' }} />
+                    <col className="hidden sm:table-column" style={{ width: '18%' }} />
+                    <col className="hidden lg:table-column" style={{ width: '18%' }} />
+                    <col style={{ width: '9%' }} />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th className={thSortable} onClick={() => toggleSort('title')}>
@@ -178,7 +185,7 @@ export default function FavoritesPage() {
                           收藏时间 <SortIcon col="createdAt" />
                         </span>
                       </th>
-                      <th className={`${thStatic} w-24 text-right pr-5`}>操作</th>
+                      <th className={`${thStatic} text-right pr-5`}>操作</th>
                     </tr>
                   </thead>
                 </table>
@@ -186,7 +193,14 @@ export default function FavoritesPage() {
 
               {/* Scrollable Body */}
               <div className="flex-1 min-h-0 overflow-y-auto">
-                <table className="w-full">
+                <table className="w-full" style={{ tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '40%' }} />
+                    <col className="hidden md:table-column" style={{ width: '15%' }} />
+                    <col className="hidden sm:table-column" style={{ width: '18%' }} />
+                    <col className="hidden lg:table-column" style={{ width: '18%' }} />
+                    <col style={{ width: '9%' }} />
+                  </colgroup>
                   <tbody className="divide-y divide-gray-100/80 dark:divide-gray-800/60">
                     {paginated.map((fav) => {
                       const avatarUrl = getCdnUrl(fav.document.creator?.avatarUrl);

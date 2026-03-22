@@ -30,21 +30,22 @@ export class SpacePermissionGuard implements CanActivate {
     const documentId = params?.id || params?.docId;
 
     // If accessing a document, find its spaceId
+    let documentRecord: {
+      spaceId: string;
+      isRestricted: boolean;
+    } | null = null;
+
     if (documentId) {
       const doc = await this.prisma.document.findUnique({
         where: { id: documentId },
-        select: { spaceId: true },
+        select: { spaceId: true, isRestricted: true },
       });
       if (!doc) throw new NotFoundException('Document not found');
       spaceId = doc.spaceId;
+      documentRecord = doc;
     }
 
     if (!spaceId) {
-      // If we can't determine spaceId (e.g. creating document without spaceId), let controller handle validation or throw error
-      // But for permission check, we need spaceId.
-      // If it's a list request without spaceId, maybe we allow it?
-      // But findAll uses spaceId.
-      // If no spaceId and no documentId, we can't check space permissions.
       return true;
     }
 
@@ -52,7 +53,7 @@ export class SpacePermissionGuard implements CanActivate {
       where: { id: spaceId },
       include: {
         permissions: {
-          where: { userId: user.id }, // This is array, but unique constraint makes it max 1
+          where: { userId: user.id },
         },
       },
     });
@@ -73,12 +74,56 @@ export class SpacePermissionGuard implements CanActivate {
       );
     }
 
-    // Write operations require EDITOR or higher
-    if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
-      if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'EDITOR') {
-        throw new ForbiddenException(
-          'You do not have permission to write in this space',
-        );
+    // ─── 文档级权限叠加 ────────────────────────────────────────
+    // 如果文档启用了 isRestricted，则在空间权限基础上叠加文档级权限
+    if (documentRecord?.isRestricted && documentId) {
+      const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+
+      if (!isOwnerOrAdmin) {
+        // 查询文档级权限
+        const docPerm = await this.prisma.documentPermission.findUnique({
+          where: {
+            documentId_userId: { documentId, userId: user.id },
+          },
+        });
+
+        if (!docPerm) {
+          throw new ForbiddenException(
+            'You do not have permission to access this restricted document',
+          );
+        }
+
+        // 将文档级权限挂到 request 上，供 Controller/Service 使用
+        request.documentPermission = docPerm.permission;
+
+        // 文档级 VIEWER 不能执行写操作
+        if (
+          docPerm.permission === 'VIEWER' &&
+          ['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)
+        ) {
+          // 允许特定的只读 PATCH 操作（如标记收藏等）
+          const path = request.url || '';
+          const isReadOnlyPatch =
+            path.includes('/favorite') || path.includes('/comment-notify');
+          if (!isReadOnlyPatch) {
+            throw new ForbiddenException(
+              'You have read-only access to this document',
+            );
+          }
+        }
+      } else {
+        // OWNER/ADMIN 始终有 EDITOR 权限
+        request.documentPermission = 'EDITOR';
+      }
+    } else {
+      // 未启用文档级权限时，走原有空间权限逻辑
+      // Write operations require EDITOR or higher
+      if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
+        if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'EDITOR') {
+          throw new ForbiddenException(
+            'You do not have permission to write in this space',
+          );
+        }
       }
     }
 

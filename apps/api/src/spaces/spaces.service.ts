@@ -15,7 +15,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { UpdateSpaceDto } from './dto/update-space.dto';
 import { ActivityService } from '../activity/activity.service';
-import { ActivityAction, EntityType } from '@prisma/client';
+import { ActivityAction, EntityType, NotificationType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface SpaceMember {
   userId: string;
@@ -31,6 +32,7 @@ export class SpacesService {
   constructor(
     private prisma: PrismaService,
     private activityService: ActivityService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string, createSpaceDto: CreateSpaceDto): Promise<Space> {
@@ -288,6 +290,23 @@ export class SpacesService {
       metadata: { targetUserId, newRole: role },
     });
 
+    // 通知被变更角色的用户
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { name: true },
+    });
+    this.notificationsService.notify({
+      recipientId: targetUserId,
+      type: NotificationType.ROLE_CHANGED,
+      title: `你在「${space.name}」中的角色已变更为 ${role}`,
+      entityType: EntityType.MEMBER,
+      entityId: spaceId,
+      spaceId,
+      actorId: currentUserId,
+      actorName: currentUser?.name,
+      metadata: { spaceName: space.name, newRole: role },
+    });
+
     return result;
   }
   async removeMember(
@@ -337,6 +356,23 @@ export class SpacesService {
       spaceId,
       spaceName: space.name,
       metadata: { removedUserId: targetUserId },
+    });
+
+    // 通知被移除的用户
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { name: true },
+    });
+    this.notificationsService.notify({
+      recipientId: targetUserId,
+      type: NotificationType.MEMBER_REMOVED,
+      title: `你已被移出空间「${space.name}」`,
+      entityType: EntityType.SPACE,
+      entityId: spaceId,
+      spaceId,
+      actorId: currentUserId,
+      actorName: currentUser?.name,
+      metadata: { spaceName: space.name },
     });
 
     return result;
@@ -402,6 +438,31 @@ export class SpacesService {
       spaceName: space?.name,
       metadata: { email, role },
     });
+
+    // 通知被邀请的用户（如果该邮箱对应已注册用户）
+    if (email) {
+      const invitedUser = await this.prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (invitedUser) {
+        const currentUser = await this.prisma.user.findUnique({
+          where: { id: currentUserId },
+          select: { name: true },
+        });
+        this.notificationsService.notify({
+          recipientId: invitedUser.id,
+          type: NotificationType.SPACE_INVITATION,
+          title: `${currentUser?.name || '某人'} 邀请你加入空间「${space?.name}」`,
+          entityType: EntityType.SPACE,
+          entityId: spaceId,
+          spaceId,
+          actorId: currentUserId,
+          actorName: currentUser?.name,
+          metadata: { spaceName: space?.name, role, token },
+        });
+      }
+    }
 
     return invitation;
   }
@@ -469,6 +530,36 @@ export class SpacesService {
       entityName: invitation.space.name,
       spaceId: invitation.spaceId,
       spaceName: invitation.space.name,
+    });
+
+    // 通知邀请发起者：邀请已被接受
+    const joiningUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    this.notificationsService.notify({
+      recipientId: invitation.inviterId,
+      type: NotificationType.INVITATION_ACCEPTED,
+      title: `${joiningUser?.name || '某人'} 接受了你的邀请，已加入「${invitation.space.name}」`,
+      entityType: EntityType.SPACE,
+      entityId: invitation.spaceId,
+      spaceId: invitation.spaceId,
+      actorId: userId,
+      actorName: joiningUser?.name,
+      metadata: { spaceName: invitation.space.name },
+    });
+
+    // 通知空间其他成员：有新成员加入
+    this.notificationsService.notifySpaceMembers({
+      spaceId: invitation.spaceId,
+      excludeUserId: userId,
+      type: NotificationType.MEMBER_JOINED,
+      title: `${joiningUser?.name || '新成员'} 加入了空间「${invitation.space.name}」`,
+      entityType: EntityType.SPACE,
+      entityId: invitation.spaceId,
+      actorId: userId,
+      actorName: joiningUser?.name,
+      metadata: { spaceName: invitation.space.name },
     });
 
     return { message: 'Joined successfully', spaceId: invitation.spaceId };

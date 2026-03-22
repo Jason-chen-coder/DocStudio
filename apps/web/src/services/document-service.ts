@@ -120,4 +120,50 @@ export const documentService = {
       method: 'POST',
     });
   },
+
+  // ─── 文档权限 ───
+
+  async setRestricted(id: string, isRestricted: boolean) {
+    return apiRequest<{ id: string; isRestricted: boolean }>(`/documents/${id}/restrict`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isRestricted }),
+    });
+  },
+
+  async getDocumentPermissions(id: string) {
+    return apiRequest<Array<{
+      id: string;
+      documentId: string;
+      userId: string;
+      permission: 'EDITOR' | 'VIEWER';
+      user: { id: string; name: string; email: string; avatarUrl: string | null };
+    }>>(`/documents/${id}/permissions`);
+  },
+
+  async setDocumentPermission(documentId: string, userId: string, permission: 'EDITOR' | 'VIEWER') {
+    return apiRequest(`/documents/${documentId}/permissions/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ permission }),
+    });
+  },
+
+  async removeDocumentPermission(documentId: string, userId: string) {
+    return apiRequest(`/documents/${documentId}/permissions/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ─── 评论通知 ───
+
+  /** 通知文档相关者有新评论（fire-and-forget） */
+  async notifyComment(
+    documentId: string,
+    commentText: string,
+    threadParticipantIds?: string[],
+  ): Promise<void> {
+    return apiRequest<void>(`/documents/${documentId}/comment-notify`, {
+      method: 'POST',
+      body: JSON.stringify({ commentText, threadParticipantIds }),
+    });
+  },
 };

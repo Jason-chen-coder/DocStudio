@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import { Search, ChevronDown, ChevronLeft, ChevronRight, MoreVertical, KeyRound, Ban, CheckCircle, Trash2, AlertTriangle, ShieldCheck, CircleSlash, CircleDot } from 'lucide-react';
 import { getCdnUrl } from '@/lib/cdn';
+import { FadeIn } from '@/components/ui/fade-in';
 
 // ─── 修改密码弹窗 ─────────────────────────────────────────────────────────────
 function ChangePasswordModal({
@@ -372,12 +373,15 @@ export default function AdminUsersPage() {
   return (
     <div className="flex flex-col h-full min-h-[calc(100vh-8rem)]">
       {/* 页头 */}
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">用户管理</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">共 {total} 位用户</p>
-      </div>
+      <FadeIn y={16} duration={0.4}>
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">用户管理</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">共 {total} 位用户</p>
+        </div>
+      </FadeIn>
 
       {/* 搜索 + 筛选 */}
+      <FadeIn delay={0.1} y={16} duration={0.4}>
       <div className="flex items-center gap-3 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -406,8 +410,10 @@ export default function AdminUsersPage() {
           <ChevronDown className="pointer-events-none absolute right-2.5 w-3.5 h-3.5 text-gray-400" />
         </div>
       </div>
+      </FadeIn>
 
       {/* 用户表格 */}
+      <FadeIn delay={0.2} y={16} duration={0.4}>
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex-1 min-h-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -477,8 +483,10 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+      </FadeIn>
 
       {/* 分页 */}
+      <FadeIn delay={0.3} y={12} duration={0.4}>
       <div className="flex items-center justify-between mt-4 pt-2 text-sm text-gray-500 dark:text-gray-400 shrink-0">
         <div className="flex items-center gap-3">
           <label className="whitespace-nowrap">每页</label>
@@ -510,6 +518,7 @@ export default function AdminUsersPage() {
           </button>
         </div>
       </div>
+      </FadeIn>
 
       {/* 弹窗 */}
       {modalUser && modalType === 'password' && (

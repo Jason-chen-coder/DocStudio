@@ -1,5 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+
+interface SearchResultRow {
+  id: string;
+  title: string;
+  content: string | null;
+  spaceId: string;
+  updatedAt: Date;
+  spaceName: string;
+  rank: number;
+}
 
 @Injectable()
 export class SearchService {
@@ -17,42 +28,68 @@ export class SearchService {
       return { data: [], total: 0, page, limit };
     }
 
-    const skip = (page - 1) * limit;
+    const offset = (page - 1) * limit;
 
-    const where = {
-      spaceId: { in: accessibleSpaceIds },
-      OR: [
-        { title: { contains: query, mode: 'insensitive' as const } },
-        { content: { contains: query, mode: 'insensitive' as const } },
-      ],
-    };
+    // 2. 构建 tsquery：按空格拆分词，用 | (OR) 连接
+    //    使用 'simple' 配置，不分词，中英文通用
+    const sanitized = query.replace(/['"\\]/g, '').trim();
+    const words = sanitized.split(/\s+/).filter(Boolean);
 
-    // 2. 并行查询文档和总数
-    const [documents, total] = await Promise.all([
-      this.prisma.document.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          content: true,
-          spaceId: true,
-          updatedAt: true,
-          space: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.document.count({ where }),
-    ]);
+    if (words.length === 0) {
+      return { data: [], total: 0, page, limit };
+    }
 
-    // 3. 生成搜索结果（含片段）
+    // tsquery 格式：'word1' | 'word2' | 'word3'（OR 匹配）
+    const tsqueryStr = words.map((w) => `'${w}'`).join(' | ');
+    const likePattern = `%${sanitized}%`;
+
+    // 3. 全文搜索 + ILIKE fallback
+    //    tsvector @@ tsquery 使用 GIN 索引
+    //    ILIKE 作为中文子串 fallback
+    const documents = await this.prisma.$queryRaw<SearchResultRow[]>`
+      SELECT
+        d.id,
+        d.title,
+        d.content,
+        d."spaceId",
+        d."updatedAt",
+        s.name as "spaceName",
+        COALESCE(ts_rank(d.search_vector, to_tsquery('simple', ${tsqueryStr})), 0) as rank
+      FROM documents d
+      JOIN spaces s ON s.id = d."spaceId"
+      WHERE d."spaceId" = ANY(${accessibleSpaceIds})
+        AND d."deletedAt" IS NULL
+        AND (
+          d.search_vector @@ to_tsquery('simple', ${tsqueryStr})
+          OR d.title ILIKE ${likePattern}
+          OR d.content ILIKE ${likePattern}
+        )
+      ORDER BY rank DESC, d."updatedAt" DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    // 4. 查询总数
+    const countResult = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count
+      FROM documents d
+      WHERE d."spaceId" = ANY(${accessibleSpaceIds})
+        AND d."deletedAt" IS NULL
+        AND (
+          d.search_vector @@ to_tsquery('simple', ${tsqueryStr})
+          OR d.title ILIKE ${likePattern}
+          OR d.content ILIKE ${likePattern}
+        )
+    `;
+
+    const total = Number(countResult[0]?.count ?? 0);
+
+    // 5. 生成搜索结果（含片段）
     const data = documents.map((doc) => ({
       id: doc.id,
       title: doc.title,
-      snippet: this.extractSnippet(doc.content, query),
+      snippet: this.extractSnippet(doc.content, sanitized),
       spaceId: doc.spaceId,
-      spaceName: doc.space.name,
+      spaceName: doc.spaceName,
       updatedAt: doc.updatedAt,
     }));
 
@@ -74,7 +111,13 @@ export class SearchService {
     if (Array.isArray(node.content)) {
       return node.content
         .map((child: any) => this.extractTextFromTiptap(child))
-        .join(node.type === 'doc' || node.type === 'bulletList' || node.type === 'orderedList' ? '\n' : ' ');
+        .join(
+          node.type === 'doc' ||
+            node.type === 'bulletList' ||
+            node.type === 'orderedList'
+            ? '\n'
+            : ' ',
+        );
     }
 
     return '';

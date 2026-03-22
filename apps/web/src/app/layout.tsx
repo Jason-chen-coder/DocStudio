@@ -67,12 +67,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
         <WebSiteJsonLd />
+        {/* 在 HTML 解析阶段立即初始化主题，避免白屏闪烁（FOUC）
+            必须与 useTheme hook 的逻辑完全一致：
+            1. 优先读 theme-mode key（light / dark / system）
+            2. 兼容旧版 theme key
+            3. system 模式跟随系统偏好 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=localStorage.getItem('theme-mode');if(!m){var legacy=localStorage.getItem('theme');if(legacy==='light'||legacy==='dark'){m=legacy;localStorage.setItem('theme-mode',m);localStorage.removeItem('theme')}else{m='system'}}var isDark=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);if(isDark){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className={`${plusJakartaSans.className} ${geistMono.variable} antialiased`}>
-        <Theme>
+        <Theme accentColor="blue">
           <AuthProvider>
             <GlobalLoading />
             {children}

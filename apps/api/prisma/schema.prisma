@@ -32,6 +32,9 @@ model User {
   documentVisits   DocumentVisit[]
   templates        DocumentTemplate[]
   favorites        DocumentFavorite[]
+  notifications           Notification[]          @relation("UserNotifications")
+  notificationPreference  NotificationPreference? @relation("UserNotificationPreference")
+  documentPermissions     DocumentPermission[]
 
   @@map("users")
 }
@@ -72,7 +75,9 @@ model Document {
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  deletedAt DateTime? // 软删除：非空表示已移至回收站
+  deletedAt    DateTime? // 软删除：非空表示已移至回收站
+  isRestricted Boolean   @default(false) // 是否启用文档级权限（默认继承空间权限）
+  search_vector Unsupported("tsvector")? // PostgreSQL 全文搜索向量（由 DB 触发器自动维护）
 
   // 关系
   space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -83,6 +88,7 @@ model Document {
   snapshots   DocumentSnapshot[]
   visits      DocumentVisit[]
   favorites   DocumentFavorite[]
+  documentPermissions DocumentPermission[]
 
   @@index([spaceId])
   @@index([spaceId, deletedAt])
@@ -298,6 +304,82 @@ enum TemplateCategory {
   REQUIREMENT
   GUIDE
   OTHER
+}
+
+// ==================== 文档权限模型 ====================
+model DocumentPermission {
+  id         String              @id @default(cuid())
+  documentId String
+  userId     String
+  permission DocumentAccessLevel @default(EDITOR)
+  createdAt  DateTime            @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([documentId])
+  @@index([userId])
+  @@map("document_permissions")
+}
+
+enum DocumentAccessLevel {
+  EDITOR
+  VIEWER
+}
+
+// ==================== 通知模型 ====================
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  title       String
+  content     String?
+  isRead      Boolean          @default(false)
+
+  // 关联上下文 — 点击通知时可跳转
+  entityType  EntityType?
+  entityId    String?
+  spaceId     String?
+
+  // 触发者信息（冗余存储，避免关联查询）
+  actorId     String?
+  actorName   String?
+
+  metadata    String?          @db.Text
+  createdAt   DateTime         @default(now())
+
+  recipient   User             @relation("UserNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([recipientId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// 通知类型枚举
+enum NotificationType {
+  SPACE_INVITATION
+  INVITATION_ACCEPTED
+  MEMBER_JOINED
+  MEMBER_REMOVED
+  ROLE_CHANGED
+  DOCUMENT_COMMENTED
+  DOCUMENT_MENTIONED
+  DOCUMENT_SHARED
+  DOCUMENT_UPDATED
+  SPACE_DELETED
+  SYSTEM
+}
+
+// ==================== 通知偏好模型 ====================
+model NotificationPreference {
+  id          String @id @default(cuid())
+  userId      String @unique
+  preferences String @db.Text // JSON: { "SPACE_INVITATION": true, ... }
+
+  user        User   @relation("UserNotificationPreference", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // ==================== 文档收藏模型 ====================

@@ -7,12 +7,11 @@ import { useAuth } from '@/lib/auth-context';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getCdnUrl } from '@/lib/cdn';
-import { LogOut, LayoutDashboard } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserCircle, FolderOpen, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -53,7 +52,7 @@ export function PublicHeader() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div className="flex-1 flex justify-start">
                     <Link href="/" className="flex items-center gap-3 relative group">
-                        <Image src="/docStudio_icon.png" alt="DocStudio" width={32} height={32} />
+                        <Image src="/docStudio_icon.png" alt="DocStudio" width={32} height={32} style={{ width: 32, height: 'auto' }} />
 
                         {/* Wrapper for smooth cross-fade of gradient text */}
                         <div className="relative flex items-center">
@@ -133,25 +132,72 @@ export function PublicHeader() {
                                     )}
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" className="w-56" sideOffset={8}>
-                                <DropdownMenuLabel className="font-normal py-3">
-                                    <div className="flex flex-col space-y-1.5">
-                                        <p className="text-sm font-medium leading-none">{user.name}</p>
-                                        <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+                            <DropdownMenuContent align="end" className="w-72 p-0 overflow-hidden" sideOffset={8}>
+                                {/* ── User card ── */}
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 px-4 pt-5 pb-4">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/80 dark:ring-gray-700/80 shadow-sm flex-shrink-0">
+                                            {user.avatarUrl ? (
+                                                <Image
+                                                    src={getCdnUrl(user.avatarUrl) || ''}
+                                                    alt={user.name || 'User'}
+                                                    width={44}
+                                                    height={44}
+                                                    unoptimized
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-base select-none">
+                                                    {(user.name || 'U').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate leading-tight">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-[12px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                {user.email}
+                                            </p>
+                                        </div>
                                     </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/dashboard" className="cursor-pointer py-2.5">
-                                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                                        <span>进入控制台</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => logout()} className="cursor-pointer py-2.5 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 dark:focus:bg-red-900/10 focus:bg-red-50">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>退出登录</span>
-                                </DropdownMenuItem>
+                                </div>
+
+                                {/* ── Nav items ── */}
+                                <div className="py-1.5 px-1.5">
+                                    {[
+                                        { href: '/dashboard', icon: LayoutDashboard, label: '进入控制台' },
+                                        { href: '/profile', icon: UserCircle, label: '个人中心' },
+                                        { href: '/spaces', icon: FolderOpen, label: '工作空间' },
+                                        { href: '/settings', icon: SlidersHorizontal, label: '设置' },
+                                    ].map((item) => (
+                                        <DropdownMenuItem key={item.href} asChild>
+                                            <Link
+                                                href={item.href}
+                                                className="cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-lg group/item"
+                                            >
+                                                <item.icon className="h-[18px] w-[18px] text-gray-400 dark:text-gray-500 group-hover/item:text-gray-600 dark:group-hover/item:text-gray-300 transition-colors" />
+                                                <span className="flex-1 text-[13px] font-medium text-gray-700 dark:text-gray-200">
+                                                    {item.label}
+                                                </span>
+                                                <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 opacity-0 -translate-x-1 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-150" />
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </div>
+
+                                <DropdownMenuSeparator className="mx-2 my-0" />
+
+                                {/* ── Logout ── */}
+                                <div className="py-1.5 px-1.5">
+                                    <DropdownMenuItem
+                                        onClick={() => logout()}
+                                        className="cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10"
+                                    >
+                                        <LogOut className="h-[18px] w-[18px]" />
+                                        <span className="text-[13px] font-medium">退出登录</span>
+                                    </DropdownMenuItem>
+                                </div>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (

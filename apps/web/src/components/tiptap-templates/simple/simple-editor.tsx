@@ -323,6 +323,8 @@ export interface SimpleEditorProps {
   initialCommentThreads?: CommentThread[]
   /** Called whenever comment threads change, for persistence */
   onCommentsChange?: (threads: CommentThread[]) => void
+  /** Called when a comment is added or replied to (for notifications) */
+  onCommentEvent?: (event: import('@/hooks/use-comments').CommentEvent) => void
   /** Space ID for @mention member lookup */
   spaceId?: string
 }
@@ -346,6 +348,7 @@ export function SimpleEditor({
   onReady,
   initialCommentThreads,
   onCommentsChange,
+  onCommentEvent,
   spaceId,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
@@ -356,7 +359,7 @@ export function SimpleEditor({
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false)
   const { threads, addThread, replyToThread, resolveThread, deleteThread } =
-    useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl ?? undefined)
+    useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl ?? undefined, onCommentEvent)
   const [tableOfContentsItems, setTableOfContentsItems] = useState<
     TableOfContentsItem[]
   >([])

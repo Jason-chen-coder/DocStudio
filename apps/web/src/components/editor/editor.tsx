@@ -3,7 +3,7 @@ import type { HocuspocusProvider } from '@hocuspocus/provider';
 import type * as Y from 'yjs';
 import type { CollabUser } from '@/hooks/use-collaboration';
 import type { Editor as TiptapEditor } from '@tiptap/react';
-import type { CommentThread } from '@/hooks/use-comments';
+import type { CommentThread, CommentEvent } from '@/hooks/use-comments';
 
 interface EditorProps {
   initialContent?: string;
@@ -18,6 +18,7 @@ interface EditorProps {
   // Comment persistence
   initialCommentThreads?: CommentThread[];
   onCommentsChange?: (threads: CommentThread[]) => void;
+  onCommentEvent?: (event: CommentEvent) => void;
   // Space ID for @mention member lookup
   spaceId?: string;
 }
@@ -32,6 +33,7 @@ export function Editor({
   onReady,
   initialCommentThreads,
   onCommentsChange,
+  onCommentEvent,
   spaceId,
 }: EditorProps) {
   return (
@@ -46,6 +48,7 @@ export function Editor({
         onReady={onReady}
         initialCommentThreads={initialCommentThreads}
         onCommentsChange={onCommentsChange}
+        onCommentEvent={onCommentEvent}
         spaceId={spaceId}
       />
     </div>

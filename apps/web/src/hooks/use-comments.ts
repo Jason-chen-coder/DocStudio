@@ -54,11 +54,20 @@ function avatarColor(author: string) {
   return colors[Math.abs(hash) % colors.length]
 }
 
+export interface CommentEvent {
+  type: 'add' | 'reply';
+  threadId: string;
+  text: string;
+  /** 该线程中所有参与者的 author 名（不含当前用户） */
+  threadParticipantNames: string[];
+}
+
 export function useComments(
   currentUser: string = "我",
   initialThreads?: CommentThread[],
   onChange?: (threads: CommentThread[]) => void,
   currentUserAvatarUrl?: string,
+  onCommentEvent?: (event: CommentEvent) => void,
 ) {
   const [threads, setThreads] = useState<CommentThread[]>(initialThreads ?? [])
 
@@ -99,9 +108,15 @@ export function useComments(
         notify(updated)
         return updated
       })
+      onCommentEvent?.({
+        type: 'add',
+        threadId: id,
+        text: firstMessage,
+        threadParticipantNames: [],
+      })
       return id
     },
-    [currentUser, notify]
+    [currentUser, notify, onCommentEvent]
   )
 
   const replyToThread = useCallback(
@@ -126,10 +141,23 @@ export function useComments(
             : t
         )
         notify(updated)
+
+        // 收集线程中除当前用户外的其他参与者
+        const thread = prev.find((t) => t.id === threadId)
+        const participants = thread
+          ? [...new Set(thread.messages.map((m) => m.author))].filter((a) => a !== currentUser)
+          : []
+        onCommentEvent?.({
+          type: 'reply',
+          threadId,
+          text,
+          threadParticipantNames: participants,
+        })
+
         return updated
       })
     },
-    [currentUser, notify]
+    [currentUser, notify, onCommentEvent]
   )
 
   const resolveThread = useCallback(

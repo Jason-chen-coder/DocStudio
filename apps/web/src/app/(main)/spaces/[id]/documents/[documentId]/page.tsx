@@ -8,6 +8,7 @@ import { Document } from '@/types/document';
 import { Space } from '@/types/space';
 import { Editor } from '@/components/editor/editor';
 import { ShareDialog } from '@/components/share/share-dialog';
+import { DocumentPermissionDialog } from '@/components/editor/document-permission-dialog';
 import { OnlineUsers } from '@/components/editor/online-users';
 import { VersionHistoryPanel } from '@/components/editor/version-history-panel';
 import {
@@ -27,7 +28,7 @@ import {
   Lock,
   ArrowRight,
 } from 'lucide-react';
-import { exportAsMarkdown, exportAsHTML } from '@/lib/export-utils';
+import { exportAsMarkdown, exportAsHTML, exportAsPDF } from '@/lib/export-utils';
 import { SaveAsTemplateDialog } from '@/components/template/save-as-template-dialog';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { useAuth } from '@/lib/auth-context';
@@ -45,7 +46,7 @@ import {
   CollabUser,
 } from '@/hooks/use-collaboration';
 import { toast } from 'sonner';
-import { deserializeThreads, type CommentThread } from '@/hooks/use-comments';
+import { deserializeThreads, type CommentThread, type CommentEvent } from '@/hooks/use-comments';
 
 // Simple debounce function
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,6 +91,8 @@ export default function DocumentPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [docIsRestricted, setDocIsRestricted] = useState(false);
   const [initialCommentThreads, setInitialCommentThreads] = useState<CommentThread[]>([]);
 
   // Status for auto-save (title only in collab mode)
@@ -141,6 +144,7 @@ export default function DocumentPage() {
         setDocument(docData);
         setTitle(docData.title);
         setSpace(spaceData);
+        setDocIsRestricted(docData.isRestricted ?? false);
         // Restore persisted comment threads
         setInitialCommentThreads(deserializeThreads(docData.commentsData));
       } catch (error) {
@@ -180,6 +184,14 @@ export default function DocumentPage() {
     documentService.updateDocument(documentId, {
       commentsData: JSON.stringify(threads),
     }).catch((err) => console.error('Failed to save comments', err));
+  }, [documentId]);
+
+  const handleCommentEvent = useCallback((event: CommentEvent) => {
+    // Fire-and-forget：通知文档相关者有新评论
+    documentService.notifyComment(
+      documentId,
+      event.text,
+    ).catch(() => { /* silent */ });
   }, [documentId]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,6 +381,17 @@ export default function DocumentPage() {
                   <Share2 className="h-4 w-4" />
                   分享
                 </DropdownMenuItem>
+                {(space?.myRole === 'OWNER' || space?.myRole === 'ADMIN') && (
+                  <DropdownMenuItem onClick={() => setShowPermissionDialog(true)}>
+                    <Lock className="h-4 w-4" />
+                    权限管理
+                    {docIsRestricted && (
+                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                        限制中
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setIsHistoryOpen(true)}>
                   <History className="h-4 w-4" />
                   版本历史
@@ -392,12 +415,19 @@ export default function DocumentPage() {
                   <FileText className="h-4 w-4" />
                   导出 HTML
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  if (editorRef.current) exportAsHTML(editorRef.current, title);
-                  setTimeout(() => window.print(), 500);
+                <DropdownMenuItem onClick={async () => {
+                  if (editorRef.current) {
+                    toast.loading('正在生成 PDF...', { id: 'pdf-export' });
+                    try {
+                      await exportAsPDF(editorRef.current, title);
+                      toast.success('PDF 导出成功', { id: 'pdf-export' });
+                    } catch {
+                      toast.error('PDF 导出失败', { id: 'pdf-export' });
+                    }
+                  }
                 }}>
                   <Printer className="h-4 w-4" />
-                  打印 / PDF
+                  导出 PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -443,6 +473,7 @@ export default function DocumentPage() {
           onUpdate={handleContentUpdate}
           initialCommentThreads={initialCommentThreads}
           onCommentsChange={handleCommentsChange}
+          onCommentEvent={handleCommentEvent}
           spaceId={spaceId}
           onReady={(editor) => {
             editorRef.current = editor;
@@ -500,6 +531,15 @@ export default function DocumentPage() {
         documentId={documentId}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
+      />
+
+      <DocumentPermissionDialog
+        open={showPermissionDialog}
+        onOpenChange={setShowPermissionDialog}
+        documentId={documentId}
+        spaceId={spaceId}
+        isRestricted={docIsRestricted}
+        onRestrictedChange={setDocIsRestricted}
       />
     </div>
   );

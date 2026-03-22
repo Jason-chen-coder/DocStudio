@@ -224,6 +224,7 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
                   permissions: { where: { userId } },
                 },
               },
+              documentPermissions: { where: { userId } },
             },
           });
 
@@ -232,15 +233,38 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
           }
 
           const isOwner = doc.space.ownerId === userId;
-          const isMember = doc.space.permissions.length > 0;
+          const spacePermission = doc.space.permissions[0];
+          const isMember = spacePermission != null;
 
           if (!isOwner && !isMember) {
             throw new Error('Unauthorized: no access to this document');
           }
 
-          // Set read-only for VIEWERs
-          const permission = doc.space.permissions[0];
-          if (permission?.role === 'VIEWER') {
+          // ─── 文档级权限检查 ───
+          let readOnly = false;
+
+          if (doc.isRestricted) {
+            const isOwnerOrAdmin =
+              isOwner || spacePermission?.role === 'ADMIN';
+
+            if (isOwnerOrAdmin) {
+              // OWNER/ADMIN 始终可编辑
+              readOnly = false;
+            } else {
+              const docPerm = doc.documentPermissions[0];
+              if (!docPerm) {
+                throw new Error(
+                  'Unauthorized: no access to this restricted document',
+                );
+              }
+              readOnly = docPerm.permission === 'VIEWER';
+            }
+          } else {
+            // 继承空间权限
+            readOnly = spacePermission?.role === 'VIEWER';
+          }
+
+          if (readOnly) {
             (data as any).connection.readOnly = true;
           }
 

@@ -217,3 +217,83 @@ export function exportAsHTML(editor: Editor, title: string) {
   const filename = `${title || '文档'}.html`;
   downloadFile(fullHtml, filename, 'text/html;charset=utf-8');
 }
+
+/**
+ * Export editor content as PDF using html2canvas + jsPDF
+ * 纯前端方案，无需服务端依赖
+ */
+export async function exportAsPDF(editor: Editor, title: string) {
+  const { default: html2canvas } = await import('html2canvas');
+  const { default: jsPDF } = await import('jspdf');
+
+  // 1. 创建临时容器渲染编辑器 HTML
+  const html = editor.getHTML();
+  const container = document.createElement('div');
+  container.innerHTML = `<h1 style="font-size:24px;margin:0 0 16px 0;font-weight:700;">${title || '文档'}</h1>${html}`;
+  Object.assign(container.style, {
+    position: 'absolute',
+    left: '-9999px',
+    top: '0',
+    width: '794px', // A4 宽度（@96dpi）
+    padding: '40px',
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: '14px',
+    lineHeight: '1.6',
+    color: '#1a1a1a',
+    background: '#fff',
+  });
+
+  // 基础样式
+  const style = document.createElement('style');
+  style.textContent = `
+    h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    h3 { font-size: 1.2em; }
+    code { background: #f4f4f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: #f4f4f5; padding: 12px; border-radius: 6px; overflow: hidden; }
+    pre code { background: none; padding: 0; }
+    blockquote { border-left: 3px solid #d1d5db; margin-left: 0; padding-left: 12px; color: #6b7280; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; font-size: 13px; }
+    th { background: #f9fafb; font-weight: 600; }
+    img { max-width: 100%; height: auto; border-radius: 6px; }
+  `;
+  container.prepend(style);
+  document.body.appendChild(container);
+
+  try {
+    // 2. html2canvas 截取
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    // 3. 计算分页
+    const imgWidth = 210; // A4 宽度 mm
+    const pageHeight = 297; // A4 高度 mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    let heightLeft = imgHeight;
+    let position = 0;
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+    // 第一页
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // 后续页
+    while (heightLeft > 0) {
+      position = -(imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // 4. 下载
+    pdf.save(`${title || '文档'}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
+}

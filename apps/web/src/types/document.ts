@@ -16,6 +16,7 @@ export interface Document {
   updatedAt: string;
   createdBy: string;
   deletedAt?: string | null; // 软删除时间（回收站）
+  isRestricted?: boolean; // 是否启用文档级权限
   children?: Document[]; // For tree structure
   creator?: {
     id: string;

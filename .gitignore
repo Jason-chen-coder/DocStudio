@@ -3,7 +3,7 @@ node_modules/
 .pnpm-store/
 
 .claude/
-
+.claude/settings.local.json
 # Build outputs
 dist/
 build/

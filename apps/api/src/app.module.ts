@@ -20,6 +20,7 @@ import { SnapshotsModule } from './snapshots/snapshots.module';
 import { SearchModule } from './search/search.module';
 import { ActivityModule } from './activity/activity.module';
 import { TemplatesModule } from './templates/templates.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -45,13 +46,19 @@ import { TemplatesModule } from './templates/templates.module';
     SearchModule,
     ActivityModule,
     TemplatesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_PIPE,
-      useClass: ValidationPipe,
+      useFactory: () =>
+        new ValidationPipe({
+          transform: true, // 启用 class-transformer，自动将 query 字符串转为 DTO 类型
+          transformOptions: { enableImplicitConversion: true },
+          whitelist: true,
+        }),
     },
     {
       provide: APP_GUARD,

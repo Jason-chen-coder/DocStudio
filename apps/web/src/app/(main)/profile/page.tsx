@@ -1,61 +1,32 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
-import { useState } from 'react';
-import { authAPI } from '@/lib/api';
-import { Dialog, Button, Flex, Text, TextField } from '@radix-ui/themes';
-
+import Link from 'next/link';
 import { AvatarUpload } from '@/components/avatar-upload';
-import { toast } from 'sonner';
+import { FadeIn } from '@/components/ui/fade-in';
+import { ChevronRight, Shield } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   if (!user) {
     return null;
   }
 
-  async function handleChangePassword(e: React.FormEvent<HTMLFormElement>) {
-    // ... existing code ...
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const currentPassword = formData.get('currentPassword') as string;
-    const newPassword = formData.get('newPassword') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
-
-    if (newPassword !== confirmPassword) {
-      toast.error("密码不匹配,两次输入的新密码不一致")
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      await authAPI.changePassword({ currentPassword, newPassword });
-      toast.success("密码修改成功,您的密码已成功更新")
-      setIsDialogOpen(false);
-      (e.target as HTMLFormElement).reset();
-    } catch (error) {
-      toast.error(`密码修改失败,${error instanceof Error ? error.message : '密码修改失败，请稍后重试'}`)
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-          个人中心
-        </h2>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          管理您的个人信息和账户设置
-        </p>
-      </div>
+      <FadeIn y={16} duration={0.4}>
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            个人中心
+          </h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            管理您的个人信息和账户设置
+          </p>
+        </div>
+      </FadeIn>
 
+      <FadeIn delay={0.1} y={16} duration={0.4}>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
@@ -107,83 +78,39 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      </FadeIn>
 
+      <FadeIn delay={0.2} y={16} duration={0.4}>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <div>
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-              安全设置
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-              管理您的密码和账户安全
-            </p>
-          </div>
-          <Dialog.Root open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <Dialog.Trigger>
-              <Button>修改密码</Button>
-            </Dialog.Trigger>
-
-            <Dialog.Content maxWidth="450px">
-              <Dialog.Title>修改密码</Dialog.Title>
-              <Dialog.Description size="2" mb="4">
-                请输入当前密码和新密码以更新您的登录凭证。
-              </Dialog.Description>
-
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <label>
-                  <Text as="div" size="2" mb="1" weight="bold">
-                    当前密码
-                  </Text>
-                  <TextField.Root
-                    type="password"
-                    name="currentPassword"
-                    placeholder="请输入当前密码"
-                    required
-                  />
-                </label>
-                <label>
-                  <Text as="div" size="2" mb="1" weight="bold">
-                    新密码
-                  </Text>
-                  <TextField.Root
-                    type="password"
-                    name="newPassword"
-                    placeholder="请输入新密码"
-                    required
-                    minLength={8}
-                  />
-                  <Text as="p" size="1" color="gray" mt="1">
-                    密码长度至少为 8 个字符
-                  </Text>
-                </label>
-                <label>
-                  <Text as="div" size="2" mb="1" weight="bold">
-                    确认新密码
-                  </Text>
-                  <TextField.Root
-                    type="password"
-                    name="confirmPassword"
-                    placeholder="请再次输入新密码"
-                    required
-                    minLength={8}
-                  />
-                </label>
-
-                <Flex gap="3" mt="4" justify="end">
-                  <Dialog.Close>
-                    <Button variant="soft" color="gray">
-                      取消
-                    </Button>
-                  </Dialog.Close>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? '更新中...' : '确认修改'}
-                  </Button>
-                </Flex>
-              </form>
-            </Dialog.Content>
-          </Dialog.Root>
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+            安全设置
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+            管理您的密码和账户安全
+          </p>
+        </div>
+        <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+          <Link
+            href="/settings/security"
+            className="flex items-center gap-4 px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-[18px] h-[18px] text-emerald-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                修改密码
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                更新您的登录密码
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors flex-shrink-0" />
+          </Link>
         </div>
       </div>
+      </FadeIn>
     </div>
   );
 }
