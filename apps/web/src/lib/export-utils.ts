@@ -151,6 +151,12 @@ function inlineNode(node: any): string {
   if (node.type === 'mention') {
     return `@${node.attrs?.label || node.attrs?.id || ''}`;
   }
+  if (node.type === 'documentLink') {
+    const title = node.attrs?.title || '文档链接';
+    const docId = node.attrs?.documentId || '';
+    const sid = node.attrs?.spaceId || '';
+    return `[${title}](/spaces/${sid}/documents/${docId})`;
+  }
   if (node.type === 'hardBreak') return '\n';
   return '';
 }

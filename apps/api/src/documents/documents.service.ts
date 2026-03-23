@@ -144,6 +144,7 @@ export class DocumentsService {
       select: {
         id: true,
         title: true,
+        spaceId: true,
         parentId: true,
         order: true,
         createdAt: true,

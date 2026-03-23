@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PreviewOpen, PreviewClose } from '@icon-park/react';
 // LoadingScreen import removed (handled globally)
 
 export default function LoginPage() {
   const { login, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,9 +19,15 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      const returnTo = searchParams.get('returnTo');
+      // Only allow relative URLs or same-origin to prevent open redirect
+      if (returnTo && (returnTo.startsWith('/') || returnTo.startsWith(window.location.origin))) {
+        router.push(returnTo);
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, searchParams]);
 
   // Loading state is handled globally via RootLayout
 

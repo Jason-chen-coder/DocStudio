@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { api } from '@/lib/api';
+import { api, apiRequest } from '@/lib/api';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -19,9 +19,20 @@ import {
   Share2,
   Copy,
   Check,
+  LogIn,
+  ShieldX,
 } from 'lucide-react';
 import Image from 'next/image';
 import { getCdnUrl } from '@/lib/cdn';
+import { useAuth } from '@/lib/auth-context';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface ShareInfo {
   token: string;
@@ -350,6 +361,7 @@ function PasswordGate({
 export default function SharePage() {
   const params = useParams();
   const token = params.token as string;
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -361,6 +373,47 @@ export default function SharePage() {
   const [password, setPassword] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  // ─── Document Link click handling ───
+  const [linkDialog, setLinkDialog] = useState<{
+    open: boolean;
+    title: string;
+    documentId: string;
+    spaceId: string;
+    status: 'no-login' | 'no-access';
+  }>({ open: false, title: '', documentId: '', spaceId: '', status: 'no-login' });
+
+  const handleDocumentLinkClick = useCallback(
+    async (e: Event) => {
+      const { documentId, spaceId, title } = (e as CustomEvent).detail;
+      if (!documentId) return;
+
+      // Not logged in
+      if (!user) {
+        setLinkDialog({ open: true, title, documentId, spaceId, status: 'no-login' });
+        return;
+      }
+
+      // Logged in — check access, navigate directly if ok
+      try {
+        await apiRequest(`/documents/${documentId}/exists`, { method: 'HEAD' });
+        // Has access — open directly, no dialog needed
+        window.open(
+          `/spaces/${spaceId}/documents/${documentId}?readonly=true`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      } catch {
+        setLinkDialog({ open: true, title, documentId, spaceId, status: 'no-access' });
+      }
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    window.addEventListener('document-link-click', handleDocumentLinkClick);
+    return () => window.removeEventListener('document-link-click', handleDocumentLinkClick);
+  }, [handleDocumentLinkClick]);
 
   const searchParams = useSearchParams();
 
@@ -472,6 +525,45 @@ export default function SharePage() {
           footer={<DocMetaFooter meta={docMeta} />}
         />
       </main>
+
+      {/* ─── Document Link Access Dialog ─── */}
+      <Dialog open={linkDialog.open} onOpenChange={(open) => setLinkDialog((prev) => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gray-500" />
+              <span className="truncate">{linkDialog.title}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {linkDialog.status === 'no-login' && '你需要登录后才能查看此文档'}
+              {linkDialog.status === 'no-access' && '你没有权限访问此文档，请联系文档所有者获取权限'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            {linkDialog.status === 'no-login' && (
+              <Button
+                onClick={() => {
+                  const returnUrl = encodeURIComponent(window.location.href);
+                  window.location.href = `/auth/login?returnTo=${returnUrl}`;
+                }}
+                className="gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                去登录
+              </Button>
+            )}
+
+            {linkDialog.status === 'no-access' && (
+              <Button
+                onClick={() => setLinkDialog((prev) => ({ ...prev, open: false }))}
+              >
+                知道了
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

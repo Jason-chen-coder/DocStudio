@@ -60,4 +60,22 @@ export class ActivityController {
       limit ? parseInt(limit, 10) : 30,
     );
   }
+
+  @Get('space/:spaceId/stats')
+  @ApiOperation({ summary: '获取空间统计数据' })
+  getSpaceStats(@Param('spaceId') spaceId: string) {
+    return this.activityService.getSpaceStats(spaceId);
+  }
+
+  @Get('document/:documentId/stats')
+  @ApiOperation({ summary: '获取文档阅读统计' })
+  getDocumentStats(@Param('documentId') documentId: string) {
+    return this.activityService.getDocumentStats(documentId);
+  }
+
+  @Get('my/stats')
+  @ApiOperation({ summary: '获取个人生产力统计' })
+  getMyStats(@Req() req: any) {
+    return this.activityService.getUserProductivityStats(req.user.id);
+  }
 }

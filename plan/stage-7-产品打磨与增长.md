@@ -1,6 +1,6 @@
 # Stage 7: 产品打磨与增长
 
-**状态**: 🔄 进行中（Phase 1 + Phase 3 已完成）
+**状态**: 🔄 进行中（Phase 1-5 + Phase 7 已完成）
 **预估周期**: 6-8 周
 **目标**: 从 MVP 走向可上线产品，补齐用户留存和增长的关键链路
 
@@ -25,11 +25,11 @@
 
 | 缺口 | 严重度 | 说明 |
 |------|--------|------|
-| **无通知系统** | 🔴 致命 | @提及和评论已实现，但被提及方完全无法感知。协作闭环断裂。 |
+| ~~无通知系统~~ | ✅ 已解决 | SSE 实时推送 + 通知面板 + 未读数 + 通知偏好设置 + 8 种通知类型 |
 | ~~无回收站~~ | ✅ 已解决 | 软删除 + 30天自动清理 + 回收站页面 + 恢复/永久删除 |
 | ~~无收藏/置顶~~ | ✅ 已解决 | DocumentFavorite 模型 + 星标按钮 + 收藏页面（分页表格）+ Dashboard 板块 |
-| **无 PDF 导出** | 🟡 高 | 商务场景刚需（合同、报告、方案），当前仅支持 Markdown/HTML。 |
-| **无导入功能** | 🟡 高 | 新用户迁移成本高，无法从 Markdown/Word 导入。 |
+| ~~无 PDF 导出~~ | ✅ 已解决 | 纯前端 PDF 导出（html2canvas + jsPDF），支持 A4 分页 |
+| ~~无导入功能~~ | ✅ 已解决 | 支持 Markdown / HTML / Word (.docx) 导入，纯前端解析 |
 | **无文档互链** | 🟠 中 | 知识库场景需要文档之间互相引用，构建知识网络。 |
 | **无 AI 能力** | 🟠 中 | 2026 年编辑器产品没有 AI 辅助写作会被认为落后。 |
 | **无数据看板** | 🟢 低 | Stage 6 已规划，属于增长阶段需求。 |
@@ -87,73 +87,50 @@
 
 ---
 
-## Phase 2: 协作闭环 — 通知系统（5-7 天）
+## Phase 2: 协作闭环 — 通知系统 ✅
 
 **优先级**: P0 🔴
-**理由**: @提及和评论没有通知 = 没有意义。这是协作产品最核心的链路。
+**状态**: ✅ 已完成（2026-03-22）
 
-### 2.1 功能设计
-
-**通知触发场景（按优先级）：**
-
-| 场景 | 接收方 | 优先级 |
-|------|--------|--------|
-| 被 @提及 | 被提及的用户 | 最高 |
-| 文档收到新评论 | 文档创建者 | 高 |
-| 评论被回复 | 原评论者 | 高 |
-| 被邀请加入空间 | 被邀请者 | 中 |
-| 文档被分享给你 | 被分享者 | 中 |
-| 你的文档被编辑 | 文档创建者 | 低（聚合） |
-
-### 2.2 实现要点
+### 2.1 实现清单
 
 **数据层：**
-```prisma
-model Notification {
-  id         String   @id @default(cuid())
-  userId     String                         // 接收者
-  type       NotificationType               // MENTION / COMMENT / REPLY / INVITE / SHARE / EDIT
-  title      String
-  body       String?
-  sourceId   String?                        // 触发源 ID（文档/评论/空间）
-  sourceType String?                        // DOCUMENT / COMMENT / SPACE
-  actorId    String                         // 触发者
-  spaceId    String?
-  isRead     Boolean  @default(false)
-  readAt     DateTime?
-  createdAt  DateTime @default(now())
+- [x] `Notification` 模型（id/userId/type/title/body/sourceId/sourceType/actorId/spaceId/isRead/readAt）
+- [x] `NotificationPreference` 模型（用户级通知偏好设置）
+- [x] 8 种通知类型：SPACE_INVITATION / MEMBER_JOINED / ROLE_CHANGED / DOCUMENT_COMMENTED / DOCUMENT_MENTIONED / DOCUMENT_SHARED / DOCUMENT_UPDATED / SPACE_DELETED / SYSTEM
 
-  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  actor User @relation("NotificationActor", fields: [actorId], references: [id])
-
-  @@index([userId, isRead, createdAt])
-}
-```
-
-**API：**
-- `GET /notifications` — 获取通知列表（分页 + 未读筛选）
-- `GET /notifications/unread-count` — 未读数（轮询或 SSE）
-- `PATCH /notifications/:id/read` — 标记已读
-- `PATCH /notifications/read-all` — 全部标记已读
+**API（8+ 端点）：**
+- [x] `GET /notifications` — 获取通知列表（分页 + 类型筛选）
+- [x] `GET /notifications/unread-count` — 未读数
+- [x] `GET /notifications/sse` — SSE 实时推送通道
+- [x] `PATCH /notifications/:id/read` — 标记单条已读
+- [x] `PATCH /notifications/read-all` — 全部标记已读
+- [x] `DELETE /notifications/:id` — 删除单条通知
+- [x] `DELETE /notifications/clear-read` — 清除所有已读通知
+- [x] `GET /notifications/preferences` — 获取通知偏好
+- [x] `PATCH /notifications/preferences` — 更新通知偏好
+- [x] `POST /notifications/cleanup` — 清理旧通知（管理员）
 
 **前端：**
-- Header 右上角铃铛图标 + 红色未读数角标
-- 点击弹出通知面板（Popover）
-  - 「全部」/「未读」Tab 切换
-  - 每条通知：触发者头像 + 描述 + 时间 + 跳转链接
-  - 「全部已读」按钮
-- 点击通知跳转到对应文档/评论位置
+- [x] Header 右上角铃铛图标 + 未读数角标（`notification-bell.tsx`）
+- [x] 通知下拉面板（`notification-dropdown.tsx`）：列表 / 标记已读 / 删除 / 筛选
+- [x] SSE 实时推送连接，未读数实时更新
+- [x] 设置页面通知偏好配置（`/settings/notifications`）
 
-**实时推送（可选增强）：**
-- 初期用轮询（30s 间隔查未读数）
-- 后期可升级为 SSE 或复用 WebSocket 通道
+**实时推送：**
+- [x] 采用 SSE（Server-Sent Events）方案，非轮询
 
-### 2.3 验收标准
-- [ ] @提及后对方收到通知
-- [ ] 评论/回复后相关方收到通知
-- [ ] 点击通知跳转到对应位置
-- [ ] 未读数实时更新
-- [ ] 支持标记已读 / 全部已读
+**相关文件：**
+- `apps/api/src/notifications/` — NotificationsModule/Controller/Service
+- `apps/web/src/components/notification/` — notification-bell / notification-dropdown
+- `apps/web/src/app/(main)/settings/notifications/page.tsx` — 通知偏好设置页
+
+### 2.2 验收标准
+- [x] @提及后对方收到通知
+- [x] 评论/回复后相关方收到通知
+- [x] 未读数实时更新（SSE）
+- [x] 支持标记已读 / 全部已读
+- [x] 通知偏好可自定义
 
 ---
 
@@ -196,73 +173,92 @@ model Notification {
 
 ---
 
-## Phase 4: 内容流通 — 导入导出增强（3-4 天）
+## Phase 4: 内容流通 — 导入导出增强 ✅
 
 **优先级**: P1 🟡
-**理由**: 导出满足商务需求，导入降低迁移成本，两者都是用户决定是否长期使用的关键因素。
+**状态**: ✅ 已完成（2026-03-23）
 
-### 4.1 PDF 导出
+### 4.1 导出功能（早期已完成）
 
-**技术方案**：服务端使用 Puppeteer（或 Playwright）渲染 HTML → PDF
+三种导出格式均为纯前端实现，无需服务端：
+- [x] Markdown 导出（`exportAsMarkdown`）— 递归遍历 Tiptap JSON 生成 .md
+- [x] HTML 导出（`exportAsHTML`）— 带 print-friendly CSS 的完整 HTML
+- [x] PDF 导出（`exportAsPDF`）— html2canvas + jsPDF，支持 A4 分页
+- [x] 编辑器菜单已集成三种导出选项
 
-- 复用已有的 `exportAsHTML()` 生成带样式 HTML
-- 服务端接收 HTML，通过 headless browser 渲染为 PDF
-- 支持 A4 分页、页眉页脚、封面页
+### 4.2 导入功能
 
-**API：**
-- `POST /documents/:id/export/pdf` — 返回 PDF 文件流
+**架构决策：纯前端解析**
+- 使用 `markdown-it` 将 Markdown → HTML
+- 使用 `mammoth` 将 DOCX → HTML
+- 使用 `@tiptap/core` 的 `generateJSON()` 将 HTML → Tiptap JSON
+- 通过已有的 `POST /documents` API 创建文档，无后端改动
 
-**前端：**
-- 编辑器工具栏 / 文档菜单中添加「导出」下拉菜单
-- 选项：Markdown / HTML / PDF
+**实现清单：**
+- [x] 安装依赖：`markdown-it`、`markdown-it-task-lists`、`mammoth`
+- [x] 提取共享 Extension 列表（`tiptap-extensions.ts`）— `generateJSON()` 需要扩展数组来理解 schema
+- [x] 重构 `SimpleEditor` 使用共享 Extension 列表
+- [x] 创建导入工具函数（`import-utils.ts`）— 支持 .md / .html / .htm / .docx
+- [x] 创建 `ImportDocumentDialog` 组件 — 拖拽/点击选择文件、标题编辑、文件类型识别
+- [x] 集成到空间页面 — "导入"按钮位于"新建文档"按钮旁
+- [x] TypeScript 编译零错误
 
-### 4.2 Markdown 导入
+**相关文件：**
+- `apps/web/src/lib/tiptap-extensions.ts` — 共享 Extension 列表
+- `apps/web/src/lib/import-utils.ts` — 三种格式解析（parseMarkdownFile / parseHTMLFile / parseDocxFile）
+- `apps/web/src/components/document/import-document-dialog.tsx` — 导入对话框
+- `apps/web/src/components/tiptap-templates/simple/simple-editor.tsx` — 重构使用共享 Extensions
+- `apps/web/src/app/(main)/spaces/[id]/page.tsx` — 空间页面集成导入按钮
 
-- 前端文件选择器 → 读取 .md 文件内容
-- 使用 Tiptap 的 Markdown → ProseMirror 解析（或 markdown-it + 自定义转换）
-- 创建新文档并填充解析后的内容
-
-### 4.3 Word 导入（可选）
-
-- 使用 `mammoth.js` 将 .docx 转换为 HTML
-- 再通过 Tiptap 的 `setContent(html)` 导入
-- 可作为增强项后续迭代
-
-### 4.4 验收标准
-- [ ] 可导出为 PDF（正确分页、样式保持）
-- [ ] 可从 .md 文件导入创建文档
-- [ ] 导入后格式基本保持（标题、列表、代码块、图片链接）
+### 4.3 验收标准
+- [x] 可导出为 PDF / Markdown / HTML
+- [x] 可从 .md 文件导入创建文档
+- [x] 可从 .html 文件导入创建文档
+- [x] 可从 .docx 文件导入创建文档
+- [x] 导入后格式保持（标题、段落、列表、代码块、表格、图片链接）
+- [x] 拖拽上传和点击选择均可用
+- [x] 文件大小限制（10MB）和格式校验
 
 ---
 
-## Phase 5: 知识网络 — 文档互链与反向链接（3-4 天）
+## Phase 5: 知识网络 — 文档互链 ✅
 
 **优先级**: P1 🟡
-**理由**: 知识库的核心价值是知识的连接。文档互链让零散文档变成有结构的知识网络。
+**状态**: ✅ 已完成（2026-03-23）
 
-### 5.1 功能设计
+### 5.1 实现方案
 
-**文档链接：**
-- Slash Command `/link` 或输入 `[[` 触发文档搜索
-- 下拉列表搜索当前空间文档
-- 选择后插入为内部链接（可点击跳转）
-- 链接样式：带文档图标的 chip，区别于普通 URL 链接
+**架构**：自定义 Tiptap Node（`documentLink`）+ `@tiptap/suggestion` 插件
+- 输入 `[[` 触发文档搜索弹窗（复用 @mention 的 ReactRenderer + tippy.js 模式）
+- 选择文档后插入内联 atom 节点（绿色 chip 样式，带文档图标）
+- 节点存储 `documentId`、`spaceId`、`title` 属性
+- 编辑模式单击选中，只读模式点击跳转
+- 斜杠命令 `/链接文档` 也可触发
 
-**反向链接面板：**
-- 文档底部或侧栏展示「引用了此文档的其他文档」
-- 帮助用户发现文档之间的关联
+**实现清单：**
+- [x] `document-link-extension.ts` — Node 扩展 + Suggestion 插件
+- [x] `document-link-list.tsx` — 下拉搜索列表组件（键盘导航）
+- [x] `document-link-suggestion.tsx` — 弹窗配置（ReactRenderer + tippy.js）
+- [x] 注册到 SimpleEditor（新增 `documentId` prop 防止自链接）
+- [x] 透传 `documentId` 到 Editor 和文档页面
+- [x] 注册到共享扩展 `tiptap-extensions.ts`（支持 import/export）
+- [x] Markdown 导出支持（`export-utils.ts`）
+- [x] 斜杠命令"链接文档"（`slash-commands-items.ts`）
+- [x] 绿色标签样式（`simple-editor.scss`）
+- [x] TypeScript 编译零错误
 
-### 5.2 实现要点
+**相关文件：**
+- `apps/web/src/components/tiptap-extension/document-link/` — 扩展目录（4 个文件）
+- `apps/web/src/components/tiptap-templates/simple/simple-editor.tsx` — 编辑器集成
+- `apps/web/src/components/editor/editor.tsx` — 透传 documentId
+- `apps/web/src/lib/tiptap-extensions.ts` — 共享扩展注册
+- `apps/web/src/lib/export-utils.ts` — 导出支持
 
-- 自定义 Tiptap Mark 或 Node：`docLink`，存储 `{ docId, title }`
-- 解析文档内容中的 docLink 节点，建立反向索引
-- 渲染时检查目标文档是否存在（处理已删除的情况）
-
-### 5.3 验收标准
-- [ ] `[[` 触发文档搜索并插入链接
-- [ ] 点击链接跳转到目标文档
-- [ ] 文档底部显示反向链接列表
-- [ ] 目标文档被删除时链接优雅降级
+### 5.2 未来增强（v2）
+- [ ] 反向链接面板（文档底部展示引用此文档的其他文档）
+- [ ] 链接标题动态解析（目标文档重命名后自动更新）
+- [ ] 失效链接提示（目标文档被删除时显示警告样式）
+- [ ] 跨空间文档搜索
 
 ---
 
@@ -311,34 +307,45 @@ model Notification {
 
 ---
 
-## Phase 7: 数据洞察（Stage 6 已规划）（4-5 天）
+## Phase 7: 数据洞察 ✅
 
 **优先级**: P2 🟠
-**理由**: 内容创作者需要反馈循环。知道"谁在看我的文档"能激励持续创作。
+**状态**: ✅ 已完成（2026-03-23）
 
-> 详细设计见 `stage-6-数据与洞察.md`，此处列出核心优先项：
+### 7.1 实现方案
 
-- 文档阅读量统计（PV/UV）
-- 空间数据面板（文档增长趋势、活跃成员排行）
-- 个人工作台数据卡片（本周创建/编辑文档数、被阅读次数）
+**后端 API**（3 个新端点）：
+- [x] `GET /activity/space/:spaceId/stats` — 空间统计（文档数、成员数、阅读量、增长趋势、热门文档 Top10、活跃成员 Top10、操作分布）
+- [x] `GET /activity/document/:documentId/stats` — 文档阅读统计（UV/PV + 7 日趋势）
+- [x] `GET /activity/my/stats` — 个人生产力（本周/上周创建数、编辑数、被阅读总次数）
+
+**前端页面**：
+- [x] 空间数据面板页面（`/spaces/[id]/analytics`）— 4 个概览卡片 + 4 个 recharts 图表
+- [x] 空间页面"数据"快捷入口（BarChart3 图标）
+- [x] 文档编辑器阅读统计徽章（Eye 图标 + PV 数字）
+- [x] 个人 Dashboard 增强（本周创建/编辑 + vs 上周趋势 + 被阅读总次数）
+
+**相关文件**：
+- `apps/api/src/activity/activity.service.ts` — 3 个统计聚合方法
+- `apps/api/src/activity/activity.controller.ts` — 3 个 API 端点
+- `apps/web/src/services/activity-service.ts` — 前端调用 + 类型
+- `apps/web/src/app/(main)/spaces/[id]/analytics/page.tsx` — 空间数据面板
+- `apps/web/src/components/editor/document-stats-badge.tsx` — 阅读统计徽章
+- `apps/web/src/app/(main)/dashboard/page.tsx` — Dashboard 增强
 
 ---
 
 ## 实施路线图
 
 ```
-第 1 周    ┃ Phase 1: 回收站（3天）
-           ┃ Phase 3: 收藏功能（2天）← 可与回收站并行
+✅ 已完成   ┃ Phase 1: 回收站 ✅
+           ┃ Phase 2: 通知系统 ✅
+           ┃ Phase 3: 收藏功能 ✅
+           ┃ Phase 4: 导入导出增强 ✅
+           ┃ Phase 5: 文档互链 ✅
+           ┃ Phase 7: 数据洞察 ✅
            ┃
-第 2-3 周  ┃ Phase 2: 通知系统（5-7天）← 最关键，需要充足时间
-           ┃
-第 4 周    ┃ Phase 4: 导入导出增强（3-4天）
-           ┃
-第 5 周    ┃ Phase 5: 文档互链（3-4天）
-           ┃
-第 6-7 周  ┃ Phase 6: AI 写作助手（5-7天）
-           ┃
-第 8 周    ┃ Phase 7: 数据洞察（4-5天）
+待开发      ┃ Phase 6: AI 写作助手（5-7天）
            ┃ 缓冲 + Bug 修复 + 体验打磨
 ```
 
@@ -348,12 +355,12 @@ model Notification {
 
 ### 如果时间紧张，必须做的（最小发布集）
 
-**Phase 1 + Phase 2 + Phase 3**（约 2 周）
+**Phase 1 + Phase 2 + Phase 3** ✅ 已全部完成
 
 这三个功能构成「可信赖的协作产品」的底线：
-- 回收站 → 用户敢用（数据安全）
-- 通知 → 协作有意义（闭环打通）
-- 收藏 → 用得顺手（效率提升）
+- 回收站 ✅ → 用户敢用（数据安全）
+- 通知 ✅ → 协作有意义（闭环打通）
+- 收藏 ✅ → 用得顺手（效率提升）
 
 ### 如果要对外推广，还需要加上
 
@@ -375,7 +382,7 @@ model Notification {
 
 | 风险 | 影响 | 缓解策略 |
 |------|------|---------|
-| 通知系统实时性 | 用户期望即时通知 | 初期轮询，后续升级 SSE/WebSocket |
+| ~~通知系统实时性~~ | ✅ 已解决 | 已采用 SSE 实时推送方案 |
 | PDF 导出复杂排版 | 表格、代码块、图片分页 | 限定 A4 简洁样式，不追求完美还原 |
 | AI API 成本 | 高频使用时费用可观 | 免费额度 + 用量限制 + 可选用户自备 API Key |
 | 文档互链一致性 | 目标文档删除/移动后链接失效 | 软删除（回收站）+ 链接检查 + 优雅降级提示 |

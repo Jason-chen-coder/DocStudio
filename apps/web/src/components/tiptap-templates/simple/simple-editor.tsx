@@ -13,43 +13,24 @@ import type { CollabUser } from "@/hooks/use-collaboration"
 // --- Comment Extensions ---
 import { CommentMark } from "@/components/tiptap-extension/comment-mark-extension"
 import { SlashCommands, slashCommandsSuggestion } from "@/components/tiptap-extension/slash-commands"
-import { CalloutExtension } from "@/components/tiptap-node/callout-node"
-import { MathExtension } from "@/components/tiptap-node/math-node"
-import { DrawingExtension } from "@/components/tiptap-node/drawing-node"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import Mention from "@tiptap/extension-mention"
 import { createMentionSuggestion } from "@/components/tiptap-extension/mention"
+import { DocumentLink, createDocumentLinkSuggestion } from "@/components/tiptap-extension/document-link"
 import { spaceService } from "@/services/space-service"
+import { documentService } from "@/services/document-service"
 import { useComments } from "@/hooks/use-comments"
 import type { CommentThread } from "@/hooks/use-comments"
 import { CommentBubbleMenu } from "@/components/editor/comment-bubble-menu"
 import { CommentPanel } from "@/components/editor/comment-panel"
 
-// --- Tiptap Core Extensions ---
-import { StarterKit } from "@tiptap/starter-kit"
-import { CodeBlockWithLanguageSelector } from "@/components/tiptap-node/code-block-node"
-import { ImageExtension } from "@/components/tiptap-node/image-node/image-extension"
-import { TaskItem, TaskList } from "@tiptap/extension-list"
-import { TextAlign } from "@tiptap/extension-text-align"
-import { Typography } from "@tiptap/extension-typography"
-import { Highlight } from "@tiptap/extension-highlight"
-import { Subscript } from "@tiptap/extension-subscript"
-import { Superscript } from "@tiptap/extension-superscript"
+// --- Shared base extensions (schema-defining nodes & marks) ---
+import { getBaseExtensions } from "@/lib/tiptap-extensions"
 import { Selection } from "@tiptap/extensions"
-
-// Lowlight: register all languages so the language switcher works for every option.
-import { all, createLowlight } from "lowlight"
-
-const lowlight = createLowlight(all)
-
 import {
   TableOfContents,
   getHierarchicalIndexes,
 } from "@tiptap/extension-table-of-contents"
-import { Table } from "@tiptap/extension-table"
-import { TableRow } from "@tiptap/extension-table-row"
-import { TableCell } from "@tiptap/extension-table-cell"
-import { TableHeader } from "@tiptap/extension-table-header"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -62,7 +43,6 @@ import {
 
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
-import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension"
 import "@/components/tiptap-node/blockquote-node/blockquote-node.scss"
 import "@/components/tiptap-node/code-block-node/code-block-node.scss"
 import "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.scss"
@@ -325,8 +305,10 @@ export interface SimpleEditorProps {
   onCommentsChange?: (threads: CommentThread[]) => void
   /** Called when a comment is added or replied to (for notifications) */
   onCommentEvent?: (event: import('@/hooks/use-comments').CommentEvent) => void
-  /** Space ID for @mention member lookup */
+  /** Space ID for @mention member lookup and [[ document link search */
   spaceId?: string
+  /** Document ID to exclude from [[ document link suggestions (self-link prevention) */
+  documentId?: string
 }
 
 type TableOfContentsItem = {
@@ -350,6 +332,7 @@ export function SimpleEditor({
   onCommentsChange,
   onCommentEvent,
   spaceId,
+  documentId,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
@@ -390,33 +373,8 @@ export function SimpleEditor({
       },
     },
     extensions: [
-      StarterKit.configure({
-        undoRedo: isCollabMode ? false : undefined, // Disable Prosemirror history in collab mode
-        horizontalRule: false,
-        codeBlock: false,           // Disabled: replaced by CodeBlockLowlight below
-        link: {
-          openOnClick: false,
-          enableClickSelection: true,
-        },
-      }),
-      // ── Code Block with Lazy Syntax Highlighting ─────────────────────────
-      // Replaces StarterKit's plain codeBlock. We eagerly registered only the
-      // most common 8 languages above; any other language selected by the user
-      // is loaded lazily on first use without any bundle hit at startup.
-      CodeBlockWithLanguageSelector.configure({
-        lowlight,
-        defaultLanguage: 'javascript',
-        languageClassPrefix: 'language-',
-      }),
-      HorizontalRule,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Highlight.configure({ multicolor: true }),
-      ImageExtension,
-      Typography,
-      Superscript,
-      Subscript,
+      // Base content-defining extensions (shared with import-utils)
+      ...getBaseExtensions({ disableUndoRedo: isCollabMode }),
       Selection,
       CommentMark,
       TableOfContents.configure({
@@ -461,17 +419,6 @@ export function SimpleEditor({
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
-      // Table (rows, cells, headers)
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableCell,
-      TableHeader,
-      // Callout blocks (info/warning/error/success)
-      CalloutExtension,
-      // Math blocks (KaTeX)
-      MathExtension,
-      // Drawing canvas (SVG + D3)
-      DrawingExtension,
       // @Mention — type @ to search and tag space members
       ...(spaceId
         ? [
@@ -496,6 +443,34 @@ export function SimpleEditor({
                     name: m.name,
                     email: m.email,
                     avatarUrl: m.avatarUrl ?? null,
+                  }));
+              } catch {
+                return [];
+              }
+            }),
+          }),
+        ]
+        : []),
+      // Document Link — type [[ to search and link documents
+      ...(spaceId
+        ? [
+          DocumentLink.configure({
+            suggestion: createDocumentLinkSuggestion(async (query) => {
+              try {
+                const docs = await documentService.getDocuments(spaceId);
+                const q = query.toLowerCase();
+                return docs
+                  .filter(
+                    (d) =>
+                      d.id !== documentId &&
+                      !d.deletedAt &&
+                      (!q || d.title.toLowerCase().includes(q)),
+                  )
+                  .slice(0, 8)
+                  .map((d) => ({
+                    id: d.id,
+                    title: d.title || '无标题文档',
+                    spaceId: d.spaceId,
                   }));
               } catch {
                 return [];

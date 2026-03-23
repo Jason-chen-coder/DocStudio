@@ -15,6 +15,7 @@ import {
   Smile,
   Sigma,
   PenTool,
+  Link2,
 } from 'lucide-react';
 import type { Editor } from '@tiptap/core';
 import type { LucideIcon } from 'lucide-react';
@@ -197,6 +198,18 @@ export const SLASH_COMMAND_ITEMS: SlashCommandItem[] = [
     aliases: ['drawing', 'draw', 'canvas', 'sketch', 'paint', 'huaban', 'huihua'],
     command: (editor) => {
       editor.chain().focus().insertDrawing().run();
+    },
+  },
+
+  // ── 链接 ──
+  {
+    title: '链接文档',
+    description: '插入文档链接 [[',
+    icon: Link2,
+    group: '插入',
+    aliases: ['link', 'doclink', 'wikilink', 'lianjie', 'wendang'],
+    command: (editor) => {
+      editor.chain().focus().insertContent('[[').run();
     },
   },
 ];

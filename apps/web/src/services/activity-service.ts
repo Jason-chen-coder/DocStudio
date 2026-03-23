@@ -62,6 +62,35 @@ export type EntityType =
   | 'SHARE_LINK'
   | 'MEMBER';
 
+// ==================== Stats Types ====================
+
+export interface SpaceStats {
+  overview: {
+    docCount: number;
+    memberCount: number;
+    totalViews: number;
+    weeklyActions: number;
+  };
+  docGrowthTrend: { date: string; count: number }[];
+  topDocuments: { documentId: string; title: string; views: number }[];
+  topMembers: { userId: string; name: string; avatarUrl: string | null; actions: number }[];
+  actionDistribution: { action: string; count: number }[];
+}
+
+export interface DocumentStats {
+  uv: number;
+  pv: number;
+  dailyTrend: { date: string; count: number }[];
+}
+
+export interface UserProductivityStats {
+  thisWeekCreated: number;
+  lastWeekCreated: number;
+  thisWeekEdited: number;
+  lastWeekEdited: number;
+  totalReads: number;
+}
+
 // ==================== Service ====================
 
 export const activityService = {
@@ -100,5 +129,17 @@ export const activityService = {
     return apiRequest<ActivityListResponse>(
       `/activity/space/${spaceId}?page=${page}&limit=${limit}`,
     );
+  },
+
+  async getSpaceStats(spaceId: string): Promise<SpaceStats> {
+    return apiRequest<SpaceStats>(`/activity/space/${spaceId}/stats`);
+  },
+
+  async getDocumentStats(documentId: string): Promise<DocumentStats> {
+    return apiRequest<DocumentStats>(`/activity/document/${documentId}/stats`);
+  },
+
+  async getMyStats(): Promise<UserProductivityStats> {
+    return apiRequest<UserProductivityStats>('/activity/my/stats');
   },
 };

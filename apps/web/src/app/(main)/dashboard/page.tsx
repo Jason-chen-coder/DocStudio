@@ -17,6 +17,7 @@ import {
   X,
   TrendingUp,
   Star,
+  Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -25,6 +26,7 @@ import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { DashboardStats } from '@/components/activity/dashboard-stats';
 import CountUp from '@/components/ui/count-up';
 import { FadeIn } from '@/components/ui/fade-in';
+import { activityService, type UserProductivityStats } from '@/services/activity-service';
 import { AnimatedModal } from '@/components/ui/animated-modal';
 import { documentService } from '@/services/document-service';
 import { DocumentFavorite } from '@/types/document';
@@ -39,6 +41,7 @@ export default function DashboardPage() {
   const [showRecentModal, setShowRecentModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [favorites, setFavorites] = useState<DocumentFavorite[]>([]);
+  const [prodStats, setProdStats] = useState<UserProductivityStats | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -49,6 +52,7 @@ export default function DashboardPage() {
         .finally(() => setLoading(false));
 
       documentService.getFavorites().then(setFavorites).catch(console.error);
+      activityService.getMyStats().then(setProdStats).catch(console.error);
     }
   }, [user]);
 
@@ -144,6 +148,62 @@ export default function DashboardPage() {
         </div>
       </div>
       </FadeIn>
+
+      {/* ═══════ Productivity Stats ═══════ */}
+      {prodStats && (
+        <FadeIn delay={0.12} y={30}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                label: '本周创建',
+                value: prodStats.thisWeekCreated,
+                prev: prodStats.lastWeekCreated,
+                icon: FileText,
+                color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+              },
+              {
+                label: '本周编辑',
+                value: prodStats.thisWeekEdited,
+                prev: prodStats.lastWeekEdited,
+                icon: TrendingUp,
+                color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
+              },
+              {
+                label: '被阅读总次数',
+                value: prodStats.totalReads,
+                prev: null,
+                icon: Eye,
+                color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+              },
+            ].map((s) => {
+              const diff = s.prev !== null ? s.value - s.prev : null;
+              return (
+                <div
+                  key={s.label}
+                  className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.color}`}>
+                      <s.icon className="w-4.5 h-4.5" />
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{s.label}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                      <CountUp from={0} to={s.value} duration={2} separator="," direction="up" />
+                    </p>
+                    {diff !== null && diff !== 0 && (
+                      <span className={`text-xs font-medium ${diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                        {diff > 0 ? '↑' : '↓'} {Math.abs(diff)} vs 上周
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </FadeIn>
+      )}
 
       {/* ═══════ Stats Charts ═══════ */}
       <FadeIn delay={0.15} y={30}>

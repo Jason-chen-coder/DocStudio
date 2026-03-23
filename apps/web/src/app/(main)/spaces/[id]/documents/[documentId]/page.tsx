@@ -27,9 +27,12 @@ import {
   Loader2,
   Lock,
   ArrowRight,
+  Keyboard,
 } from 'lucide-react';
 import { exportAsMarkdown, exportAsHTML, exportAsPDF } from '@/lib/export-utils';
 import { SaveAsTemplateDialog } from '@/components/template/save-as-template-dialog';
+import { KeyboardShortcutsDialog } from '@/components/editor/keyboard-shortcuts-dialog';
+import { DocumentStatsBadge } from '@/components/editor/document-stats-badge';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -92,14 +95,17 @@ export default function DocumentPage() {
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [docIsRestricted, setDocIsRestricted] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [initialCommentThreads, setInitialCommentThreads] = useState<CommentThread[]>([]);
 
   // Status for auto-save (title only in collab mode)
   const [status, setStatus] = useState<'saved' | 'saving' | 'error' | 'pending'>('saved');
 
-  // Permissions: VIEWER 角色 或 从活动日志进入时强制只读
-  const isReadOnly = space?.myRole === 'VIEWER' || isReadOnlyFromQuery;
+  // Permissions: VIEWER 角色、非空间成员（公开空间匿名访问）、或从活动日志进入时强制只读
+  const hasWriteRole = space?.myRole === 'OWNER' || space?.myRole === 'ADMIN' || space?.myRole === 'EDITOR';
+  const isReadOnly = !hasWriteRole || isReadOnlyFromQuery;
 
   // Build the current user object for collaboration
   const collabUser: CollabUser | null = authUser
@@ -147,9 +153,14 @@ export default function DocumentPage() {
         setDocIsRestricted(docData.isRestricted ?? false);
         // Restore persisted comment threads
         setInitialCommentThreads(deserializeThreads(docData.commentsData));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load document', error);
-        toast.error('无法加载文档');
+        // Detect 403 Forbidden → show access denied page
+        if (error?.status === 403 || error?.message?.includes('403') || error?.message?.includes('permission')) {
+          setAccessDenied(true);
+        } else {
+          toast.error('无法加载文档');
+        }
       } finally {
         setLoading(false);
         loadingRef.current = false;
@@ -223,6 +234,33 @@ export default function DocumentPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [title, saveDocument]);
 
+
+  if (accessDenied) {
+    return (
+      <div className="mx-auto h-full flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg px-6">
+        <div className="flex flex-col items-center text-center max-w-sm">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-5">
+            <Lock className="w-7 h-7 text-red-500 dark:text-red-400" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            无访问权限
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+            你没有权限访问此文档，请联系文档所有者或空间管理员获取访问权限。
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-1.5"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            返回上一页
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -347,6 +385,8 @@ export default function DocumentPage() {
               )}
             </div>
 
+            <DocumentStatsBadge documentId={documentId} />
+
             {/* View mode toggle / edit entry */}
             {isReadOnlyFromQuery && space?.myRole !== 'VIEWER' ? (
               <Button
@@ -429,6 +469,11 @@ export default function DocumentPage() {
                   <Printer className="h-4 w-4" />
                   导出 PDF
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowShortcuts(true)}>
+                  <Keyboard className="h-4 w-4" />
+                  快捷键
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -475,6 +520,7 @@ export default function DocumentPage() {
           onCommentsChange={handleCommentsChange}
           onCommentEvent={handleCommentEvent}
           spaceId={spaceId}
+          documentId={documentId}
           onReady={(editor) => {
             editorRef.current = editor;
             setIsEditorReady(true);
@@ -540,6 +586,11 @@ export default function DocumentPage() {
         spaceId={spaceId}
         isRestricted={docIsRestricted}
         onRestrictedChange={setDocIsRestricted}
+      />
+
+      <KeyboardShortcutsDialog
+        open={showShortcuts}
+        onOpenChange={setShowShortcuts}
       />
     </div>
   );

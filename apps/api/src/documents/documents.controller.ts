@@ -58,10 +58,10 @@ export class DocumentsController {
   }
 
   /**
-   * Lightweight existence check — returns 204 if exists, 404 if not.
+   * Lightweight existence + permission check — returns 204 if exists and user has access, 403/404 otherwise.
    * No body, no side effects (no visit recording).
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SpacePermissionGuard)
   @Get(':id/exists')
   @HttpCode(204)
   async checkExists(@Param('id') id: string) {

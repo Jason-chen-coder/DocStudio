@@ -26,10 +26,13 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  Upload,
+  BarChart3,
 } from 'lucide-react';
 import { documentService } from '@/services/document-service';
 import { toast } from 'sonner';
 import { TemplatePickerModal } from '@/components/template/template-picker-modal';
+import { ImportDocumentDialog } from '@/components/document/import-document-dialog';
 import { FadeIn } from '@/components/ui/fade-in';
 import type { Document } from '@/types/document';
 
@@ -394,6 +397,7 @@ export default function SpaceDetailPage() {
   const [space, setSpace] = useState<Space | null>(null);
   const [spaceLoading, setSpaceLoading] = useState(true);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const { documents, loading: docsLoading, createDocument, deleteDocument } = useDocuments(id);
 
@@ -509,13 +513,23 @@ export default function SpaceDetailPage() {
                 </p>
               )}
             </div>
-            <button
-              onClick={handleCreate}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer flex-shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              新建文档
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setShowImportDialog(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                title="导入文档"
+              >
+                <Upload className="w-4 h-4" />
+                导入
+              </button>
+              <button
+                onClick={handleCreate}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                新建文档
+              </button>
+            </div>
           </div>
 
           {/* Row 2: Stats + Quick Actions */}
@@ -538,6 +552,14 @@ export default function SpaceDetailPage() {
 
             {/* Quick Actions */}
             <div className="flex items-center gap-1">
+              <Link
+                href={`/spaces/${space.id}/analytics`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
+                title="数据面板"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">数据</span>
+              </Link>
               <Link
                 href={`/spaces/${space.id}/activity`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
@@ -629,6 +651,16 @@ export default function SpaceDetailPage() {
         spaceId={id}
         onSelect={handleTemplateSelect}
         onSkip={handleSkipTemplate}
+      />
+
+      {/* ═══════ Import Document ═══════ */}
+      <ImportDocumentDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        spaceId={id}
+        onImported={(doc) => {
+          router.push(`/spaces/${id}/documents/${doc.id}`);
+        }}
       />
     </div>
   );

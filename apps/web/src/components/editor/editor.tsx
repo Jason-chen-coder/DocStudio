@@ -19,8 +19,10 @@ interface EditorProps {
   initialCommentThreads?: CommentThread[];
   onCommentsChange?: (threads: CommentThread[]) => void;
   onCommentEvent?: (event: CommentEvent) => void;
-  // Space ID for @mention member lookup
+  // Space ID for @mention member lookup and [[ document link search
   spaceId?: string;
+  // Document ID for [[ document link self-exclusion
+  documentId?: string;
 }
 
 export function Editor({
@@ -35,6 +37,7 @@ export function Editor({
   onCommentsChange,
   onCommentEvent,
   spaceId,
+  documentId,
 }: EditorProps) {
   return (
     <div className="editor-container h-full">
@@ -50,6 +53,7 @@ export function Editor({
         onCommentsChange={onCommentsChange}
         onCommentEvent={onCommentEvent}
         spaceId={spaceId}
+        documentId={documentId}
       />
     </div>
   );
