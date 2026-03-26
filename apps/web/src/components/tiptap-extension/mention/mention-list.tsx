@@ -1,5 +1,6 @@
 'use client';
 
+import { getCdnUrl } from '@/lib/cdn';
 import {
   forwardRef,
   useEffect,
@@ -101,9 +102,9 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                 }`}
               >
-                {user.avatarUrl ? (
+                {getCdnUrl(user.avatarUrl) ? (
                   <img
-                    src={user.avatarUrl}
+                    src={getCdnUrl(user.avatarUrl)!}
                     alt={user.name}
                     className="w-full h-full rounded-full object-cover"
                   />

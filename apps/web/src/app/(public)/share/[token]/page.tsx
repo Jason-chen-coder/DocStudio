@@ -382,11 +382,12 @@ export default function SharePage() {
     spaceId: string;
     status: 'no-login' | 'no-access';
   }>({ open: false, title: '', documentId: '', spaceId: '', status: 'no-login' });
+  const [checkingAccess, setCheckingAccess] = useState(false);
 
   const handleDocumentLinkClick = useCallback(
     async (e: Event) => {
       const { documentId, spaceId, title } = (e as CustomEvent).detail;
-      if (!documentId) return;
+      if (!documentId || checkingAccess) return;
 
       // Not logged in
       if (!user) {
@@ -395,6 +396,7 @@ export default function SharePage() {
       }
 
       // Logged in — check access, navigate directly if ok
+      setCheckingAccess(true);
       try {
         await apiRequest(`/documents/${documentId}/exists`, { method: 'HEAD' });
         // Has access — open directly, no dialog needed
@@ -405,9 +407,11 @@ export default function SharePage() {
         );
       } catch {
         setLinkDialog({ open: true, title, documentId, spaceId, status: 'no-access' });
+      } finally {
+        setCheckingAccess(false);
       }
     },
-    [user],
+    [user, checkingAccess],
   );
 
   useEffect(() => {

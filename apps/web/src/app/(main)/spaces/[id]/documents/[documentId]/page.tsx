@@ -33,6 +33,7 @@ import { exportAsMarkdown, exportAsHTML, exportAsPDF } from '@/lib/export-utils'
 import { SaveAsTemplateDialog } from '@/components/template/save-as-template-dialog';
 import { KeyboardShortcutsDialog } from '@/components/editor/keyboard-shortcuts-dialog';
 import { DocumentStatsBadge } from '@/components/editor/document-stats-badge';
+import { AiChatPanel } from '@/components/editor/ai-chat-panel';
 import type { Editor as TiptapEditor } from '@tiptap/react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -96,6 +97,8 @@ export default function DocumentPage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [aiChatMode, setAiChatMode] = useState<'floating' | 'sidebar'>('floating');
   const [docIsRestricted, setDocIsRestricted] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [initialCommentThreads, setInitialCommentThreads] = useState<CommentThread[]>([]);
@@ -317,7 +320,8 @@ export default function DocumentPage() {
   } as const;
 
   return (
-    <div className="mx-auto h-full flex flex-col bg-white rounded-lg dark:bg-gray-800">
+    <div className="h-full flex">
+    <div className="flex-1 min-w-0 h-full flex flex-col bg-white rounded-lg dark:bg-gray-800 overflow-x-hidden">
       {/* ─── Header ─── */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700/50">
         {/* Top bar: navigation + actions */}
@@ -521,6 +525,10 @@ export default function DocumentPage() {
           onCommentEvent={handleCommentEvent}
           spaceId={spaceId}
           documentId={documentId}
+          isAiChatOpen={isAiChatOpen}
+          onAiChatToggle={() => setIsAiChatOpen((v) => !v)}
+          aiChatMode={aiChatMode}
+          onAiChatModeChange={setAiChatMode}
           onReady={(editor) => {
             editorRef.current = editor;
             setIsEditorReady(true);
@@ -592,6 +600,18 @@ export default function DocumentPage() {
         open={showShortcuts}
         onOpenChange={setShowShortcuts}
       />
+    </div>
+
+    {/* AI Chat Sidebar (same level as editor container) */}
+    {isAiChatOpen && aiChatMode === 'sidebar' && editorRef.current && (
+      <AiChatPanel
+        editor={editorRef.current}
+        documentId={documentId}
+        onClose={() => setIsAiChatOpen(false)}
+        mode="sidebar"
+        onModeChange={setAiChatMode}
+      />
+    )}
     </div>
   );
 }

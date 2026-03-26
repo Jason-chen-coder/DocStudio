@@ -468,13 +468,13 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-16 mt-16 pb-32">
+          <div className="flex flex-wrap items-center gap-16 mt-16 pb-32">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="lg:w-1/2 flex flex-col gap-6"
+              className="max-w-[650px] w-full shrink-0 flex flex-col gap-6"
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-sm font-medium w-fit">
                 <Users className="w-4 h-4" />
@@ -506,8 +506,8 @@ export default function Home() {
               </ul>
             </motion.div>
 
-            <div className="lg:w-1/2 flex justify-center w-full min-h-[500px]">
-              <div style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+            <div className="flex-1 min-w-[500px] flex justify-end min-h-[500px]">
+              <div style={{maxWidth: '600px', position: 'relative' }}>
                 <CardSwap
                   cardDistance={80}
                   verticalDistance={30}

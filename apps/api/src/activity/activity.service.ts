@@ -252,23 +252,21 @@ export class ActivityService {
       }),
     ]);
 
-    // 30 天文档增长趋势
-    const docGrowth = await this.prisma.document.groupBy({
-      by: ['createdAt'],
+    // 30 天文档增长趋势（按日期聚合，非按时间戳）
+    const recentDocs = await this.prisma.document.findMany({
       where: {
         spaceId,
         deletedAt: null,
         createdAt: { gte: thirtyDaysAgo },
       },
-      _count: true,
-      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
     });
 
     // 按日聚合文档增长
     const growthByDay: Record<string, number> = {};
-    for (const item of docGrowth) {
-      const day = new Date(item.createdAt).toISOString().slice(0, 10);
-      growthByDay[day] = (growthByDay[day] || 0) + item._count;
+    for (const doc of recentDocs) {
+      const day = new Date(doc.createdAt).toISOString().slice(0, 10);
+      growthByDay[day] = (growthByDay[day] || 0) + 1;
     }
     const docGrowthTrend = [];
     for (let i = 29; i >= 0; i--) {

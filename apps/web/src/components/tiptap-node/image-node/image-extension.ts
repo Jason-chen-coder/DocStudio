@@ -16,6 +16,13 @@ export const ImageExtension = BaseImage.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      alignment: {
+        default: 'center',
+        parseHTML: (element) => element.getAttribute("data-alignment") || 'center',
+        renderHTML: (attributes) => {
+          return { 'data-alignment': attributes.alignment || 'center' }
+        },
+      },
       width: {
         default: null,
         parseHTML: (element) => {

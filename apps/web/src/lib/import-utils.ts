@@ -29,8 +29,12 @@ function filenameToTitle(filename: string): string {
  * Convert HTML string to Tiptap JSON using the shared extension schema.
  */
 function htmlToTiptapJSON(html: string): object {
-  const extensions = getBaseExtensions();
-  return generateJSON(html, extensions);
+  try {
+    const extensions = getBaseExtensions();
+    return generateJSON(html, extensions);
+  } catch {
+    throw new Error('无法解析文件内容，请检查文件格式是否正确');
+  }
 }
 
 /**

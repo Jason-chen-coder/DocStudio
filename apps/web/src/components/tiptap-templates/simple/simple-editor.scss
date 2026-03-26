@@ -1137,3 +1137,226 @@ body,
   margin-bottom: 0;
 }
 
+/* ================================================================
+   AI Copilot Ghost Text
+   ================================================================ */
+.ai-ghost-text {
+  color: #9ca3af;
+  font-style: italic;
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dark .ai-ghost-text {
+  color: #6b7280;
+}
+
+/* ================================================================
+   AI Chat Panel — Entrance Animation (scale from button origin)
+   ================================================================ */
+@keyframes ai-chat-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-ai-chat-in {
+  animation: ai-chat-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ai-chat-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+.animate-ai-chat-out {
+  animation: ai-chat-out 0.2s cubic-bezier(0.55, 0, 1, 0.45) both;
+  pointer-events: none;
+}
+
+/* ================================================================
+   AI Chat Panel — Markdown Rendering
+   ================================================================ */
+.ai-chat-markdown {
+  font-size: 13px;
+  line-height: 1.6;
+
+  p {
+    margin: 0 0 0.5em;
+    &:last-child { margin-bottom: 0; }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin: 0.75em 0 0.25em;
+    &:first-child { margin-top: 0; }
+  }
+  h1 { font-size: 1.2em; }
+  h2 { font-size: 1.1em; }
+  h3 { font-size: 1.05em; }
+
+  ul, ol {
+    margin: 0.4em 0;
+    padding-left: 1.5em;
+  }
+  li {
+    margin: 0.15em 0;
+  }
+
+  code {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Menlo', monospace;
+    font-size: 0.9em;
+    background: rgba(0,0,0,0.06);
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
+  }
+
+  pre {
+    margin: 0.5em 0;
+    padding: 0.75em 1em;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+
+    code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+  }
+
+  blockquote {
+    margin: 0.5em 0;
+    padding-left: 0.75em;
+    border-left: 3px solid #d1d5db;
+    color: #6b7280;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 12px;
+    width: 100%;
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 0.35em 0.6em;
+      text-align: left;
+    }
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 0.75em 0;
+  }
+
+  a {
+    color: #3b82f6;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    &:hover { color: #2563eb; }
+  }
+
+  img {
+    max-width: 100%;
+    border-radius: 6px;
+  }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+}
+
+/* Syntax highlighting tokens (One Dark inspired) */
+.ai-chat-markdown pre.hljs {
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-built_in { color: #c678dd; }
+  .hljs-string,
+  .hljs-attr { color: #98c379; }
+  .hljs-number,
+  .hljs-literal { color: #d19a66; }
+  .hljs-comment,
+  .hljs-doctag { color: #5c6370; font-style: italic; }
+  .hljs-function,
+  .hljs-title { color: #61afef; }
+  .hljs-variable,
+  .hljs-template-variable { color: #e06c75; }
+  .hljs-type,
+  .hljs-class .hljs-title { color: #e5c07b; }
+  .hljs-tag { color: #e06c75; }
+  .hljs-name { color: #e06c75; }
+  .hljs-attribute { color: #d19a66; }
+  .hljs-regexp,
+  .hljs-link { color: #56b6c2; }
+  .hljs-symbol,
+  .hljs-bullet { color: #61afef; }
+  .hljs-meta { color: #abb2bf; }
+  .hljs-params { color: #abb2bf; }
+  .hljs-addition { color: #98c379; background: rgba(152,195,121,0.1); }
+  .hljs-deletion { color: #e06c75; background: rgba(224,108,117,0.1); }
+}
+
+/* Dark mode overrides */
+.dark .ai-chat-markdown {
+  code {
+    background: rgba(255,255,255,0.08);
+  }
+
+  pre {
+    background: #0d1117;
+    color: #e6edf3;
+  }
+
+  blockquote {
+    border-left-color: #4b5563;
+    color: #9ca3af;
+  }
+
+  table {
+    th, td { border-color: #374151; }
+    th { background: #1f2937; }
+  }
+
+  hr { border-top-color: #374151; }
+}
+
+/* ================================================================
+   AI Chat Sidebar – horizontal layout with editor
+   ================================================================ */
+.simple-editor-wrapper.has-ai-chat-sidebar .simple-editor-main {
+  display: flex;
+  align-items: stretch;
+}
+
+.simple-editor-wrapper.has-ai-chat-sidebar .simple-editor-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+

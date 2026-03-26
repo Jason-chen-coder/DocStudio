@@ -20,8 +20,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (!authLoading && user) {
       const returnTo = searchParams.get('returnTo');
-      // Only allow relative URLs or same-origin to prevent open redirect
-      if (returnTo && (returnTo.startsWith('/') || returnTo.startsWith(window.location.origin))) {
+      // Only allow relative paths to prevent open redirect (reject protocol-relative //evil.com)
+      if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
         router.push(returnTo);
       } else {
         router.push('/dashboard');
@@ -38,7 +38,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log('Login attempt:', { email, passwordLength: password.length });
       await login({ email, password });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请重试');

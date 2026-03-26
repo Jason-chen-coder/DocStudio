@@ -16,6 +16,11 @@ import {
   Sigma,
   PenTool,
   Link2,
+  Sparkles,
+  PenLine,
+  Languages,
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
 import type { Editor } from '@tiptap/core';
 import type { LucideIcon } from 'lucide-react';
@@ -212,4 +217,80 @@ export const SLASH_COMMAND_ITEMS: SlashCommandItem[] = [
       editor.chain().focus().insertContent('[[').run();
     },
   },
+
+  // ── AI 助手 ──
+  {
+    title: 'AI 续写',
+    description: '基于上下文继续写作',
+    icon: PenLine,
+    group: 'AI 助手',
+    aliases: ['ai', 'continue', 'xuxie', '续写'],
+    command: (editor) => {
+      dispatchAiCommand(editor, 'continue');
+    },
+  },
+  {
+    title: 'AI 润色',
+    description: '改善措辞和语法',
+    icon: Sparkles,
+    group: 'AI 助手',
+    aliases: ['polish', 'runse', '润色', 'improve'],
+    command: (editor) => {
+      dispatchAiCommand(editor, 'polish');
+    },
+  },
+  {
+    title: 'AI 翻译',
+    description: '中英互译',
+    icon: Languages,
+    group: 'AI 助手',
+    aliases: ['translate', 'fanyi', '翻译'],
+    command: (editor) => {
+      dispatchAiCommand(editor, 'translate');
+    },
+  },
+  {
+    title: 'AI 摘要',
+    description: '提取核心要点',
+    icon: FileText,
+    group: 'AI 助手',
+    aliases: ['summary', 'zhaiyao', '摘要', 'summarize'],
+    command: (editor) => {
+      dispatchAiCommand(editor, 'summary');
+    },
+  },
+  {
+    title: 'AI 自定义',
+    description: '输入自定义 AI 指令',
+    icon: MessageSquare,
+    group: 'AI 助手',
+    aliases: ['ask', 'custom', 'zidingyi', '自定义', '问'],
+    command: (editor) => {
+      dispatchAiCommand(editor, 'custom');
+    },
+  },
 ];
+
+/**
+ * Dispatch an AI command via custom event.
+ * The SimpleEditor listens for this event and triggers the AI completion.
+ */
+function dispatchAiCommand(editor: Editor, command: string) {
+  // Get selected text or current paragraph text
+  const { from, to } = editor.state.selection;
+  let text = '';
+  if (from !== to) {
+    text = editor.state.doc.textBetween(from, to, ' ');
+  } else {
+    // No selection: use current paragraph
+    const $pos = editor.state.doc.resolve(from);
+    const parent = $pos.parent;
+    text = parent.textContent;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('ai-slash-command', {
+      detail: { command, text },
+    }),
+  );
+}

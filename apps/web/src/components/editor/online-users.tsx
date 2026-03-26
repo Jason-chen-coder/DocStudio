@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { getCdnUrl } from '@/lib/cdn';
 import type { CollabUser } from '@/hooks/use-collaboration';
 
 interface OnlineUsersProps {
@@ -70,9 +71,9 @@ export function OnlineUsers({
                                 (e.currentTarget as HTMLDivElement).style.zIndex = String(maxVisible - index);
                             }}
                         >
-                            {user.avatarUrl ? (
+                            {getCdnUrl(user.avatarUrl) ? (
                                 <img
-                                    src={user.avatarUrl}
+                                    src={getCdnUrl(user.avatarUrl)!}
                                     alt={user.name}
                                     style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                                 />

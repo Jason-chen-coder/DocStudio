@@ -7,7 +7,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ className }: LoadingScreenProps) {
   return (
-    <div className={cn("fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col items-center justify-center", className)}>
+    <div className={cn("fixed inset-0 bg-white dark:bg-gray-900 z-[9999] flex flex-col items-center justify-center", className)}>
       <div className="relative flex items-center justify-center w-28 h-28">
         {/* Outer Ring - Deep Color */}
         <div className="absolute inset-0 w-full h-full animate-[spin_3s_linear_infinite]">

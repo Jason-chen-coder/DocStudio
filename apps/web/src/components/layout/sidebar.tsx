@@ -6,7 +6,7 @@ import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
-import { ChevronLeft, Plus, LayoutDashboard, FolderOpen, Users, Trash2, Star } from 'lucide-react';
+import { ChevronLeft, Plus, LayoutDashboard, FolderOpen, Users, Trash2, Star, Bot, Crown, Sparkles } from 'lucide-react';
 import { DocumentTree } from '@/components/document/document-tree';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
@@ -84,6 +84,7 @@ export function Sidebar() {
     { href: '/dashboard', label: '仪表盘', Icon: LayoutDashboard },
     { href: '/spaces', label: '工作空间', Icon: FolderOpen },
     { href: '/favorites', label: '我的收藏', Icon: Star },
+    { href: '/subscription', label: 'AI 订阅', Icon: Sparkles },
   ];
 
   return (
@@ -219,6 +220,26 @@ export function Sidebar() {
                     >
                       <Users className="w-4 h-4" />
                       用户管理
+                    </Link>
+                    <Link
+                      href="/admin/ai-settings"
+                      className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/ai-settings')
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                      <Bot className="w-4 h-4" />
+                      AI 设置
+                    </Link>
+                    <Link
+                      href="/admin/ai-subscriptions"
+                      className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/ai-subscriptions')
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                      <Crown className="w-4 h-4" />
+                      AI 订阅管理
                     </Link>
                   </div>
                 </div>

@@ -23,6 +23,11 @@ interface EditorProps {
   spaceId?: string;
   // Document ID for [[ document link self-exclusion
   documentId?: string;
+  // AI Chat state (controlled by parent for sidebar layout)
+  isAiChatOpen?: boolean;
+  onAiChatToggle?: () => void;
+  aiChatMode?: 'floating' | 'sidebar';
+  onAiChatModeChange?: (mode: 'floating' | 'sidebar') => void;
 }
 
 export function Editor({
@@ -38,6 +43,10 @@ export function Editor({
   onCommentEvent,
   spaceId,
   documentId,
+  isAiChatOpen,
+  onAiChatToggle,
+  aiChatMode,
+  onAiChatModeChange,
 }: EditorProps) {
   return (
     <div className="editor-container h-full">
@@ -54,6 +63,10 @@ export function Editor({
         onCommentEvent={onCommentEvent}
         spaceId={spaceId}
         documentId={documentId}
+        isAiChatOpen={isAiChatOpen}
+        onAiChatToggle={onAiChatToggle}
+        aiChatMode={aiChatMode}
+        onAiChatModeChange={onAiChatModeChange}
       />
     </div>
   );

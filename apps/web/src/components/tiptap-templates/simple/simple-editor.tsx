@@ -1,6 +1,6 @@
 "use client"
 
-import { CSSProperties, ReactNode, useCallback, useEffect, useRef, useState } from "react"
+import React, { CSSProperties, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { type Editor, EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Collaboration ---
@@ -23,6 +23,13 @@ import { useComments } from "@/hooks/use-comments"
 import type { CommentThread } from "@/hooks/use-comments"
 import { CommentBubbleMenu } from "@/components/editor/comment-bubble-menu"
 import { CommentPanel } from "@/components/editor/comment-panel"
+import { AiBubbleMenu } from "@/components/editor/ai-bubble-menu"
+import { ImageBubbleMenu } from "@/components/editor/image-bubble-menu"
+import { AiInlinePanel } from "@/components/editor/ai-inline-panel"
+import { AiChatPanel } from "@/components/editor/ai-chat-panel"
+import { useAiCopilot } from "@/hooks/use-ai-copilot"
+import { useAiSubscription } from "@/hooks/use-ai-subscription"
+import { AiCopilotExtension } from "@/components/tiptap-extension/ai-copilot"
 
 // --- Shared base extensions (schema-defining nodes & marks) ---
 import { getBaseExtensions } from "@/lib/tiptap-extensions"
@@ -80,7 +87,7 @@ import { Undo2, Redo2 } from "lucide-react"
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
-import { Pin, PinOff, Minus } from "lucide-react"
+import { Pin, PinOff, Minus, Sparkles, MoreHorizontal } from "lucide-react"
 
 // --- Hooks ---
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
@@ -174,6 +181,104 @@ function SmartUndoRedoButton({ action }: { action: "undo" | "redo" }) {
   )
 }
 
+/**
+ * Overflow-aware toolbar: items that don't fit in one line are moved to a "more" dropdown.
+ * Uses IntersectionObserver to detect which groups are fully visible.
+ */
+function OverflowToolbar({ children }: { children: React.ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const moreRef = useRef<HTMLDivElement>(null)
+  const [overflowIndices, setOverflowIndices] = useState<Set<number>>(new Set())
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  // Convert children to array for indexing
+  const items = React.Children.toArray(children)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const checkOverflow = () => {
+      const containerRight = container.getBoundingClientRect().right
+      // Reserve space for the "more" button (~44px)
+      const moreWidth = moreRef.current?.getBoundingClientRect().width ?? 44
+      const threshold = containerRight - moreWidth - 8
+      const newOverflow = new Set<number>()
+
+      const childEls = container.querySelectorAll<HTMLElement>('[data-toolbar-item]')
+      childEls.forEach((el) => {
+        const idx = parseInt(el.dataset.toolbarItem || '0', 10)
+        const elRight = el.getBoundingClientRect().right
+        if (elRight > threshold) {
+          newOverflow.add(idx)
+        }
+      })
+
+      setOverflowIndices((prev) => {
+        if (prev.size === newOverflow.size && [...prev].every((v) => newOverflow.has(v))) return prev
+        return newOverflow
+      })
+    }
+
+    const observer = new ResizeObserver(checkOverflow)
+    observer.observe(container)
+    // Initial check
+    requestAnimationFrame(checkOverflow)
+
+    return () => observer.disconnect()
+  }, [items.length])
+
+  const hasOverflow = overflowIndices.size > 0
+
+  return (
+    <div className="flex items-center w-full min-w-0 relative">
+      {/* Main toolbar row */}
+      <div ref={containerRef} className="flex items-center gap-[1.375rem] flex-1 min-w-0 overflow-hidden">
+        {items.map((child, i) => (
+          <div
+            key={i}
+            data-toolbar-item={i}
+            className="flex-shrink-0"
+            style={{ visibility: overflowIndices.has(i) ? 'hidden' : 'visible' }}
+          >
+            {child}
+          </div>
+        ))}
+      </div>
+
+      {/* More button */}
+      <div ref={moreRef} className={`flex-shrink-0 ml-1 ${hasOverflow ? '' : 'hidden'}`}>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={`tiptap-button flex items-center px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
+              moreOpen
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+            title="更多工具"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+              <div className="absolute top-full right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 flex items-center gap-2 whitespace-nowrap">
+                {items.map((child, i) =>
+                  overflowIndices.has(i) ? (
+                    <div key={i} className="flex-shrink-0">{child}</div>
+                  ) : null,
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
@@ -184,15 +289,11 @@ const MainToolbarContent = ({
   isMobile: boolean
 }) => {
   return (
-    <>
-      <Spacer />
-
+    <OverflowToolbar>
       <ToolbarGroup>
         <SmartUndoRedoButton action="undo" />
         <SmartUndoRedoButton action="redo" />
       </ToolbarGroup>
-
-      <ToolbarSeparator />
 
       <ToolbarGroup>
         <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal />
@@ -204,8 +305,6 @@ const MainToolbarContent = ({
         <CodeBlockButton />
         <HorizontalRuleButton />
       </ToolbarGroup>
-
-      <ToolbarSeparator />
 
       <ToolbarGroup>
         <MarkButton type="bold" />
@@ -221,14 +320,10 @@ const MainToolbarContent = ({
         {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
       </ToolbarGroup>
 
-      <ToolbarSeparator />
-
       <ToolbarGroup>
         <MarkButton type="superscript" />
         <MarkButton type="subscript" />
       </ToolbarGroup>
-
-      <ToolbarSeparator />
 
       <ToolbarGroup>
         <TextAlignButton align="left" />
@@ -237,22 +332,16 @@ const MainToolbarContent = ({
         <TextAlignButton align="justify" />
       </ToolbarGroup>
 
-      <ToolbarSeparator />
-
       <ToolbarGroup>
         <TablePopover />
         <EmojiPopover />
         <ImageUploadButton text="Add" />
       </ToolbarGroup>
 
-      <Spacer />
-
-      {isMobile && <ToolbarSeparator />}
-
       <ToolbarGroup>
         <ThemeToggle />
       </ToolbarGroup>
-    </>
+    </OverflowToolbar>
   )
 }
 
@@ -309,6 +398,11 @@ export interface SimpleEditorProps {
   spaceId?: string
   /** Document ID to exclude from [[ document link suggestions (self-link prevention) */
   documentId?: string
+  /** AI Chat state (controlled by parent for sidebar mode) */
+  isAiChatOpen?: boolean
+  onAiChatToggle?: () => void
+  aiChatMode?: 'floating' | 'sidebar'
+  onAiChatModeChange?: (mode: 'floating' | 'sidebar') => void
 }
 
 type TableOfContentsItem = {
@@ -333,6 +427,10 @@ export function SimpleEditor({
   onCommentEvent,
   spaceId,
   documentId,
+  isAiChatOpen: isAiChatOpenProp,
+  onAiChatToggle,
+  aiChatMode: aiChatModeProp,
+  onAiChatModeChange,
 }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
@@ -341,6 +439,13 @@ export function SimpleEditor({
   )
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false)
+  // AI Chat: use parent-controlled state if provided, else internal
+  const [internalAiChatOpen, setInternalAiChatOpen] = useState(false)
+  const [internalAiChatMode, setInternalAiChatMode] = useState<'floating' | 'sidebar'>('floating')
+  const isAiChatOpen = isAiChatOpenProp ?? internalAiChatOpen
+  const aiChatMode = aiChatModeProp ?? internalAiChatMode
+  const toggleAiChat = onAiChatToggle ?? (() => setInternalAiChatOpen((v) => !v))
+  const setAiChatMode = onAiChatModeChange ?? setInternalAiChatMode
   const { threads, addThread, replyToThread, resolveThread, deleteThread } =
     useComments(collabUser?.name ?? "我", initialCommentThreads, onCommentsChange, collabUser?.avatarUrl ?? undefined, onCommentEvent)
   const [tableOfContentsItems, setTableOfContentsItems] = useState<
@@ -353,6 +458,10 @@ export function SimpleEditor({
   /** 点击 TOC 跳转时锁住高亮，防止 scroll 事件期间抖动 */
   const isScrollingRef = useRef(false)
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── AI Inline Panel state ──
+  const [showAiInlinePanel, setShowAiInlinePanel] = useState(false)
+  const [aiSelection, setAiSelection] = useState<{ text: string; range: { from: number; to: number }; coords: { top: number; left: number } } | null>(null)
 
   const isCollabMode = !!(provider && ydoc)
 
@@ -497,6 +606,8 @@ export function SimpleEditor({
           }),
         ]
         : []),
+      // AI Copilot ghost text (autocomplete)
+      ...(editable ? [AiCopilotExtension] : []),
     ],
     // In collab mode, don't pass initial content (Yjs manages it from server)
     content: isCollabMode ? undefined : content,
@@ -512,6 +623,36 @@ export function SimpleEditor({
       onUpdate?.({ editor });
     },
   })
+
+  // ── AI Inline Panel opener ──
+  const openAiInlinePanel = useCallback(() => {
+    if (!editor) return
+    const { from, to } = editor.state.selection
+    if (from === to) return
+    const text = editor.state.doc.textBetween(from, to, ' ')
+    if (!text) return
+    // Get coordinates: left from selection start, top from selection end bottom
+    const startCoords = editor.view.coordsAtPos(from)
+    const endCoords = editor.view.coordsAtPos(to)
+    setAiSelection({
+      text,
+      range: { from, to },
+      coords: { top: endCoords.bottom, left: startCoords.left },
+    })
+    setShowAiInlinePanel(true)
+    // Force BubbleMenu to re-evaluate shouldShow by dispatching an empty transaction
+    requestAnimationFrame(() => {
+      if (editor && !editor.isDestroyed) {
+        editor.view.dispatch(editor.state.tr)
+      }
+    })
+  }, [editor])
+
+  // AI subscription state (gates all AI features)
+  const aiSub = useAiSubscription()
+
+  // AI Copilot: inline autocomplete ghost text (Max plan only)
+  useAiCopilot(editor, editable && aiSub.canUseCopilot)
 
   const [toolbarHeight, setToolbarHeight] = useState(0)
 
@@ -653,13 +794,37 @@ export function SimpleEditor({
     >
       <EditorContext.Provider value={{ editor }}>
         {editor && editable && (
-          <CommentBubbleMenu
+          <>
+            <AiBubbleMenu
+              editor={editor}
+              isAiPanelOpen={showAiInlinePanel}
+              onAiPanelOpen={openAiInlinePanel}
+              canUseCommand={aiSub.isSubscribed ? aiSub.canUseCommand : undefined}
+              onAddComment={addThread}
+              onCommentAdded={(id) => {
+                setActiveCommentId(id)
+                setIsCommentPanelOpen(true)
+              }}
+            />
+            <ImageBubbleMenu
+              editor={editor}
+              onAddComment={addThread}
+              onCommentAdded={(id) => {
+                setActiveCommentId(id)
+                setIsCommentPanelOpen(true)
+              }}
+            />
+          </>
+        )}
+        {/* AI Inline Panel (portal, positioned below selection) */}
+        {showAiInlinePanel && editor && aiSelection && (
+          <AiInlinePanel
             editor={editor}
-            onAddComment={addThread}
-            onCommentAdded={(id) => {
-              setActiveCommentId(id)
-              setIsCommentPanelOpen(true)
-            }}
+            selectedText={aiSelection.text}
+            selectionRange={aiSelection.range}
+            canUseCommand={aiSub.isSubscribed ? aiSub.canUseCommand : undefined}
+            onClose={() => { setShowAiInlinePanel(false); setAiSelection(null); }}
+            anchorCoords={aiSelection.coords}
           />
         )}
         {editable && (
@@ -693,6 +858,26 @@ export function SimpleEditor({
             {editable && editor && <BlockMenu editor={editor} />}
             <EditorContent editor={editor} role="presentation" />
             {footer}
+            {/* AI Chat floating toggle (requires subscription with chat feature) */}
+            {editable && aiSub.canUseChat && (
+              <button
+                type="button"
+                onClick={toggleAiChat}
+                className={`group fixed bottom-6 right-6 z-30 flex items-center gap-0 p-2.5 rounded-full shadow-lg transition-all duration-200 text-sm font-medium ${
+                  isAiChatOpen
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:pr-4 hover:gap-2'
+                }`}
+                title={isAiChatOpen ? '关闭 AI 助手' : '打开 AI 助手'}
+              >
+                <Sparkles className="w-4 h-4 flex-shrink-0" />
+                {!isAiChatOpen && (
+                  <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[80px] group-hover:opacity-100 transition-all duration-200">
+                    AI 助手
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           {isCommentPanelOpen && (
@@ -727,6 +912,8 @@ export function SimpleEditor({
               />
             </aside>
           )}
+
+          {/* Sidebar AI Chat is rendered by parent (DocumentPage) */}
 
           {showTableOfContents && tableOfContentsItems.length > 0 && (
             <aside
@@ -791,6 +978,17 @@ export function SimpleEditor({
           )}
         </div>
       </EditorContext.Provider>
+
+      {/* Floating AI Chat (rendered outside editor context to avoid layout impact) */}
+      {isAiChatOpen && editor && aiChatMode === 'floating' && (
+        <AiChatPanel
+          editor={editor}
+          documentId={documentId}
+          onClose={toggleAiChat}
+          mode="floating"
+          onModeChange={setAiChatMode}
+        />
+      )}
     </div>
   )
 }

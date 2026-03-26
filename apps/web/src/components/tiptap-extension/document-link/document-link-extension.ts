@@ -141,6 +141,9 @@ export const DocumentLink = Node.create<DocumentLinkOptions>({
             const spaceId = el.getAttribute('data-space-id');
             const title = el.getAttribute('data-title') || '文档链接';
 
+            // Validate required attributes
+            if (!documentId || !spaceId) return false;
+
             // In share/public pages, dispatch event for the page to handle
             // (permission check + login gate needed)
             if (typeof window !== 'undefined' && window.location.pathname.includes('/share/')) {
@@ -153,10 +156,11 @@ export const DocumentLink = Node.create<DocumentLinkOptions>({
             }
 
             // In app pages, open directly in new tab
-            const href = el.getAttribute('data-href');
-            if (href && !href.includes('/null/')) {
-              window.open(href, '_blank', 'noopener,noreferrer');
-            }
+            window.open(
+              `/spaces/${spaceId}/documents/${documentId}?readonly=true`,
+              '_blank',
+              'noopener,noreferrer',
+            );
             return true;
           },
         },

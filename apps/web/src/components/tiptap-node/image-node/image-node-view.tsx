@@ -21,7 +21,7 @@ const CURSOR_MAP: Record<ResizeDir, string> = {
 };
 
 export function ImageNodeView({ node, updateAttributes, selected, editor }: NodeViewProps) {
-  const { src, alt, title, width: savedWidth, height: savedHeight } = node.attrs;
+  const { src, alt, title, width: savedWidth, height: savedHeight, alignment = 'center' } = node.attrs;
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [resizing, setResizing] = useState(false);
@@ -111,9 +111,16 @@ export function ImageNodeView({ node, updateAttributes, selected, editor }: Node
   const showHandles = isEditable && selected;
 
   return (
-    <NodeViewWrapper ref={containerRef} className="my-3" data-drag-handle>
+    <NodeViewWrapper
+      ref={containerRef}
+      className={`my-3 ${
+        alignment === 'center' ? 'flex justify-center' :
+        alignment === 'right' ? 'flex justify-end' : ''
+      }`}
+      data-drag-handle
+    >
       <div
-        className={`relative inline-block ${selected ? 'ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 rounded-lg' : ''}`}
+        className={`relative inline-block ${selected ? 'ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
         style={{
           width: currentWidth ? `${currentWidth}px` : undefined,
           maxWidth: '100%',
@@ -127,7 +134,7 @@ export function ImageNodeView({ node, updateAttributes, selected, editor }: Node
           loading="lazy"
           decoding="async"
           draggable={false}
-          className="block rounded-lg max-w-full"
+          className="block max-w-full"
           style={{
             width: currentWidth ? `${currentWidth}px` : undefined,
             height: currentHeight ? `${currentHeight}px` : 'auto',

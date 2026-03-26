@@ -48,6 +48,7 @@
     "fastify": "^5.7.4",
     "fastify-multer": "^2.0.3",
     "minio": "^8.0.6",
+    "openai": "^6.32.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

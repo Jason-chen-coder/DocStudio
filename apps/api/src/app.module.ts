@@ -21,6 +21,7 @@ import { SearchModule } from './search/search.module';
 import { ActivityModule } from './activity/activity.module';
 import { TemplatesModule } from './templates/templates.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ActivityModule,
     TemplatesModule,
     NotificationsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

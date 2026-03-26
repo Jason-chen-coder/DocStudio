@@ -35,6 +35,9 @@ model User {
   notifications           Notification[]          @relation("UserNotifications")
   notificationPreference  NotificationPreference? @relation("UserNotificationPreference")
   documentPermissions     DocumentPermission[]
+  aiUsageLogs             AiUsageLog[]
+  aiSubscription          AiSubscription?            @relation("UserAiSubscription")
+  aiSubscriptionRequests  AiSubscriptionRequest[]    @relation("UserAiSubscriptionRequests")
 
   @@map("users")
 }
@@ -369,6 +372,10 @@ enum NotificationType {
   DOCUMENT_UPDATED
   SPACE_DELETED
   SYSTEM
+  SUBSCRIPTION_APPROVED
+  SUBSCRIPTION_REJECTED
+  SUBSCRIPTION_EXPIRING
+  SUBSCRIPTION_EXPIRED
 }
 
 // ==================== 通知偏好模型 ====================
@@ -395,4 +402,98 @@ model DocumentFavorite {
   @@unique([userId, documentId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("document_favorites")
+}
+
+// ==================== AI 配置模型（单例） ====================
+model AiConfig {
+  id         String   @id @default("singleton")
+  provider   String?  // 覆盖 AI_PROVIDER 环境变量
+  apiKey     String?  // 覆盖 AI_API_KEY（加密存储）
+  baseUrl    String?  // 覆盖 AI_BASE_URL
+  model      String?  // 覆盖 AI_MODEL
+  dailyLimit Int?     // 覆盖 AI_DAILY_LIMIT
+  updatedAt  DateTime @updatedAt
+
+  @@map("ai_config")
+}
+
+// ==================== AI 用量日志 ====================
+model AiUsageLog {
+  id           String   @id @default(cuid())
+  userId       String
+  command      String   // 'continue' | 'polish' | 'translate' | 'summary' | 'custom'
+  model        String   // 使用的模型名称
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  latencyMs    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
+}
+
+// ==================== AI 订阅枚举 ====================
+enum AiPlan {
+  BASIC
+  VIP
+  MAX
+}
+
+enum AiBillingPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum AiSubStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum AiRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ==================== AI 订阅模型 ====================
+model AiSubscription {
+  id            String          @id @default(cuid())
+  userId        String          @unique
+  plan          AiPlan
+  billingPeriod AiBillingPeriod
+  status        AiSubStatus     @default(ACTIVE)
+  startDate     DateTime        @default(now())
+  endDate       DateTime
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user User @relation("UserAiSubscription", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([endDate])
+  @@map("ai_subscriptions")
+}
+
+// ==================== AI 订阅申请模型 ====================
+model AiSubscriptionRequest {
+  id            String           @id @default(cuid())
+  userId        String
+  plan          AiPlan
+  billingPeriod AiBillingPeriod
+  status        AiRequestStatus  @default(PENDING)
+  reason        String?          // 用户申请理由
+  rejectReason  String?          // 管理员拒绝原因
+  reviewedBy    String?          // 审批管理员 ID
+  reviewedAt    DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  user User @relation("UserAiSubscriptionRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ai_subscription_requests")
 }
