@@ -52,21 +52,10 @@ export function createGhostTextPlugin() {
         return DecorationSet.create(state.doc, [widget]);
       },
 
-      // Handle Tab to accept ghost text
+      // Handle keyboard shortcuts for ghost text
       handleKeyDown(view, event) {
         const pluginState = ghostTextPluginKey.getState(view.state) as GhostTextState | undefined;
         if (!pluginState?.text) return false;
-
-        if (event.key === 'Tab') {
-          event.preventDefault();
-          // Accept: insert the ghost text
-          const { tr } = view.state;
-          tr.insertText(pluginState.text, pluginState.pos);
-          // Clear ghost text
-          tr.setMeta(ghostTextPluginKey, { text: null, pos: 0 });
-          view.dispatch(tr);
-          return true;
-        }
 
         if (event.key === 'Escape') {
           event.preventDefault();

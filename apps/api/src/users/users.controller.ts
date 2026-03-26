@@ -1,14 +1,19 @@
 import {
   Controller,
   Post,
+  HttpCode,
+  HttpStatus,
   UseGuards,
   Req,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
 import { extname } from 'path';
 import { MinioService } from '../common/minio/minio.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface RequestWithUser {
   user: {
@@ -18,11 +23,13 @@ interface RequestWithUser {
   };
 }
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly minioService: MinioService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('avatar')
@@ -65,5 +72,18 @@ export class UsersController {
     } catch (err) {
       throw new BadRequestException('File upload failed');
     }
+  }
+
+  @Post('onboarding-complete')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '完成新用户引导' })
+  async completeOnboarding(@CurrentUser() user: { id: string }) {
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { onboardingCompleted: true },
+    });
+    return { message: '引导完成' };
   }
 }

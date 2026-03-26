@@ -4,12 +4,14 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import fastifyCors from '@fastify/cors';
 
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import compression from '@fastify/compress';
+import helmet from '@fastify/helmet';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -25,6 +27,31 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  });
+
+  // 使用 Pino 结构化日志
+  app.useLogger(app.get(Logger));
+
+  // 安全 Headers（XSS / 点击劫持 / MIME 嗅探防护）
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:', process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000'],
+        connectSrc: [
+          "'self'",
+          process.env.FRONTEND_URL || 'http://localhost:3000',
+          `ws://${process.env.REDIS_HOST || 'localhost'}:${process.env.COLLAB_PORT || '1234'}`,
+          `wss://${process.env.REDIS_HOST || 'localhost'}:${process.env.COLLAB_PORT || '1234'}`,
+        ],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // 允许加载外部图片（MinIO）
   });
 
   // 注册压缩插件以解决过大 payload

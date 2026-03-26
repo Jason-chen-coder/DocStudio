@@ -137,4 +137,15 @@ export class SpacesController {
   ) {
     return this.spacesService.joinSpace(joinSpaceDto.token, req.user.id);
   }
+
+  @Post(':id/transfer')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '转让空间所有权', description: '将空间所有权转让给管理员' })
+  transferOwnership(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+    @Body('targetUserId') targetUserId: string,
+  ) {
+    return this.spacesService.transferOwnership(id, req.user.id, targetUserId);
+  }
 }

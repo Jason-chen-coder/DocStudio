@@ -27,9 +27,7 @@ import { AiBubbleMenu } from "@/components/editor/ai-bubble-menu"
 import { ImageBubbleMenu } from "@/components/editor/image-bubble-menu"
 import { AiInlinePanel } from "@/components/editor/ai-inline-panel"
 import { AiChatPanel } from "@/components/editor/ai-chat-panel"
-import { useAiCopilot } from "@/hooks/use-ai-copilot"
 import { useAiSubscription } from "@/hooks/use-ai-subscription"
-import { AiCopilotExtension } from "@/components/tiptap-extension/ai-copilot"
 
 // --- Shared base extensions (schema-defining nodes & marks) ---
 import { getBaseExtensions } from "@/lib/tiptap-extensions"
@@ -606,8 +604,6 @@ export function SimpleEditor({
           }),
         ]
         : []),
-      // AI Copilot ghost text (autocomplete)
-      ...(editable ? [AiCopilotExtension] : []),
     ],
     // In collab mode, don't pass initial content (Yjs manages it from server)
     content: isCollabMode ? undefined : content,
@@ -651,8 +647,6 @@ export function SimpleEditor({
   // AI subscription state (gates all AI features)
   const aiSub = useAiSubscription()
 
-  // AI Copilot: inline autocomplete ghost text (Max plan only)
-  useAiCopilot(editor, editable && aiSub.canUseCopilot)
 
   const [toolbarHeight, setToolbarHeight] = useState(0)
 

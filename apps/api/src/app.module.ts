@@ -22,6 +22,9 @@ import { ActivityModule } from './activity/activity.module';
 import { TemplatesModule } from './templates/templates.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AiModule } from './ai/ai.module';
+import { HealthModule } from './health/health.module';
+import { EmailModule } from './email/email.module';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -49,6 +52,18 @@ import { AiModule } from './ai/ai.module';
     TemplatesModule,
     NotificationsModule,
     AiModule,
+    HealthModule,
+    EmailModule,
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { colorize: true, singleLine: true } }
+            : undefined,
+        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+        autoLogging: false, // 避免记录每个 HTTP 请求（太嘈杂）
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [

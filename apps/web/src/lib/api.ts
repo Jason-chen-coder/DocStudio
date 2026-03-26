@@ -12,9 +12,21 @@ export function setToken(token: string): void {
   localStorage.setItem('access_token', token);
 }
 
+// 获取 refresh token
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refresh_token');
+}
+
+// 设置 refresh token
+export function setRefreshToken(token: string): void {
+  localStorage.setItem('refresh_token', token);
+}
+
 // 清除 token
 export function clearToken(): void {
   localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
 }
 
 // API 请求封装
@@ -50,6 +62,23 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
+    // 401 时尝试自动刷新 token
+    if (response.status === 401 && !endpoint.includes('/auth/refresh') && !endpoint.includes('/auth/login')) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        // 使用新 token 重试原始请求
+        const newToken = getToken();
+        if (newToken) {
+          (headers as any)['Authorization'] = `Bearer ${newToken}`;
+        }
+        const retryResponse = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+        if (retryResponse.ok) {
+          if (retryResponse.status === 204) return null as any;
+          return retryResponse.json();
+        }
+      }
+    }
+
     // 尝试解析错误信息，如果解析失败（非 JSON），则使用默认错误
     const error = await response.json().catch(() => ({ message: '请求失败' }));
     throw new Error(error.message || `HTTP ${response.status}`);
@@ -92,6 +121,35 @@ export interface ChangePasswordData {
 export interface AuthResponse {
   user: User;
   access_token: string;
+  refresh_token?: string;
+}
+
+// 自动刷新 token
+let refreshPromise: Promise<boolean> | null = null;
+async function tryRefreshToken(): Promise<boolean> {
+  // 防止并发刷新
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const rt = getRefreshToken();
+    if (!rt) return false;
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setToken(data.access_token);
+      if (data.refresh_token) setRefreshToken(data.refresh_token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
 }
 
 export interface User {
@@ -101,6 +159,8 @@ export interface User {
   avatarUrl?: string;
   isSuperAdmin: boolean;
   isDisabled: boolean;
+  emailVerified?: boolean;
+  onboardingCompleted?: boolean;
   createdAt: string;
 }
 

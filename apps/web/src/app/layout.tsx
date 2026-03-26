@@ -8,6 +8,7 @@ import { Toaster } from 'sonner';
 import { GlobalLoading } from '@/components/layout/global-loading';
 import { siteConfig } from '@/lib/site-config';
 import { WebSiteJsonLd } from '@/components/seo/json-ld';
+import { CookieConsent } from '@/components/cookie-consent';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -91,6 +92,7 @@ export default function RootLayout({
         {/* Toaster 必须在 Theme/AuthProvider 外部，作为 body 直接子元素，
             否则会被父级 stacking context 困住，被 Radix Dialog Portal 遮挡 */}
         <Toaster position="top-center" richColors />
+        <CookieConsent />
       </body>
     </html>
   );

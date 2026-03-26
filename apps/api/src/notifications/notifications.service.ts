@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { NotificationType, EntityType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 export interface CreateNotificationParams {
   recipientId: string;
@@ -23,7 +24,10 @@ export class NotificationsService implements OnModuleInit {
   private sseClients = new Map<string, Array<(data: any) => void>>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   onModuleInit() {
     // 每 24 小时自动清理旧通知
@@ -78,6 +82,9 @@ export class NotificationsService implements OnModuleInit {
 
       // 通过 SSE 实时推送
       this.pushToUser(params.recipientId, notification);
+
+      // 异步发送邮件通知（不阻塞）
+      this.sendEmailNotification(params).catch(() => {});
     } catch (err) {
       this.logger.error('Failed to create notification', err);
     }
@@ -334,6 +341,41 @@ export class NotificationsService implements OnModuleInit {
   /**
    * 推送通知给指定用户的所有 SSE 连接
    */
+  /** 发送邮件通知（仅重要通知类型） */
+  private async sendEmailNotification(params: CreateNotificationParams) {
+    // 仅对重要通知发送邮件
+    const emailTypes: NotificationType[] = [
+      'DOCUMENT_MENTIONED',
+      'DOCUMENT_COMMENTED',
+      'SPACE_INVITATION',
+      'DOCUMENT_SHARED',
+    ];
+    if (!emailTypes.includes(params.type)) return;
+
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: params.recipientId },
+      select: { email: true, name: true, emailVerified: true },
+    });
+    if (!recipient || !recipient.emailVerified) return;
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    let actionUrl = frontendUrl;
+    if (params.spaceId && params.entityId) {
+      actionUrl = `${frontendUrl}/spaces/${params.spaceId}/documents/${params.entityId}`;
+    } else if (params.spaceId) {
+      actionUrl = `${frontendUrl}/spaces/${params.spaceId}`;
+    }
+
+    await this.emailService.sendNotification(
+      recipient.email,
+      recipient.name,
+      params.title,
+      params.content || params.title,
+      actionUrl,
+      '查看详情',
+    );
+  }
+
   private pushToUser(userId: string, notification: any): void {
     const clients = this.sseClients.get(userId);
     if (!clients || clients.length === 0) return;

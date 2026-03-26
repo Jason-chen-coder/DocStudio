@@ -15,10 +15,29 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
-  password     String? // 可选：如果使用 GitHub OAuth 则为空
+  password     String? // 可选：如果使用 OAuth 则为空
   avatarUrl    String? // 用户头像 URL
   isSuperAdmin Boolean  @default(false) // 平台级超级管理员
   isDisabled   Boolean  @default(false) // 账号禁用状态
+
+  // 邮箱验证
+  emailVerified    Boolean   @default(false)
+  emailVerifyToken String?   @unique
+
+  // 密码重置
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+
+  // OAuth
+  googleId     String?  @unique
+  githubId     String?  @unique
+
+  // 新用户引导
+  onboardingCompleted Boolean @default(false)
+
+  // JWT Refresh Token
+  refreshToken String?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

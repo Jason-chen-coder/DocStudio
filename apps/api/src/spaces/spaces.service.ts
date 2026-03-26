@@ -564,4 +564,45 @@ export class SpacesService {
 
     return { message: 'Joined successfully', spaceId: invitation.spaceId };
   }
+
+  // ==================== 空间所有权转让 ====================
+
+  async transferOwnership(spaceId: string, currentOwnerId: string, targetUserId: string) {
+    const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) throw new NotFoundException('空间不存在');
+    if (space.ownerId !== currentOwnerId) {
+      throw new ForbiddenException('只有空间拥有者可以转让所有权');
+    }
+    if (currentOwnerId === targetUserId) {
+      throw new ForbiddenException('不能转让给自己');
+    }
+
+    // 目标用户必须是空间的 ADMIN
+    const targetPermission = await this.prisma.spacePermission.findUnique({
+      where: { userId_spaceId: { userId: targetUserId, spaceId } },
+    });
+    if (!targetPermission || targetPermission.role !== Role.ADMIN) {
+      throw new ForbiddenException('只能将所有权转让给管理员');
+    }
+
+    await this.prisma.$transaction([
+      // 转让 Space owner
+      this.prisma.space.update({
+        where: { id: spaceId },
+        data: { ownerId: targetUserId },
+      }),
+      // 新 owner 的权限升为 OWNER
+      this.prisma.spacePermission.update({
+        where: { userId_spaceId: { userId: targetUserId, spaceId } },
+        data: { role: Role.OWNER },
+      }),
+      // 旧 owner 降为 ADMIN
+      this.prisma.spacePermission.update({
+        where: { userId_spaceId: { userId: currentOwnerId, spaceId } },
+        data: { role: Role.ADMIN },
+      }),
+    ]);
+
+    return { message: '所有权已转让' };
+  }
 }

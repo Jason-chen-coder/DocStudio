@@ -17,6 +17,7 @@ export default function RegisterPage() {
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,6 +43,11 @@ export default function RegisterPage() {
     // 验证密码匹配
     if (formData.password !== formData.confirmPassword) {
       setError('两次输入的密码不一致');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError('请先同意服务条款和隐私政策');
       return;
     }
 
@@ -172,6 +178,23 @@ export default function RegisterPage() {
               className="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#333DFC]/20 focus:border-[#333DFC] dark:text-white transition-all duration-200 placeholder:text-gray-400"
               placeholder="再次输入密码"
             />
+          </div>
+
+          {/* Terms Checkbox */}
+          <div className="form-float-in flex items-start gap-2" style={{ animationDelay: '340ms' }}>
+            <input
+              id="terms"
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-[#333DFC] focus:ring-[#333DFC]/20"
+            />
+            <label htmlFor="terms" className="text-xs text-gray-500 dark:text-gray-400">
+              我已阅读并同意{' '}
+              <Link href="/terms" className="text-[#333DFC] hover:underline" target="_blank">服务条款</Link>
+              {' '}和{' '}
+              <Link href="/privacy" className="text-[#333DFC] hover:underline" target="_blank">隐私政策</Link>
+            </label>
           </div>
 
           {/* Error Message */}

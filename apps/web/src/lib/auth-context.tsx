@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { authAPI, setToken, clearToken, User, RegisterData, LoginData } from '@/lib/api';
+import { authAPI, setToken, setRefreshToken, clearToken, User, RegisterData, LoginData } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(data: LoginData) {
     const response = await authAPI.login(data);
     setToken(response.access_token);
+    if (response.refresh_token) setRefreshToken(response.refresh_token);
     setUser(response.user);
     router.push('/dashboard');
   }
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function register(data: RegisterData) {
     const response = await authAPI.register(data);
     setToken(response.access_token);
+    if (response.refresh_token) setRefreshToken(response.refresh_token);
     setUser(response.user);
     router.push('/dashboard');
   }
