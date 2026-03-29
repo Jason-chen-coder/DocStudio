@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-6 sm:p-10">
         <div className="space-y-6 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
             <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-6 sm:p-10">
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">

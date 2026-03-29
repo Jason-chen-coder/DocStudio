@@ -46,8 +46,8 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
-      <div className="space-y-8">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-6 sm:p-10">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="form-float-in" style={{ animationDelay: '40ms' }}>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">

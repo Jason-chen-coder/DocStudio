@@ -14,9 +14,9 @@ export default function AuthLayout({
   return (
     <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-gray-950' : 'bg-gradient-to-br from-[#333DFC]/5 via-[#333DFC]/10 to-[#333DFC]/20'}`}>
       {/* Left Side - Form Area */}
-      <div className="w-full  flex flex-col bg-white dark:bg-gray-900 lg:rounded-r-[3rem]">
+      <div className="w-full flex flex-col bg-white dark:bg-gray-900 lg:rounded-r-[3rem]">
         {/* Header with Logo and Theme Toggle */}
-        <div className="p-8 flex items-center justify-between">
+        <div className="p-4 sm:p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
               src="/docStudio_icon.png"
@@ -47,7 +47,7 @@ export default function AuthLayout({
         </div>
 
         {/* Form Container */}
-        <div className="flex-1 flex items-center justify-center px-8 pb-8">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-4 sm:pb-8">
           <div className="w-full max-w-md animate-fade-in">{children}</div>
         </div>
       </div>

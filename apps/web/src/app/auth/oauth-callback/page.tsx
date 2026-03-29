@@ -26,7 +26,7 @@ function OAuthCallbackContent() {
   }, [searchParams]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg p-10 text-center">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[2rem] shadow-lg p-6 sm:p-10 text-center">
       <div className="flex items-center justify-center">
         <svg className="animate-spin h-8 w-8 text-[#333DFC]" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

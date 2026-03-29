@@ -30,7 +30,7 @@ function VerifyEmailContent() {
   }, [token]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-10">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[2rem] shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 p-6 sm:p-10">
       <div className="space-y-6 text-center">
         {status === 'loading' && (
           <>
