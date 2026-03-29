@@ -54,10 +54,6 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      console.log('Register attempt:', {
-        email: formData.email,
-        passwordLength: formData.password.length,
-      });
       await register({
         email: formData.email,
         name: formData.name,

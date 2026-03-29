@@ -66,18 +66,8 @@ export class SpacesController {
 
   @Delete(':id')
   @ApiOperation({ summary: '删除空间' })
-  async remove(@Request() req: RequestWithUser, @Param('id') id: string) {
-    console.log(
-      `[SpacesController] Deleting space ${id} for user ${req.user.id}`,
-    );
-    try {
-      const result = await this.spacesService.remove(id, req.user.id);
-      console.log(`[SpacesController] Successfully deleted space ${id}`);
-      return result;
-    } catch (error) {
-      console.error(`[SpacesController] Failed to delete space ${id}:`, error);
-      throw error;
-    }
+  remove(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.spacesService.remove(id, req.user.id);
   }
 
   // ==================== Member Management ====================

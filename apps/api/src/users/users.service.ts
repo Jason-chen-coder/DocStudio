@@ -21,9 +21,6 @@ export class UsersService {
     }
 
     // 哈希密码
-    console.log(
-      `Creating user ${email}, password length before hash: ${password.length}`,
-    );
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 创建用户
@@ -75,12 +72,7 @@ export class UsersService {
     plainPassword: string,
     hashedPassword: string,
   ): Promise<boolean> {
-    console.log(
-      `Validating password. Plain length: ${plainPassword.length}, Hash length: ${hashedPassword.length}`,
-    );
-    const result = await bcrypt.compare(plainPassword, hashedPassword);
-    console.log(`Password validation result: ${result}`);
-    return result;
+    return bcrypt.compare(plainPassword, hashedPassword);
   }
 
   async updatePassword(userId: string, newPassword: string) {
@@ -118,7 +110,7 @@ export class UsersService {
     if (user.avatarUrl && !user.avatarUrl.startsWith('http')) {
       const baseUrl =
         process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000';
-      user.avatarUrl = `${baseUrl}/${user.avatarUrl}`;
+      return { ...user, avatarUrl: `${baseUrl}/${user.avatarUrl}` };
     }
     return user;
   }

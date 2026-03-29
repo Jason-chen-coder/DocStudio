@@ -21,20 +21,24 @@ export class ShareService {
   async create(userId: string, createShareDto: CreateShareDto) {
     const { documentId, type, password, expiresAt } = createShareDto;
 
-    // Check if document exists and user has permission (ownership or write)
-    // For simplicity, checking if user is owner or has access.
-    // Ideally use a permission guard system, but here we enforce it before creation.
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
-      include: { space: true },
+      include: {
+        space: {
+          include: {
+            permissions: { where: { userId } },
+          },
+        },
+      },
     });
 
     if (!document) {
       throw new NotFoundException('Document not found');
     }
 
-    // TODO: Strict permission check can be added here.
-    // Assuming the controller guard handles basic access, but we should verify ownership or editor role.
+    if (document.space.permissions.length === 0) {
+      throw new ForbiddenException('No permission to share this document');
+    }
 
     let hashedPassword = null;
     if (type === ShareType.PASSWORD && password) {
@@ -142,7 +146,7 @@ export class ShareService {
         where: { id: share.id },
         data: { viewCount: { increment: 1 } },
       })
-      .catch(console.error);
+      .catch(() => undefined);
 
     if (share.type === ShareType.PASSWORD) {
       if (!accessToken) {
