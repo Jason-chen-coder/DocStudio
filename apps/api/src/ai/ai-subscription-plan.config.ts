@@ -6,13 +6,13 @@
 export const PLAN_COMMANDS: Record<string, string[]> = {
   BASIC: ['continue', 'polish', 'longer', 'shorter'],
   VIP: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'chat'],
-  MAX: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'autocomplete', 'chat'],
+  MAX: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'chat'],
 };
 
 export const PLAN_FEATURES: Record<string, { chat: boolean; copilot: boolean }> = {
   BASIC: { chat: false, copilot: false },
   VIP: { chat: true, copilot: false },
-  MAX: { chat: true, copilot: true },
+  MAX: { chat: true, copilot: false },
 };
 
 /** 月付每日额度 */

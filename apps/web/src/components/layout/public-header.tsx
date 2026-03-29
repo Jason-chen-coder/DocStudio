@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/auth-context';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getCdnUrl } from '@/lib/cdn';
-import { LogOut, LayoutDashboard, UserCircle, FolderOpen, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import { LogOut, LayoutDashboard, UserCircle, FolderOpen, SlidersHorizontal, ChevronRight, Github, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/hooks/use-theme';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 
 export function PublicHeader() {
     const { user, logout } = useAuth();
+    const { theme, toggleTheme, mounted } = useTheme();
     const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(false);
 
@@ -76,33 +78,49 @@ export function PublicHeader() {
 
                 {/* Center Navigation */}
                 <nav className="hidden md:flex items-center gap-8 justify-center">
-                    <Link
-                        href="/"
-                        className={cn(
-                            "text-sm font-medium transition-colors duration-300",
-                            pathname === '/'
-                                ? (isTransparent ? "text-white drop-shadow-sm" : "text-blue-600 dark:text-blue-400")
-                                : (isTransparent ? "text-white/80 hover:text-white drop-shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white")
-                        )}
-                    >
-                        首页
-                    </Link>
-                    <Link
-                        href="/explore"
-                        className={cn(
-                            "text-sm font-medium transition-colors duration-300",
-                            pathname === '/explore'
-                                ? (isTransparent ? "text-white drop-shadow-sm" : "text-blue-600 dark:text-blue-400")
-                                : (isTransparent ? "text-white/80 hover:text-white drop-shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white")
-                        )}
-                    >
-                        探索
-                    </Link>
+                    {[
+                        { href: '/', label: '首页' },
+                        { href: '/explore', label: '探索' },
+                        { href: '/help', label: '帮助' },
+                        { href: '/contact', label: '联系' },
+                    ].map(({ href, label }) => (
+                        <Link
+                            key={href}
+                            href={href}
+                            className={cn(
+                                "text-sm font-medium transition-colors duration-300",
+                                pathname === href
+                                    ? (isTransparent ? "text-white drop-shadow-sm" : "text-blue-600 dark:text-blue-400")
+                                    : (isTransparent ? "text-white/80 hover:text-white drop-shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white")
+                            )}
+                        >
+                            {label}
+                        </Link>
+                    ))}
                 </nav>
 
                 {/* Right Auth Buttons */}
                 <div className="flex-1 flex items-center justify-end gap-4">
                     {user ? (
+                        <>
+                        {mounted && (
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+                                className={cn(
+                                    "p-1.5 rounded-lg transition-all duration-200",
+                                    isTransparent
+                                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.07]"
+                                )}
+                            >
+                                {theme === 'dark'
+                                    ? <Sun className="h-[18px] w-[18px]" />
+                                    : <Moon className="h-[18px] w-[18px]" />
+                                }
+                            </button>
+                        )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button className={cn(
@@ -200,23 +218,56 @@ export function PublicHeader() {
                                 </div>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        </>
                     ) : (
                         <>
-                            <Link href="/auth/login" className={cn(
-                                "text-sm font-medium transition-colors duration-300",
-                                isTransparent
-                                    ? "text-white/90 hover:text-white drop-shadow-sm"
-                                    : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                            )}>
+                            {/* GitHub icon */}
+                            <a
+                                href="https://github.com/Jason-chen-coder/DocStudio"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="GitHub"
+                                className={cn(
+                                    "p-1.5 rounded-lg transition-all duration-200",
+                                    isTransparent
+                                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                                        : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.07]"
+                                )}
+                            >
+                                <Github className="h-[18px] w-[18px]" />
+                            </a>
+
+                            {/* Theme toggle */}
+                            {mounted && (
+                                <button
+                                    type="button"
+                                    onClick={toggleTheme}
+                                    aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+                                    className={cn(
+                                        "p-1.5 rounded-lg transition-all duration-200",
+                                        isTransparent
+                                            ? "text-white/80 hover:text-white hover:bg-white/10"
+                                            : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.07]"
+                                    )}
+                                >
+                                    {theme === 'dark'
+                                        ? <Sun className="h-[18px] w-[18px]" />
+                                        : <Moon className="h-[18px] w-[18px]" />
+                                    }
+                                </button>
+                            )}
+
+                            {/* Login — primary CTA */}
+                            <Link
+                                href="/auth/login"
+                                className={cn(
+                                    "text-sm font-medium px-3.5 py-1.5 rounded-lg transition-all duration-200",
+                                    isTransparent
+                                        ? "border border-white/40 text-white hover:bg-white/10 hover:border-white/60"
+                                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                                )}
+                            >
                                 登录
-                            </Link>
-                            <Link href="/auth/register" className={cn(
-                                "text-sm font-medium px-5 py-2 rounded-full transition-all duration-300 border",
-                                isTransparent
-                                    ? "bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-white/30 shadow-none"
-                                    : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 border-transparent shadow-sm"
-                            )}>
-                                免费注册
                             </Link>
                         </>
                     )}

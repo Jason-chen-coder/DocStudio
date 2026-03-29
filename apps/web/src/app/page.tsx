@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Globe, Lock, Zap, Sparkles, Layout, Users, Database } from 'lucide-react';
+import { ArrowRight, Globe, Lock, Zap, Sparkles, Layout, Users, Database, BrainCircuit, Link2, History, FileInput, BarChart3, WifiOff, MessageSquareText, Search, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PublicHeader } from '@/components/layout/public-header';
 import CardSwap, { Card } from '@/components/CardSwap';
@@ -11,26 +11,34 @@ import Grainient from '@/components/Grainient';
 import { SiReact, SiNextdotjs, SiTypescript, SiTailwindcss, SiNestjs, SiPrisma, SiPostgresql, SiFastify, SiMinio, SiFramer, SiRadixui, SiSwagger } from 'react-icons/si';
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/components/ui/marquee";
-import WorldMap from "@/components/ui/world-map";
+import BorderGlow from '@/components/BorderGlow';
+import { useTheme } from '@/hooks/use-theme';
+import CountUp from '@/components/ui/count-up';
 
 const mockSpaces = [
   {
     id: 'mock-1',
     name: '前端设计系统',
     description: '构建可扩展、无障碍且精美的现代 Web 应用设计系统全面指南。',
-    owner: { name: 'Alex Rivera', avatarBg: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400', icon: <Layout className="w-5 h-5" /> }
+    icon: <Layout className="w-5 h-5" />,
+    color: 'bg-blue-500',
+    owner: 'Alex Rivera',
   },
   {
     id: 'mock-2',
     name: '人工智能与机器学习基础',
     description: '探索神经网络、深度学习的基础知识，以及在生产环境中的实用 AI 部署方案。',
-    owner: { name: 'Dr. Sarah Chen', avatarBg: 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400', icon: <Sparkles className="w-5 h-5" /> }
+    icon: <Sparkles className="w-5 h-5" />,
+    color: 'bg-purple-500',
+    owner: 'Dr. Sarah Chen',
   },
   {
     id: 'mock-3',
     name: '系统架构设计',
     description: '涵盖分布式系统设计、缓存策略及高可用微服务架构的进阶指南。',
-    owner: { name: 'David Thompson', avatarBg: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400', icon: <Database className="w-5 h-5" /> }
+    icon: <Database className="w-5 h-5" />,
+    color: 'bg-emerald-500',
+    owner: 'David Thompson',
   }
 ];
 
@@ -116,6 +124,8 @@ const ReviewCard = ({
 };
 
 export default function Home() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 selection:bg-blue-100 selection:text-blue-900">
@@ -451,158 +461,96 @@ export default function Home() {
         </section>
 
         {/* Public Spaces Preview (Mock Data) */}
-        <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4"
-          >
-            <div>
-              {/* <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">探索精选空间</h3> */}
-              {/* <p className="text-gray-600 dark:text-gray-400">发现来自社区的优质文档，激发您的创作灵感</p> */}
-            </div>
-            <Link href="/explore" className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 flex items-center group bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full transition-colors">
-              探索 <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-
-          <div className="flex flex-wrap items-center gap-16 mt-16 pb-32">
+              {/* ==================== Highlight Features ==================== */}
+        <section className="py-24 bg-white dark:bg-gray-950 relative">
+          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="max-w-[650px] w-full shrink-0 flex flex-col gap-6"
+              transition={{ duration: 0.4 }}
+              className="text-center mb-16"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-sm font-medium w-fit">
-                <Users className="w-4 h-4" />
-                活跃的创作者社区
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium mb-4">
+                更多能力
               </div>
-              <h4 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
-                灵感碰撞，<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-                  知识在此生长
-                </span>
-              </h4>
-              <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-                在这里，你不仅可以管理个人文档，还能与成千上万的创作者探索交流。发现前沿的技术库、优秀的设计规范指南，或者深度的行业经验洞察。
+              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                从 AI 写作到数据洞察
+              </h3>
+              <p className="text-base text-gray-500 dark:text-gray-400 max-w-lg mx-auto leading-relaxed">
+                每一项功能都经过打磨，为你和团队提供极致的文档体验。
               </p>
-
-              <ul className="flex flex-col gap-4 mt-2">
-                {[
-                  "海量优质开源知识随时查阅",
-                  "汲取行业专家的实践与经验",
-                  "构筑属于你的独特专业影响力"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-gray-700 dark:text-gray-300 font-medium">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
             </motion.div>
 
-            <div className="flex-1 min-w-[500px] flex justify-end min-h-[500px]">
-              <div style={{maxWidth: '600px', position: 'relative' }}>
-                <CardSwap
-                  cardDistance={80}
-                  verticalDistance={30}
-                  delay={4000}
-                  pauseOnHover={true}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                { icon: BrainCircuit, title: "AI 辅助写作", desc: "续写、润色、翻译、摘要，Copilot 补全，AI 文档对话", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-900/30" },
+                { icon: Link2, title: "文档互链", desc: "[[ 语法即时搜索链接，构建知识网络", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-900/30" },
+                { icon: History, title: "版本历史", desc: "自动快照与手动存档，随时回溯并一键恢复", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30" },
+                { icon: FileInput, title: "导入导出", desc: "Markdown / HTML / Word 导入，PDF 一键导出", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30" },
+                { icon: BarChart3, title: "数据洞察", desc: "空间面板、文档 PV/UV、个人生产力指标", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+                { icon: WifiOff, title: "离线编辑", desc: "IndexedDB 本地缓存，断网可编辑，CRDT 无缝合并", color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-900/30" },
+                { icon: MessageSquareText, title: "行内评论", desc: "选中文字发起评论线程，支持多人回复与解决", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30" },
+                { icon: Search, title: "全文搜索", desc: "标题与正文检索，结果高亮，快速定位知识", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30" },
+              ].map((feature, i) => (
+                <div
+                  key={feature.title}
+                  className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-5 hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 hover:shadow-sm"
                 >
-                  {mockSpaces.map((space) => {
-                    return (
-                      <Card key={space.id}>
-                        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-[40px] rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] border border-slate-200/60 dark:border-white/10 p-8 md:p-10 flex flex-col h-full min-h-[380px] w-full max-w-[500px] mx-auto relative overflow-hidden">
-                          {/* Inner Refraction Ring */}
-                          <div className="absolute inset-0 rounded-[2.5rem] pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] z-20" />
-
-                          {/* Dynamic Mesh & Abstract Geometry (Permanently visible) */}
-                          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                            {/* Geometric Vector Graphic Layer */}
-                            <svg className="absolute top-0 right-0 w-full h-full opacity-100 text-slate-100 dark:text-white/[0.02] transform-gpu scale-105" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="280" cy="80" r="120" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
-                              <circle cx="350" cy="200" r="80" stroke="currentColor" strokeWidth="1" />
-                              <path d="M150 0L400 250" stroke="currentColor" strokeWidth="1" strokeDasharray="8 8" />
-                            </svg>
-
-                            {/* Floating Noise/Texture Overlay */}
-                            <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
-
-                            {/* Deep Color Bloom */}
-                            <div className={`absolute -right-32 -top-32 w-80 h-80 rounded-[100%] opacity-80 scale-150 rotate-45 blur-[90px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-${space.owner.avatarBg.split('-')[1]}-400/50 via-${space.owner.avatarBg.split('-')[1]}-200/10 to-transparent dark:from-${space.owner.avatarBg.split('-')[1]}-600/40 dark:via-${space.owner.avatarBg.split('-')[1]}-800/20`} />
-
-                            {/* Secondary Contrast Flare */}
-                            <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full opacity-30 blur-[70px] bg-blue-400/30 dark:bg-purple-500/20 mix-blend-screen" />
-                          </div>
-
-                          <div className="flex flex-col flex-1 relative z-30 w-full group/content">
-                            <div className="flex flex-start justify-between mb-8 items-start">
-                              <div className="relative">
-                                {/* Abstract Ring behind Icon */}
-                                <div className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-[1.25rem] scale-110 opacity-100 blur-sm mix-blend-screen dark:mix-blend-color-dodge" />
-
-                                <div className={`relative p-5 rounded-[1.25rem] ${space.owner.avatarBg} bg-opacity-10 dark:bg-opacity-20 ring-1 ring-white/50 dark:ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md transform-gpu scale-[1.15] -rotate-6 z-10 overflow-hidden`}>
-                                  {/* Glass Sweep Animation inside Icon Box */}
-                                  <div className="absolute inset-0 -translate-x-[150%] skew-x-[-20deg] animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent w-1/2" />
-                                  <div className="relative z-10 animate-pulse">
-                                    {space.owner.icon}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Animated Metric/Badge */}
-                              <div className="px-3 py-1 rounded-full border border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-black/20 backdrop-blur-md text-xs font-mono text-slate-500 dark:text-zinc-400 opacity-100 translate-y-0 flex items-center gap-1.5 shadow-sm">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                1.2K+ 活跃
-                              </div>
-                            </div>
-
-                            <h4 className="text-[1.8rem] font-bold text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-500 dark:from-white dark:to-zinc-400 mb-4 tracking-[-0.04em] leading-[1.15]">
-                              {space.name}
-                            </h4>
-
-                            <p className="text-slate-500 dark:text-zinc-400 flex-grow text-[1.05rem] leading-relaxed mb-10 font-medium max-w-[90%] transform-gpu translate-x-1">
-                              {space.description}
-                            </p>
-
-                            {/* Complex Author Row */}
-                            <div className="flex items-center justify-between mt-auto pt-6 border-t border-slate-200/50 dark:border-zinc-800/50 relative overflow-hidden">
-                              <div className="flex items-center gap-4 relative z-10">
-                                <div className="relative">
-                                  <div className="absolute inset-0 rounded-full blur-md opacity-60 bg-blue-100" />
-                                  <div className={`relative w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ring-[3px] ring-white dark:ring-zinc-900 shadow-md ${space.owner.avatarBg} text-white`}>
-                                    {space.owner.name[0].toUpperCase()}
-                                  </div>
-                                </div>
-                                <div className="flex flex-col transform-gpu translate-x-2">
-                                  <span className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1.5 flex items-center gap-1.5">
-                                    {space.owner.name}
-                                  </span>
-                                  <span className="text-[10px] uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500 font-bold bg-slate-100 dark:bg-zinc-800/50 px-1.5 py-0.5 rounded w-fit inline-block">社区卓越贡献者</span>
-                                </div>
-                              </div>
-
-                              {/* Persistent Arrow */}
-                              {/* <div className="w-8 h-8 rounded-full border flex items-center justify-center opacity-100 translate-x-0 bg-slate-900 border-slate-900 dark:bg-white dark:border-white">
-                                <ArrowRight className="w-4 h-4 text-white dark:text-slate-900" />
-                              </div> */}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    )
-                  })}
-                </CardSwap>
-              </div>
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4", feature.bg, feature.color)}>
+                    <feature.icon className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1.5">{feature.title}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{feature.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
+        {/* ==================== Public Spaces Preview ==================== */}
+        <section className="py-24 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800/50">
+          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row items-start gap-16">
+              {/* Left */}
+              <div className="lg:max-w-md shrink-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-medium mb-4">
+                  <Users className="w-3.5 h-3.5" />
+                  社区
+                </div>
+                <h4 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+                  灵感碰撞，<br />
+                  <span className="text-blue-600 dark:text-blue-400">知识在此生长</span>
+                </h4>
+                <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
+                  管理个人文档的同时，探索社区中的优质公开知识库，发现技术前沿、设计规范和行业洞察。
+                </p>
+                <Link href="/explore" className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 text-sm group">
+                  浏览更多 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+
+              {/* Right - Static Cards */}
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+                {mockSpaces.map((space) => (
+                  <div key={space.id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 flex flex-col transition-shadow hover:shadow-md">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white mb-4", space.color)}>
+                      {space.icon}
+                    </div>
+                    <h5 className="text-base font-semibold text-gray-900 dark:text-white mb-2 leading-snug">{space.name}</h5>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed flex-grow mb-4">{space.description}</p>
+                    <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-medium", space.color)}>
+                        {space.owner[0]}
+                      </div>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{space.owner}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
         {/* Premium Tech Stack Section */}
         <section className="py-24 w-full border-t border-slate-200/50 dark:border-zinc-800/50 bg-slate-50/50 dark:bg-[#0a0a0a] overflow-hidden relative">
           {/* Subtle Dynamic Mesh & Grid Base */}
@@ -733,80 +681,206 @@ export default function Home() {
             <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-white dark:from-zinc-900"></div>
           </div>
         </section>
-        {/* 全球创作者 Section */}
-        <section className="py-24 bg-slate-50 dark:bg-[#050505] relative overflow-hidden border-t border-slate-200/50 dark:border-white/5">
-          <div className="max-w-7xl mx-auto text-center px-4 sm:px-6 lg:px-8 mb-16 relative z-10">
+        {/* ==================== Bottom CTA ==================== */}
+        <section className="relative py-24 sm:py-32 overflow-hidden">
+          {/* Gradient bg — soft radial spotlight, not a color block */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-50/80 to-blue-100/50 dark:from-transparent dark:via-blue-950/20 dark:to-indigo-950/30" />
+          {/* Radial center glow */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-400/[0.12] dark:bg-blue-500/[0.07] rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="text-center"
             >
-              <p className="font-extrabold text-3xl md:text-5xl dark:text-white text-slate-900 tracking-tighter mb-4">
-                连接{" "}
-                <span className="text-blue-500">
-                  {"全球创作者".split("").map((word, idx) => (
-                    <motion.span
-                      key={idx}
-                      className="inline-block"
-                      initial={{ x: -10, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: idx * 0.08 }}
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </span>
+              {/* Headline — large, confident */}
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-[1.1] mb-6">
+                开始用 DocStudio<br />
+                <span className="text-blue-600 dark:text-blue-400">重新定义团队协作</span>
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 text-lg sm:text-xl leading-relaxed mb-10 max-w-xl mx-auto">
+                从个人笔记到团队知识库，分钟级上手，让知识真正流动起来。
               </p>
-              <p className="text-lg md:text-xl text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                打破物理边界的束缚。无论你身在何处，皆可无痕融入团队的知识流动。DocStudio 正在全球范围内为你加速。
-              </p>
-            </motion.div>
-          </div>
 
-          <div className="w-full mix-blend-multiply dark:mix-blend-screen relative z-0 -mt-10 md:mt-0">
-            <WorldMap
-              dots={[
-                {
-                  start: { lat: 64.2008, lng: -149.4937 }, // Alaska (Fairbanks)
-                  end: { lat: 34.0522, lng: -118.2437 }, // Los Angeles
-                },
-                {
-                  start: { lat: 64.2008, lng: -149.4937 }, // Alaska (Fairbanks)
-                  end: { lat: -15.7975, lng: -47.8919 }, // Brazil (Brasília)
-                },
-                {
-                  start: { lat: -15.7975, lng: -47.8919 }, // Brazil (Brasília)
-                  end: { lat: 38.7223, lng: -9.1393 }, // Lisbon
-                },
-                {
-                  start: { lat: 51.5074, lng: -0.1278 }, // London
-                  end: { lat: 28.6139, lng: 77.209 }, // New Delhi
-                },
-                {
-                  start: { lat: 28.6139, lng: 77.209 }, // New Delhi
-                  end: { lat: 43.1332, lng: 131.9113 }, // Vladivostok
-                },
-                {
-                  start: { lat: 28.6139, lng: 77.209 }, // New Delhi
-                  end: { lat: -1.2921, lng: 36.8219 }, // Nairobi
-                },
-              ]}
-            />
+              {/* CTA — BorderGlow wraps the primary button for interactive delight */}
+              <div className="flex flex-col items-center gap-5">
+                <BorderGlow
+                  edgeSensitivity={30}
+                  glowColor={isDark ? '230 70 65' : '230 85 60'}
+                  backgroundColor={isDark ? '#1e3a8a' : '#2563eb'}
+                  borderRadius={14}
+                  glowRadius={25}
+                  glowIntensity={isDark ? 1 : 0.8}
+                  coneSpread={35}
+                  animated={false}
+                  colors={['#6366f1', '#3b82f6', '#60a5fa']}
+                  className="w-full sm:w-auto"
+                >
+                  <Link
+                    href="/auth/register"
+                    className="inline-flex items-center justify-center gap-2.5 w-full px-10 py-4 text-white font-semibold text-base transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                  >
+                    免费开始使用 <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </BorderGlow>
+                <Link
+                  href="/explore"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-150 underline underline-offset-4 decoration-gray-300 dark:decoration-gray-600 hover:decoration-blue-400"
+                >
+                  或先探索公开知识库
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Stats bar — visual density + social proof */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-16 flex items-center justify-center gap-8 sm:gap-12"
+            >
+              {[
+                { to: 500, suffix: '+', label: '活跃用户', delay: 0 },
+                { to: 10, suffix: 'K+', label: '文档创建', delay: 0.15 },
+                { to: 99.9, suffix: '%', label: '服务可用性', delay: 0.3 },
+              ].map((stat, i) => (
+                <div key={i} className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                    <CountUp to={stat.to} duration={2} delay={stat.delay} separator="," />
+                    <span>{stat.suffix}</span>
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <Image src="/docStudio_icon.png" alt="DocStudio" width={24} height={24} className="opacity-70" />
-            <span className="text-gray-500 font-semibold">DocStudio</span>
+      <footer className="bg-[#FAFAF9] dark:bg-[#0D0D10] border-t border-gray-200/70 dark:border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {/* Brand */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2.5">
+                <Image src="/docStudio_icon.png" alt="DocStudio" width={22} height={22} style={{ width: 22, height: 'auto' }} />
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">DocStudio</span>
+              </div>
+              <p className="text-[13px] text-gray-500 dark:text-gray-500 leading-relaxed max-w-[220px]">
+                为现代团队打造的实时协作文档平台
+              </p>
+              <a
+                href="https://github.com/Jason-chen-coder/DocStudio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[12px] text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors w-fit"
+              >
+                <Github className="w-3.5 h-3.5" />
+                Jason-chen-coder
+              </a>
+            </div>
+
+            {/* Open source projects */}
+            <div className="md:col-span-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-4">
+                开源项目
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0 divide-y divide-gray-100/80 dark:divide-white/[0.04] sm:divide-y-0">
+                {[
+                  {
+                    name: 'Mxgraph-EasyFlowEditor',
+                    desc: '基于 mxGraph + Vue 的可视化流程图编辑器',
+                    stars: '214',
+                    href: 'https://github.com/Jason-chen-coder/Mxgraph-EasyFlowEditor',
+                    lang: 'Vue',
+                  },
+                  {
+                    name: 'D3-EasyFlowRender',
+                    desc: '基于 D3.js 的拓扑图可视化渲染库',
+                    stars: '44',
+                    href: 'https://github.com/Jason-chen-coder/D3-EasyFlowRender',
+                    lang: 'JavaScript',
+                  },
+                  {
+                    name: 'Monaco-EasyCodeEditor',
+                    desc: '基于 Monaco Editor 的在线代码编辑器',
+                    stars: '27',
+                    href: 'https://github.com/Jason-chen-coder/Monaco-EasyCodeEditor',
+                    lang: 'JavaScript',
+                  },
+                  {
+                    name: 'Flutter-EasySpeechRecognition',
+                    desc: '基于 Sherpa-ONNX 的本地语音识别 App',
+                    stars: '28',
+                    href: 'https://github.com/Jason-chen-coder/Flutter-EasySpeechRecognition',
+                    lang: 'Flutter',
+                  },
+                  {
+                    name: 'Webpack5Mfp-Node-Nacos',
+                    desc: 'Webpack 5 模块联邦 + Node + Nacos 微前端实践',
+                    stars: '22',
+                    href: 'https://github.com/Jason-chen-coder/Webpack5Mfp-Node-Nacos',
+                    lang: 'JavaScript',
+                  },
+                  {
+                    name: 'JsPlumb-EasyFlowEditor',
+                    desc: '基于 JsPlumb 的拖拽式流程图编辑器',
+                    stars: '—',
+                    href: 'https://github.com/Jason-chen-coder/JsPlumb-EasyFlowEditor',
+                    lang: 'Vue',
+                  },
+                ].map((proj) => (
+                  <a
+                    key={proj.name}
+                    href={proj.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start justify-between py-3 group hover:bg-gray-50/60 dark:hover:bg-white/[0.02] -mx-2 px-2 rounded-lg transition-colors duration-150"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-150 truncate">
+                        {proj.name}
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5 leading-relaxed truncate">
+                        {proj.desc}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-3 flex-shrink-0 mt-0.5">
+                      <span className="text-[10px] text-gray-400 dark:text-gray-600 font-mono">★ {proj.stars}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/[0.05] text-gray-500 dark:text-gray-500 border border-gray-200/70 dark:border-white/[0.06]">
+                        {proj.lang}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} DocStudio. All rights reserved.
-          </p>
+
+          {/* Bottom bar */}
+          <div className="mt-10 pt-6 border-t border-gray-200/60 dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[11px] text-gray-400 dark:text-gray-600">
+              © {new Date().getFullYear()} Jason Chen · DocStudio. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              <Link href="/help" className="text-[11px] text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">帮助</Link>
+              <Link href="/contact" className="text-[11px] text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">联系</Link>
+              <a
+                href="https://github.com/Jason-chen-coder/DocStudio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div >

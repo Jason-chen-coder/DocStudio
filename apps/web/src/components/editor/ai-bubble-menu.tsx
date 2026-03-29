@@ -24,6 +24,7 @@ interface AiBubbleMenuProps {
   isAiPanelOpen?: boolean;
   onAiPanelOpen?: () => void;
   canUseCommand?: (command: string) => boolean;
+  onUpgradeNeeded?: () => void;
   onAddComment?: (quote: string, firstMessage: string) => string;
   onCommentAdded?: (commentId: string) => void;
 }
@@ -46,7 +47,7 @@ function FmtBtn({ active, onClick, title, children }: { active?: boolean; onClic
   );
 }
 
-export function AiBubbleMenu({ editor, isAiPanelOpen, onAiPanelOpen, canUseCommand, onAddComment, onCommentAdded }: AiBubbleMenuProps) {
+export function AiBubbleMenu({ editor, isAiPanelOpen, onAiPanelOpen, canUseCommand, onUpgradeNeeded, onAddComment, onCommentAdded }: AiBubbleMenuProps) {
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -74,18 +75,16 @@ export function AiBubbleMenu({ editor, isAiPanelOpen, onAiPanelOpen, canUseComma
       }}
     >
       <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-1 py-0.5 gap-0.5">
-        {/* AI 创作 button — opens inline panel below selection */}
-        {canUseCommand && (
-          <button
-            type="button"
-            onClick={onAiPanelOpen}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-          >
-            <Sparkles className={iconSize} />
-            AI 创作
-          </button>
-        )}
-        {canUseCommand && <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />}
+        {/* AI 创作 button — opens inline panel (or upgrade modal for non-subscribers) */}
+        <button
+          type="button"
+          onClick={canUseCommand ? onAiPanelOpen : onUpgradeNeeded}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+        >
+          <Sparkles className={iconSize} />
+          AI 创作
+        </button>
+        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
 
         {/* Formatting tools */}
         <FmtBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="加粗">

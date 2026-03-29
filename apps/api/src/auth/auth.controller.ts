@@ -159,34 +159,87 @@ export class AuthController {
   // ==================== OAuth 登录 ====================
 
   @Get('google')
-  @UseGuards(GoogleAuthGuard)
   @ApiExcludeEndpoint()
-  googleLogin() {
-    // Guard 会自动重定向到 Google
+  async googleLogin(@Res() res: any) {
+    // Fastify 不兼容 passport 的 res.setHeader 重定向，手动构造 Google OAuth URL
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      redirect_uri:
+        process.env.GOOGLE_CALLBACK_URL ||
+        `${process.env.API_URL || 'http://localhost:3001'}/auth/google/callback`,
+      response_type: 'code',
+      scope: 'email profile',
+    });
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    return res.code(302).header('Location', url).send();
   }
 
   @Get('google/callback')
-  @UseGuards(GoogleAuthGuard)
   @ApiExcludeEndpoint()
-  async googleCallback(@Req() req: any, @Res() res: any) {
-    const profile = req.user;
-    const result = await this.authService.oauthLogin({
-      googleId: profile.googleId,
-      email: profile.email,
-      name: profile.name,
-      avatarUrl: profile.avatarUrl,
-    });
+  async googleCallback(@Query('code') code: string, @Res() res: any) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(
-      `${frontendUrl}/auth/oauth-callback?token=${result.access_token}`,
-    );
+    const failUrl = `${frontendUrl}/auth/login?error=oauth_failed`;
+
+    if (!code) {
+      return res.code(302).header('Location', failUrl).send();
+    }
+
+    try {
+      // 1. 用 code 换 access_token
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: process.env.GOOGLE_CLIENT_ID || '',
+          client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+          redirect_uri:
+            process.env.GOOGLE_CALLBACK_URL ||
+            `${process.env.API_URL || 'http://localhost:3001'}/auth/google/callback`,
+          grant_type: 'authorization_code',
+        }),
+      });
+      const tokenData: any = await tokenRes.json();
+
+      if (!tokenData.access_token) {
+        return res.code(302).header('Location', failUrl).send();
+      }
+
+      // 2. 用 access_token 拉取用户信息
+      const profileRes = await fetch(
+        'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+        { headers: { Authorization: `Bearer ${tokenData.access_token}` } },
+      );
+      const profile: any = await profileRes.json();
+
+      // 3. 创建或更新用户，生成 JWT
+      const result = await this.authService.oauthLogin({
+        googleId: profile.id,
+        email: profile.email,
+        name: profile.name,
+        avatarUrl: profile.picture,
+      });
+
+      const url = `${frontendUrl}/auth/oauth-callback?token=${result.access_token}&refresh_token=${result.refresh_token}`;
+      return res.code(302).header('Location', url).send();
+    } catch {
+      return res.code(302).header('Location', failUrl).send();
+    }
   }
 
   @Get('github')
-  @UseGuards(GithubAuthGuard)
   @ApiExcludeEndpoint()
-  githubLogin() {
-    // Guard 会自动重定向到 GitHub
+  async githubLogin(@Res() res: any) {
+    // Fastify 不兼容 passport 的 res.setHeader 重定向，手动构造 GitHub OAuth URL
+    const params = new URLSearchParams({
+      client_id: process.env.GITHUB_CLIENT_ID || '',
+      redirect_uri:
+        process.env.GITHUB_CALLBACK_URL ||
+        `${process.env.API_URL || 'http://localhost:3001'}/auth/github/callback`,
+      scope: 'user:email',
+    });
+    const url = `https://github.com/login/oauth/authorize?${params.toString()}`;
+    return res.code(302).header('Location', url).send();
   }
 
   @Get('github/callback')
@@ -201,8 +254,7 @@ export class AuthController {
       avatarUrl: profile.avatarUrl,
     });
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(
-      `${frontendUrl}/auth/oauth-callback?token=${result.access_token}`,
-    );
+    const url = `${frontendUrl}/auth/oauth-callback?token=${result.access_token}&refresh_token=${result.refresh_token}`;
+    return res.code(302).header('Location', url).send();
   }
 }

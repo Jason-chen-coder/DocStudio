@@ -173,7 +173,7 @@ export default function SubscriptionPage() {
                 </Button>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
               <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
                 <p className="text-gray-500 dark:text-gray-400">每日额度</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{subscription.dailyLimit}</p>
@@ -181,10 +181,6 @@ export default function SubscriptionPage() {
               <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
                 <p className="text-gray-500 dark:text-gray-400">AI 对话</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{subscription.features.chat ? '✓' : '✗'}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
-                <p className="text-gray-500 dark:text-gray-400">Copilot</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{subscription.features.copilot ? '✓' : '✗'}</p>
               </div>
             </div>
           </div>
@@ -274,10 +270,11 @@ export default function SubscriptionPage() {
                           </div>
                           {cmd === 'continue' && '续写'}
                           {cmd === 'polish' && '润色/修正'}
+                          {cmd === 'longer' && '扩写'}
+                          {cmd === 'shorter' && '缩写'}
                           {cmd === 'translate' && '翻译'}
                           {cmd === 'summary' && '摘要'}
                           {cmd === 'custom' && '自定义指令'}
-                          {cmd === 'autocomplete' && 'Copilot 行内补全'}
                         </li>
                       ))}
                       <li className="flex items-center gap-2.5">
@@ -292,20 +289,6 @@ export default function SubscriptionPage() {
                         )}
                         <span className={plan.features.chat ? 'text-gray-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}>
                           AI 对话侧栏
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2.5">
-                        {plan.features.copilot ? (
-                          <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                            <X className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                          </div>
-                        )}
-                        <span className={plan.features.copilot ? 'text-gray-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}>
-                          Copilot 行内补全
                         </span>
                       </li>
                     </ul>

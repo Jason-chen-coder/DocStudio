@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 生成独立部署包，用于 Docker 容器（减小镜像体积）
+  output: 'standalone',
   images: {
     remotePatterns: [
       // 开发环境：直连本地 MinIO
@@ -14,6 +16,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'avatar.vercel.sh',
+        pathname: '/**',
+      },
+      // GitHub avatars
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
         pathname: '/**',
       },
       // 生产环境（Nginx 反代 MinIO）：取消注释并填写实际域名

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Space } from '@/types/space';
 import { publicService } from '@/services/public-service';
@@ -35,6 +35,7 @@ export default function ExplorePage() {
     useEffect(() => {
         const fetchSpaces = async () => {
             setLoading(true);
+            const start = Date.now();
             try {
                 const result = await publicService.getPublicSpaces(page, limit, search, sort, order);
                 setSpaces(result.data);
@@ -43,6 +44,12 @@ export default function ExplorePage() {
             } catch (error) {
                 console.error('Failed to fetch public spaces:', error);
             } finally {
+                // 保证骨架屏至少展示 500ms，避免闪烁
+                const elapsed = Date.now() - start;
+                const remaining = Math.max(0, 500 - elapsed);
+                if (remaining > 0) {
+                    await new Promise(resolve => setTimeout(resolve, remaining));
+                }
                 setLoading(false);
             }
         };
@@ -72,11 +79,11 @@ export default function ExplorePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0D0D10] pt-16">
             <PublicHeader />
 
             {/* Rich Header Section */}
-            <div className="relative overflow-hidden bg-white dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
+            <div className="relative overflow-hidden bg-white dark:bg-[#0D0D10] border-b border-gray-200 dark:border-gray-800">
                 {/* Decorative Background Elements */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[150%] bg-gradient-to-tr from-blue-100/40 to-indigo-50/10 dark:from-blue-900/20 dark:to-indigo-900/10 -rotate-12 blur-3xl rounded-full" />
@@ -205,7 +212,11 @@ export default function ExplorePage() {
                         ))}
                     </div>
                 ) : spaces.length > 0 ? (
-                    <>
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {spaces.map((space) => {
                                 const avatarUrl = getCdnUrl(space.owner?.avatarUrl);
@@ -299,7 +310,7 @@ export default function ExplorePage() {
                                 </button>
                             </div>
                         )}
-                    </>
+                    </motion.div>
                 ) : (
                     <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">没有找到公开工作空间</h3>

@@ -34,41 +34,78 @@ DocStudio 是一个**AI 驱动的实时协作知识管理平台**。支持多人
   <img src="./images/home_page_6.png" width="100%" alt="DocStudio Home Page Part 6" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
 </div>
 
-## 🚀 快速开始
+## 🚀 快速开始（本地开发）
 
-### 1. 安装依赖
+**前置要求**：Node.js >= 22、pnpm >= 9、Docker Desktop
 
 ```bash
+# 1. 克隆项目
+git clone https://github.com/Jason-chen-coder/DocStudio.git
+cd DocStudio
+
+# 2. 安装依赖
 pnpm install
-```
 
-### 2. 启动 Docker 服务（数据库等）
+# 3. 复制环境变量（本地开发默认值即可直接使用）
+cp apps/api/.env.example apps/api/.env
 
-```bash
+# 4. 启动基础服务（PostgreSQL / Redis / MinIO）
 docker-compose up -d
-```
 
-### 3. 初始化数据库
+# 5. 初始化数据库
+cd apps/api && pnpm exec prisma migrate dev --name init && cd ../..
 
-```bash
-cd apps/api
-pnpm exec prisma migrate dev --name init
-```
-
-### 4. 启动开发服务器
-
-```bash
-cd ../..
+# 6. 启动开发服务器
 pnpm dev
 ```
 
-**访问应用**：
+访问：前端 http://localhost:3000 · 后端 http://localhost:3001 · MinIO http://localhost:9001
 
-- 前端：http://localhost:3000
-- 后端：http://localhost:3001
-- Prisma Studio：`cd apps/api && pnpm exec prisma studio`
+**详细配置** → [DEVELOPMENT.md](./DEVELOPMENT.md)
 
-**详细配置请查看** → [开发环境指南](./DEVELOPMENT.md)
+---
+
+## 🐳 Docker 部署（生产环境）
+
+**前置要求**：Docker & Docker Compose
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/Jason-chen-coder/DocStudio.git
+cd DocStudio
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env，填写域名、密码、API Key 等（必填项见文件内注释）
+
+# 3. 构建并启动所有服务
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+首次启动完成后：
+- 前端：`http://your-server:3000`
+- 后端 API：`http://your-server:3001`
+- 超级管理员账号：`.env` 中 `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`
+
+> ⚠️ `.env` 中的 `NEXT_PUBLIC_*` 变量在构建时烧入镜像，**修改后需重新执行 `--build`**。
+
+**常用命令：**
+
+```bash
+# 查看日志
+docker compose -f docker-compose.prod.yml logs -f
+
+# 重启某个服务
+docker compose -f docker-compose.prod.yml restart api
+
+# 停止所有服务
+docker compose -f docker-compose.prod.yml down
+
+# 更新部署（拉取新代码后）
+git pull && docker compose -f docker-compose.prod.yml up -d --build
+```
+
+**详细部署说明**（OAuth 配置、Nginx 反代、SMTP 邮件等）→ [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 ---
 
@@ -223,12 +260,12 @@ pnpm exec prisma studio         # 可视化工具
 - [x] AI 订阅制（三档套餐 + 申请审批 + 按月/按年）
 - [x] LLM Provider 抽象层（OpenAI 兼容，支持 MiniMax/DeepSeek）
 
-### 📋 Stage 9: 上线前必备（待开发）
+### ✅ Stage 9: 上线前必备
 
-- [ ] 密码重置 / 邮箱验证 / 邮件服务
-- [ ] OAuth 登录（Google/GitHub）
-- [ ] 404/500 错误页面 + 全局错误边界
-- [ ] 安全 Headers + JWT 刷新
+- [x] 密码重置 / 邮箱验证 / 邮件服务
+- [x] OAuth 登录（Google / GitHub）
+- [x] 404/500 错误页面 + 全局错误边界
+- [x] 安全 Headers + JWT 刷新
 - [ ] 移动端适配
 - [ ] 新用户引导流程
 

@@ -10,13 +10,13 @@ export type AiRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export const PLAN_COMMANDS: Record<AiPlan, string[]> = {
   BASIC: ['continue', 'polish', 'longer', 'shorter'],
   VIP: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'chat'],
-  MAX: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'autocomplete', 'chat'],
+  MAX: ['continue', 'polish', 'longer', 'shorter', 'translate', 'summary', 'custom', 'chat'],
 };
 
 export const PLAN_FEATURES: Record<AiPlan, { chat: boolean; copilot: boolean }> = {
   BASIC: { chat: false, copilot: false },
   VIP: { chat: true, copilot: false },
-  MAX: { chat: true, copilot: true },
+  MAX: { chat: true, copilot: false },
 };
 
 export const PLAN_DAILY_LIMITS: Record<AiPlan, { monthly: number; yearly: number }> = {

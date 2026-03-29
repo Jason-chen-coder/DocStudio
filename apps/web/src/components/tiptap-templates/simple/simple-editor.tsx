@@ -27,6 +27,7 @@ import { AiBubbleMenu } from "@/components/editor/ai-bubble-menu"
 import { ImageBubbleMenu } from "@/components/editor/image-bubble-menu"
 import { AiInlinePanel } from "@/components/editor/ai-inline-panel"
 import { AiChatPanel } from "@/components/editor/ai-chat-panel"
+import { AiUpgradeModal } from "@/components/editor/ai-upgrade-modal"
 import { useAiSubscription } from "@/hooks/use-ai-subscription"
 
 // --- Shared base extensions (schema-defining nodes & marks) ---
@@ -646,7 +647,7 @@ export function SimpleEditor({
 
   // AI subscription state (gates all AI features)
   const aiSub = useAiSubscription()
-
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const [toolbarHeight, setToolbarHeight] = useState(0)
 
@@ -794,6 +795,7 @@ export function SimpleEditor({
               isAiPanelOpen={showAiInlinePanel}
               onAiPanelOpen={openAiInlinePanel}
               canUseCommand={aiSub.isSubscribed ? aiSub.canUseCommand : undefined}
+              onUpgradeNeeded={() => setShowUpgradeModal(true)}
               onAddComment={addThread}
               onCommentAdded={(id) => {
                 setActiveCommentId(id)
@@ -817,6 +819,7 @@ export function SimpleEditor({
             selectedText={aiSelection.text}
             selectionRange={aiSelection.range}
             canUseCommand={aiSub.isSubscribed ? aiSub.canUseCommand : undefined}
+            onUpgradeNeeded={() => setShowUpgradeModal(true)}
             onClose={() => { setShowAiInlinePanel(false); setAiSelection(null); }}
             anchorCoords={aiSelection.coords}
           />
@@ -983,6 +986,13 @@ export function SimpleEditor({
           onModeChange={setAiChatMode}
         />
       )}
+
+      {/* AI Upgrade Modal */}
+      <AiUpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        isPlanLimit={aiSub.isSubscribed}
+      />
     </div>
   )
 }

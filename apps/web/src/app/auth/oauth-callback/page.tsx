@@ -1,22 +1,29 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { setToken } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
+import { setToken, setRefreshToken } from '@/lib/api';
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   useEffect(() => {
     const token = searchParams.get('token');
-    if (token) {
-      setToken(token);
-      router.replace('/dashboard');
-    } else {
-      router.replace('/auth/login?error=oauth_failed');
+    const refreshToken = searchParams.get('refresh_token');
+
+    if (!token) {
+      window.location.replace('/auth/login?error=oauth_failed');
+      return;
     }
-  }, [searchParams, router]);
+
+    // 先存 token，再做全页刷新跳转
+    // 用 window.location.replace 而不是 router.replace，
+    // 确保 AuthProvider 重新 mount 时 localStorage 里已有 token，
+    // 避免 checkAuth() 与 setToken() 的 race condition
+    setToken(token);
+    if (refreshToken) setRefreshToken(refreshToken);
+    window.location.replace('/dashboard');
+  }, [searchParams]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-lg p-10 text-center">

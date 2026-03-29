@@ -109,6 +109,7 @@ interface AiInlinePanelProps {
   selectedText: string;
   selectionRange: { from: number; to: number };
   canUseCommand?: (cmd: string) => boolean;
+  onUpgradeNeeded?: () => void;
   onClose: () => void;
   anchorCoords: { top: number; left: number } | null;
 }
@@ -120,6 +121,7 @@ export function AiInlinePanel({
   selectedText,
   selectionRange,
   canUseCommand,
+  onUpgradeNeeded,
   onClose,
   anchorCoords,
 }: AiInlinePanelProps) {
@@ -176,17 +178,17 @@ export function AiInlinePanel({
 
   const handlePresetClick = useCallback((preset: PresetCommand) => {
     if (canUseCommand && !canUseCommand(preset.command)) {
-      toast.error('您的订阅不支持此功能');
+      onUpgradeNeeded ? onUpgradeNeeded() : toast.error('您的订阅不支持此功能，请升级套餐');
       return;
     }
     runCommand(preset.command as AiCommand, preset.customPrompt);
-  }, [canUseCommand, runCommand]);
+  }, [canUseCommand, onUpgradeNeeded, runCommand]);
 
   const handleCustomSubmit = useCallback(() => {
     const text = customInput.trim();
     if (!text) return;
     if (canUseCommand && !canUseCommand('custom')) {
-      toast.error('您的订阅不支持自定义指令');
+      onUpgradeNeeded ? onUpgradeNeeded() : toast.error('您的订阅不支持自定义指令，请升级套餐');
       return;
     }
     setActiveCommand('custom');

@@ -128,7 +128,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     }
 
     const renderFooter = () => (
-        <div className="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500 flex flex-col md:flex-row items-center justify-between gap-4 pb-8 max-w-[800px] mx-auto px-4 sm:px-6 md:px-12">
+        <div className="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-500 flex flex-col md:flex-row items-center justify-between gap-4 pb-8 max-w-[800px] mx-auto px-4 sm:px-6 md:px-12">
             <div className="flex items-center gap-2">
                 <span>创建者:</span>
                 <span className="font-medium text-gray-700 dark:text-gray-300">{doc.creator?.name || '未知用户'}</span>
@@ -140,7 +140,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     );
 
     return (
-        <div className="h-full w-full flex flex-col relative text-gray-900 bg-white">
+        <div className="h-full w-full flex flex-col relative text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900">
             {/* Floating Toolbar */}
             <div className="sticky top-0 z-10 flex items-center justify-end gap-1 px-4 py-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 print:hidden">
                 <ToolbarButton

@@ -221,39 +221,299 @@ pnpm typecheck          # 类型检查
 ### 后端环境变量 (`apps/api/.env`)
 
 ```env
-# 数据库
+# ── 数据库 ──────────────────────────────────────────────────────
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/docStudio_dev?schema=public"
 
-# 服务器
+# ── 服务地址 ─────────────────────────────────────────────────────
 PORT=3001
 NODE_ENV=development
+API_URL=http://localhost:3001          # 后端自身地址，用于 OAuth 回调 URL 拼接
+FRONTEND_URL=http://localhost:3000     # 前端地址，用于 CORS 白名单和 OAuth 登录后跳转
 
-# JWT
+# ── JWT ──────────────────────────────────────────────────────────
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_EXPIRES_IN=7d
 
-# GitHub OAuth（可选）
-# GITHUB_CLIENT_ID=
-# GITHUB_CLIENT_SECRET=
-# GITHUB_CALLBACK_URL=http://localhost:3001/auth/github/callback
+# ── 超级管理员（首次启动自动创建）────────────────────────────────
+SUPER_ADMIN_EMAIL=admin@doc-studio.com
+SUPER_ADMIN_PASSWORD=admin             # ⚠️ 生产环境必须修改为强密码
 
-# Redis（后续使用）
-# REDIS_HOST=localhost
-# REDIS_PORT=6379
+# ── GitHub OAuth（可选）─────────────────────────────────────────
+# Callback URL 自动派生自 API_URL，无需单独配置
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 
-# MinIO（后续使用）
-# MINIO_ENDPOINT=localhost
-# MINIO_PORT=9000
-# MINIO_ACCESS_KEY=minioadmin
-# MINIO_SECRET_KEY=minioadmin
+# ── Google OAuth（可选）─────────────────────────────────────────
+# Callback URL 自动派生自 API_URL，无需单独配置
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# ── Redis（Hocuspocus 实时协作多实例同步）──────────────────────
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# ── Hocuspocus 实时协作 WebSocket 服务 ──────────────────────────
+COLLAB_PORT=1234                       # 独立于 HTTP API，前端通过 ws:// 连接
+
+# ── MinIO 对象存储（头像、文件上传）────────────────────────────
+MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_ACCESS_KEY=minioadmin            # ⚠️ 生产环境必须修改
+MINIO_SECRET_KEY=minioadmin            # ⚠️ 生产环境必须修改
+MINIO_BUCKET=avatars
+MINIO_PUBLIC_ENDPOINT=http://localhost:9000   # 客户端访问文件的公共地址
+MINIO_USE_SSL=false
+
+# ── SMTP 邮件（邮箱验证、密码重置、邀请通知）──────────────────
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_SECURE=false
+SMTP_FROM="DocStudio" <noreply@docstudio.app>
+
+# ── AI 辅助写作 ──────────────────────────────────────────────────
+AI_PROVIDER=minimax                    # 可选：minimax / openai
+AI_API_KEY=
+AI_BASE_URL=https://api.minimax.io/v1
+AI_MODEL=MiniMax-Text-01
+AI_DAILY_LIMIT=50                      # 每用户每日 AI 操作次数上限
 ```
 
 ### 前端环境变量 (`apps/web/.env.local`)
 
-根据需要创建：
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001         # 后端 HTTP API 地址
+NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:1234     # Hocuspocus WebSocket 地址
+NEXT_PUBLIC_CDN_URL=http://localhost:9000         # 文件/头像访问地址（MinIO 或 CDN）
+NEXT_PUBLIC_SITE_URL=http://localhost:3000        # 网站地址（用于分享链接、SEO）
+```
+
+---
+
+## 🔐 OAuth 第三方登录配置
+
+### GitHub OAuth
+
+**第一步：创建 GitHub OAuth App**
+
+1. 打开 https://github.com/settings/developers → **OAuth Apps** → **New OAuth App**
+2. 填写信息：
+
+   | 字段 | 本地开发值 | 生产环境值 |
+   |---|---|---|
+   | Application name | DocStudio | DocStudio |
+   | Homepage URL | `http://localhost:3000` | `https://你的前端域名` |
+   | Authorization callback URL | `http://localhost:3001/auth/github/callback` | `https://你的后端域名/auth/github/callback` |
+
+   > ⚠️ **生产环境**：部署后必须回到此页将两个 URL 改为实际域名，同时更新 `.env` 中的 `API_URL`、`FRONTEND_URL`，否则登录报 `redirect_uri_mismatch`。
+
+3. 创建后复制 **Client ID** 和 **Client Secret**，填入 `apps/api/.env`
+
+**第二步：重启后端服务**（环境变量改动需重启才生效）
+
+---
+
+### Google OAuth
+
+**第一步：创建 Google OAuth 应用**
+
+1. 打开 https://console.cloud.google.com → 选择或新建项目
+2. 左侧菜单 → **API 和服务** → **OAuth 同意屏幕**
+   - 用户类型选 **外部**，填写应用名称和支持邮箱，保存
+3. 左侧菜单 → **凭据** → **创建凭据** → **OAuth 客户端 ID**
+   - 应用类型选 **Web 应用**，填写：
+
+   | 字段 | 本地开发值 | 生产环境值 |
+   |---|---|---|
+   | 已获授权的 JavaScript 来源 | `http://localhost:3000` | `https://你的前端域名` |
+   | 已获授权的重定向 URI | `http://localhost:3001/auth/google/callback` | `https://你的后端域名/auth/google/callback` |
+
+   > ⚠️ **生产环境**：部署后必须回到此页将两个 URL 改为实际域名，同时更新 `.env` 中的 `API_URL`、`FRONTEND_URL`，否则 Google 拒绝回调。
+
+4. 创建后复制 **客户端 ID** 和 **客户端密钥**，填入 `apps/api/.env`
+
+**第二步：重启后端服务**
+
+---
+
+### OAuth 登录流程说明
+
+```
+用户点击登录按钮
+  → 跳转到 /auth/github 或 /auth/google（后端）
+  → 后端重定向到第三方授权页
+  → 用户授权后回调到 /auth/github/callback 或 /auth/google/callback
+  → 后端用 code 换取用户信息，生成 JWT
+  → 重定向到前端 /auth/oauth-callback?token=xxx&refresh_token=xxx
+  → 前端存储 token，跳转到 /dashboard
+```
+
+---
+
+## 🚀 生产环境部署
+
+### 部署前检查清单
+
+**必填项（缺少则系统无法正常运行）**
+
+```
+[ ] DATABASE_URL              — PostgreSQL 连接字符串
+[ ] JWT_SECRET                — 使用强密钥：openssl rand -base64 32
+[ ] API_URL                   — 后端实际域名，如 https://api.yourdomain.com
+[ ] FRONTEND_URL              — 前端实际域名，如 https://yourdomain.com
+[ ] MINIO_ACCESS_KEY/SECRET   — 修改默认的 minioadmin
+[ ] SUPER_ADMIN_PASSWORD      — 修改默认的 admin
+[ ] NEXT_PUBLIC_API_URL       — 前端 .env 中的后端地址
+[ ] NEXT_PUBLIC_WEBSOCKET_URL — 前端 .env 中的 WebSocket 地址（wss://）
+[ ] NEXT_PUBLIC_CDN_URL       — 前端 .env 中的文件访问地址
+```
+
+**推荐配置（影响功能完整性）**
+
+```
+[ ] GITHUB_CLIENT_ID/SECRET   — GitHub 登录，回调 URL 改为生产域名
+[ ] GOOGLE_CLIENT_ID/SECRET   — Google 登录，回调 URL 改为生产域名
+[ ] SMTP_HOST/USER/PASS       — 邮件验证、密码重置、邀请通知
+[ ] AI_API_KEY                — AI 辅助写作功能
+```
+
+---
+
+### 生产环境变量示例
+
+**`apps/api/.env`（生产）**
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
+DATABASE_URL="postgresql://user:password@db-host:5432/docstudio?schema=public"
+PORT=3001
+NODE_ENV=production
+API_URL=https://api.yourdomain.com
+FRONTEND_URL=https://yourdomain.com
+
+JWT_SECRET=<openssl rand -base64 32 生成的强密钥>
+JWT_EXPIRES_IN=7d
+
+SUPER_ADMIN_EMAIL=admin@yourdomain.com
+SUPER_ADMIN_PASSWORD=<强密码>
+
+GITHUB_CLIENT_ID=<your_id>
+GITHUB_CLIENT_SECRET=<your_secret>
+
+GOOGLE_CLIENT_ID=<your_id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-<your_secret>
+
+REDIS_HOST=redis-host
+REDIS_PORT=6379
+COLLAB_PORT=1234
+
+MINIO_ENDPOINT=minio-host
+MINIO_PORT=9000
+MINIO_ACCESS_KEY=<strong-access-key>
+MINIO_SECRET_KEY=<strong-secret-key>
+MINIO_BUCKET=avatars
+MINIO_PUBLIC_ENDPOINT=https://cdn.yourdomain.com
+MINIO_USE_SSL=true
+
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_USER=your@email.com
+SMTP_PASS=<smtp-password>
+SMTP_SECURE=false
+SMTP_FROM="DocStudio" <noreply@yourdomain.com>
+
+AI_PROVIDER=minimax
+AI_API_KEY=<your-api-key>
+AI_BASE_URL=https://api.minimax.io/v1
+AI_MODEL=MiniMax-Text-01
+AI_DAILY_LIMIT=50
+```
+
+**`apps/web/.env.local`（生产）**
+
+```env
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+NEXT_PUBLIC_WEBSOCKET_URL=wss://api.yourdomain.com:1234
+NEXT_PUBLIC_CDN_URL=https://cdn.yourdomain.com
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+```
+
+> ⚠️ **Next.js 图片域名**：生产环境使用自定义域名访问 MinIO 文件时，需要在 `apps/web/next.config.ts` 的 `images.remotePatterns` 中添加该域名，否则图片无法加载。
+
+---
+
+### 数据库部署步骤
+
+```bash
+cd apps/api
+
+# 生产环境用 migrate deploy（不创建新迁移，只应用已有迁移）
+pnpm exec prisma migrate deploy
+
+# 生成 Prisma Client
+pnpm exec prisma generate
+```
+
+---
+
+### 构建 & 启动
+
+```bash
+# 1. 安装依赖
+pnpm install --frozen-lockfile
+
+# 2. 构建
+pnpm build
+
+# 3. 启动后端
+pnpm --filter @docStudio/api start:prod   # HTTP API :3001 + WebSocket :1234
+
+# 4. 启动前端
+pnpm --filter @docStudio/web start        # :3000
+```
+
+---
+
+### 反向代理（Nginx 示例）
+
+生产环境建议用 Nginx 统一入口并处理 SSL：
+
+```nginx
+# 前端
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+    location / {
+        proxy_pass http://localhost:3000;
+    }
+}
+
+# 后端 API
+server {
+    listen 443 ssl;
+    server_name api.yourdomain.com;
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    # Hocuspocus WebSocket
+    location /ws {
+        proxy_pass http://localhost:1234;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# MinIO 文件访问（可选，若通过 CDN 域名访问）
+server {
+    listen 443 ssl;
+    server_name cdn.yourdomain.com;
+    location / {
+        proxy_pass http://localhost:9000;
+    }
+}
 ```
 
 ---
