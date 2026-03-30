@@ -234,7 +234,7 @@ export default function AdminAiSubscriptionsPage() {
           ) : subscriptions.length === 0 ? (
             <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">暂无订阅记录</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">用户</th>
@@ -290,7 +290,7 @@ export default function AdminAiSubscriptionsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       )}

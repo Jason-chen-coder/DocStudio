@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -11,17 +12,26 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
+import { ActivityService } from '../activity/activity.service';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 
+/** 登录失败锁定阈值 */
+const MAX_FAILED_ATTEMPTS = 5;
+/** 锁定时长（毫秒）— 30 分钟 */
+const LOCK_DURATION_MS = 30 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private prisma: PrismaService,
     private emailService: EmailService,
     private onboardingService: OnboardingService,
+    private activityService: ActivityService,
   ) {}
 
   private async generateTokens(userId: string, email: string) {
@@ -76,6 +86,23 @@ export class AuthService {
       throw new UnauthorizedException('邮箱或密码错误');
     }
 
+    // 检查账号是否被锁定
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMin = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60000,
+      );
+      this.activityService.log({
+        userId: user.id,
+        action: 'LOGIN_FAILED',
+        entityType: 'USER',
+        entityId: user.id,
+        metadata: { reason: 'account_locked' },
+      });
+      throw new UnauthorizedException(
+        `账号已锁定，请 ${remainingMin} 分钟后重试`,
+      );
+    }
+
     // 验证密码
     const isPasswordValid = await this.usersService.validatePassword(
       password,
@@ -83,11 +110,47 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      // 递增失败次数，达到阈值则锁定
+      const attempts = (user.failedLoginAttempts ?? 0) + 1;
+      const lockData: { failedLoginAttempts: number; lockedUntil?: Date } = {
+        failedLoginAttempts: attempts,
+      };
+      if (attempts >= MAX_FAILED_ATTEMPTS) {
+        lockData.lockedUntil = new Date(Date.now() + LOCK_DURATION_MS);
+      }
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: lockData,
+      });
+
+      this.activityService.log({
+        userId: user.id,
+        action: 'LOGIN_FAILED',
+        entityType: 'USER',
+        entityId: user.id,
+        metadata: { attempts },
+      });
+
       throw new UnauthorizedException('邮箱或密码错误');
+    }
+
+    // 登录成功 — 重置失败计数
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
     }
 
     // 生成 token 对
     const tokens = await this.generateTokens(user.id, user.email);
+
+    this.activityService.log({
+      userId: user.id,
+      action: 'LOGIN_SUCCESS',
+      entityType: 'USER',
+      entityId: user.id,
+    });
 
     // 返回用户信息（不包含密码）
     const { password: _, ...userWithoutPassword } = user;
@@ -126,6 +189,13 @@ export class AuthService {
 
     // 更新密码
     await this.usersService.updatePassword(userId, newPassword);
+
+    this.activityService.log({
+      userId,
+      action: 'PASSWORD_CHANGED',
+      entityType: 'USER',
+      entityId: userId,
+    });
 
     return { message: '密码修改成功' };
   }
@@ -315,10 +385,35 @@ export class AuthService {
       }
     }
 
+    this.activityService.log({
+      userId,
+      action: 'ACCOUNT_DELETED',
+      entityType: 'USER',
+      entityId: userId,
+    });
+
     // 级联删除所有用户数据（Prisma onDelete: Cascade 会处理大部分关联）
     await this.prisma.user.delete({ where: { id: userId } });
 
     return { message: '账号已永久删除' };
+  }
+
+  // ==================== 登出 ====================
+
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+
+    this.activityService.log({
+      userId,
+      action: 'LOGOUT',
+      entityType: 'USER',
+      entityId: userId,
+    });
+
+    return { message: '已退出登录' };
   }
 
   async resetPassword(token: string, newPassword: string) {

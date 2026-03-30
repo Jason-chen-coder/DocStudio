@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import { all, createLowlight } from 'lowlight';
+import { sanitizeHtml } from './sanitize';
 
 // Syntax highlighter using lowlight (same engine as the code block editor)
 const lowlight = createLowlight(all);
@@ -51,5 +52,5 @@ const md = new MarkdownIt({
  * Used by AI Chat Panel and AI Result Panel.
  */
 export function renderMarkdown(text: string): string {
-  return md.render(text);
+  return sanitizeHtml(md.render(text));
 }

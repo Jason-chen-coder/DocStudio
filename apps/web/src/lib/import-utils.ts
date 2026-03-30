@@ -1,5 +1,6 @@
 import { generateJSON } from '@tiptap/core';
 import { getBaseExtensions } from './tiptap-extensions';
+import { sanitizeHtml } from './sanitize';
 
 export const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10MB
 export const ACCEPT_STRING = '.md,.html,.htm,.docx';
@@ -31,7 +32,7 @@ function filenameToTitle(filename: string): string {
 function htmlToTiptapJSON(html: string): object {
   try {
     const extensions = getBaseExtensions();
-    return generateJSON(html, extensions);
+    return generateJSON(sanitizeHtml(html), extensions);
   } catch {
     throw new Error('无法解析文件内容，请检查文件格式是否正确');
   }

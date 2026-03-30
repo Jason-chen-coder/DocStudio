@@ -30,6 +30,7 @@ function ChangePasswordModal({
 
   async function handleSubmit() {
     if (pw.length < 8) { setError('密码至少需要 8 位'); return; }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(pw)) { setError('密码需包含大写、小写字母和数字'); return; }
     if (mismatch) return;
     setLoading(true);
     setError('');
@@ -45,7 +46,7 @@ function ChangePasswordModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">修改用户密码</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">用户：{user.name}（{user.email}）</p>
@@ -57,7 +58,7 @@ function ChangePasswordModal({
               value={pw}
               onChange={(e) => setPw(e.target.value)}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="至少 8 位"
+              placeholder="需含大写、小写字母和数字"
             />
           </div>
           <div>
@@ -113,7 +114,7 @@ function DisableModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">{user.isDisabled ? '启用账号' : '禁用账号'}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -166,7 +167,7 @@ function DeleteModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />

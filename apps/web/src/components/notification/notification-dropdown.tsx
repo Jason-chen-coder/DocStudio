@@ -43,7 +43,7 @@ export function NotificationDropdown({
       : notifications;
 
   return (
-    <div className="w-[380px] max-h-[480px] flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="w-[calc(100vw-2rem)] sm:w-[380px] max-h-[480px] flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* 头部 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">

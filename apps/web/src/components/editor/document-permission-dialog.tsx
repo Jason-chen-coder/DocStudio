@@ -138,7 +138,7 @@ export function DocumentPermissionDialog({
         onClick={() => onOpenChange(false)}
       />
       <FadeIn duration={0.2}>
-        <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-[480px] max-h-[600px] flex flex-col">
+        <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-[calc(100vw-2rem)] md:w-[480px] max-h-[calc(100vh-4rem)] md:max-h-[600px] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2.5">

@@ -35,6 +35,10 @@ model User {
   // 新用户引导
   onboardingCompleted Boolean @default(false)
 
+  // 登录安全
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   // JWT Refresh Token
   refreshToken String?
 
@@ -241,6 +245,11 @@ enum ActivityAction {
   LEAVE
   INVITE
   ROLE_CHANGE
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  PASSWORD_CHANGED
+  ACCOUNT_DELETED
+  LOGOUT
 }
 
 // 实体类型枚举
@@ -250,6 +259,7 @@ enum EntityType {
   SNAPSHOT
   SHARE_LINK
   MEMBER
+  USER
 }
 
 // ==================== 最近访问模型（独立优化表） ====================

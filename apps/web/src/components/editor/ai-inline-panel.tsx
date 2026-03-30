@@ -254,7 +254,7 @@ export function AiInlinePanel({
   const panel = (
     <div
       ref={panelRef}
-      className="fixed z-50 w-[520px] max-h-[460px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+      className="fixed z-50 w-[calc(100vw-2rem)] md:w-[520px] max-h-[calc(100vh-4rem)] md:max-h-[460px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
       style={{
         top: anchorCoords.top + 4,
         left: Math.max(16, Math.min(anchorCoords.left, window.innerWidth - 540)),

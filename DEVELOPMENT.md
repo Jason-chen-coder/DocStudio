@@ -723,6 +723,52 @@ pnpm exec prisma migrate dev
 
 ---
 
+## 🌐 生产部署（Nginx 反向代理）
+
+项目包含 `nginx/` 目录下的生产 Nginx 配置：
+
+```bash
+# 目录结构
+nginx/
+├── nginx.conf    # 主配置（HTTP/HTTPS server 块）
+└── proxy.conf    # 代理规则（API/WebSocket/前端/静态资源）
+```
+
+### 使用方式
+
+1. 将 `nginx/` 目录挂载到 Nginx 容器：
+
+```yaml
+# docker-compose.prod.yml 中添加 nginx 服务
+nginx:
+  image: nginx:alpine
+  ports:
+    - "80:80"
+    - "443:443"
+  volumes:
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro
+    # SSL 证书（生产环境）
+    # - ./ssl:/etc/nginx/ssl:ro
+  depends_on:
+    - api
+    - web
+```
+
+2. HTTPS 配置：编辑 `nginx/nginx.conf`，取消注释 HTTPS server 块，填写域名和证书路径。
+
+3. 数据库备份：
+
+```bash
+# 备份
+docker exec docStudio-postgres pg_dump -U postgres docStudio_dev > backup.sql
+
+# 恢复
+docker exec -i docStudio-postgres psql -U postgres docStudio_dev < backup.sql
+```
+
+---
+
 ## 🆘 获取帮助
 
 - **Prisma 文档**：https://www.prisma.io/docs

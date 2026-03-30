@@ -44,6 +44,12 @@ export default function SecuritySettingsPage() {
       return;
     }
 
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      toast.error('密码需包含至少一个大写字母、一个小写字母和一个数字');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await authAPI.changePassword({ currentPassword, newPassword });
       toast.success('密码修改成功');
@@ -167,7 +173,7 @@ export default function SecuritySettingsPage() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                  密码长度至少为 8 个字符
+                  至少 8 个字符，需包含大写字母、小写字母和数字
                 </p>
               </div>
 

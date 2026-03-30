@@ -7,6 +7,7 @@ import { CATEGORY_LABELS, SCOPE_LABELS } from '@/types/template';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedModal } from '@/components/ui/animated-modal';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Minimal Tiptap JSON → HTML renderer (no editor dependency)
 function renderTiptapJson(node: any): string {
@@ -146,7 +147,7 @@ export function TemplatePreviewDialog({
           ) : (
             <div
               className="prose prose-sm dark:prose-invert max-w-none template-preview"
-              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderedHtml) }}
             />
           )}
         </div>

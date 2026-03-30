@@ -163,23 +163,23 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   ];
 
   return (
-    <div className="border border-input bg-transparent rounded-lg p-1 mb-2 flex flex-wrap gap-1 sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
+    <div className="border border-input bg-transparent rounded-lg p-1 mb-2 flex flex-wrap gap-0.5 sm:gap-1 sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-sm overflow-x-auto">
       {items.map((item, index) => {
         if (item.type === 'divider') {
-          return <div key={index} className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-1 my-1" />;
+          return <div key={index} className="w-[1px] bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1 my-1 hidden sm:block" />;
         }
 
         const Icon = item.icon as any;
-        
+
         return (
           <button
             key={index}
             onClick={(e) => {
-                e.preventDefault(); 
+                e.preventDefault();
                 item.action?.();
             }}
             className={cn(
-              "p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors",
+              "p-2 sm:p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors touch-manipulation",
               item.isActive?.() && "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             )}
             title={item.title}

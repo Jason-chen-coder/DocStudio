@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 // Fastify types imported as values (not 'import type') for decorator metadata
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -37,6 +38,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 次/小时
   @ApiOperation({ summary: '用户注册', description: '创建新用户账号' })
   @ApiResponse({
     status: 201,
@@ -50,6 +52,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 次/15分钟
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '用户登录', description: '使用邮箱和密码登录' })
   @ApiResponse({
@@ -77,6 +80,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 次/小时
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '修改密码', description: '需要 JWT 认证' })
@@ -113,6 +117,7 @@ export class AuthController {
   // ==================== 密码重置 ====================
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 次/小时
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '忘记密码', description: '发送密码重置邮件' })
   @ApiResponse({ status: 200, description: '如果邮箱存在将发送重置邮件' })
@@ -121,6 +126,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 次/小时
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '重置密码', description: '使用重置令牌设置新密码' })
   @ApiResponse({ status: 200, description: '密码重置成功' })
@@ -143,6 +149,18 @@ export class AuthController {
     @Body() dto: DeleteAccountDto,
   ) {
     return this.authService.deleteAccount(user.id, dto.password ?? '');
+  }
+
+  // ==================== 登出 ====================
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '退出登录', description: '清除 refresh token 使其失效' })
+  @ApiResponse({ status: 200, description: '已退出登录' })
+  async logout(@CurrentUser() user: UserResponseDto) {
+    return this.authService.logout(user.id);
   }
 
   // ==================== Refresh Token ====================

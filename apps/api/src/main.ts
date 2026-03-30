@@ -97,16 +97,20 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, documentFactory);
 
+  // 优雅关闭 — 收到 SIGTERM/SIGINT 时先排空连接再退出
+  app.enableShutdownHooks();
+
   await app.listen({
     port: Number(process.env.PORT) || 3001,
     host: '0.0.0.0',
   });
 
-  console.log(
-    `🚀 Application is running on: http://localhost:${process.env.PORT || 3001}`,
+  const logger = app.get(Logger);
+  logger.log(
+    `Application is running on: http://localhost:${process.env.PORT || 3001}`,
   );
-  console.log(
-    `📚 Swagger API docs: http://localhost:${process.env.PORT || 3001}/api/docs`,
+  logger.log(
+    `Swagger API docs: http://localhost:${process.env.PORT || 3001}/api/docs`,
   );
 }
 void bootstrap();

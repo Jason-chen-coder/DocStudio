@@ -104,7 +104,7 @@ function FloatingWrapper({ children, onStartDrag }: { children: React.ReactNode;
   return (
     <div
       className="fixed z-40 shadow-2xl rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-      style={{ bottom: 80, right: 24, width: 380, height: 520 }}
+      style={{ bottom: 20, right: 16, width: 'min(380px, calc(100vw - 2rem))', height: 'min(520px, calc(100vh - 6rem))' }}
     >
       {children}
     </div>

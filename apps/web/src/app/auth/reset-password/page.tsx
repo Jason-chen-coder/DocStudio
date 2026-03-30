@@ -20,6 +20,16 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError('');
 
+    if (password.length < 8) {
+      setError('密码长度至少为 8 个字符');
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      setError('密码需包含至少一个大写字母、一个小写字母和一个数字');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('两次输入的密码不一致');
       return;
@@ -84,7 +94,7 @@ function ResetPasswordForm() {
           <label htmlFor="password" className="block text-[0.8125rem] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             新密码
           </label>
-          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={inputCls} placeholder="至少 8 个字符" />
+          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={inputCls} placeholder="需含大写、小写字母和数字" />
         </div>
 
         <div>

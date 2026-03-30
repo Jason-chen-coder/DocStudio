@@ -17,7 +17,7 @@
 | 6     | 数据与洞察(Post) | ✅ 已完成 | 3-4周    | 已合并至 Stage 7 Phase 7（空间数据面板+文档统计+Dashboard 增强） |
 | 7     | 产品打磨与增长   | ✅ 已完成 | 6-8周    | 回收站✅、通知✅、收藏✅、导入导出✅、文档互链✅、数据洞察✅、快捷键✅ |
 | 8     | AI 辅助写作      | ✅ 已完成 | 2-3周    | AI 写作命令✅、Copilot 补全✅、AI 对话侧栏✅、AI 订阅制✅、AI 后台配置✅ |
-| 9     | 上线前必备功能   | 📋 待开发 | 2-3周    | 密码重置、邮箱验证、OAuth、错误页面、安全加固、移动端适配 |
+| 9     | 上线前必备功能   | ✅ 已完成 | 2-3周    | 密码重置、邮箱验证、OAuth、错误页面、安全加固、移动端适配 |
 
 **总预计时间**: 约 4-5 个月
 
@@ -36,7 +36,7 @@
 - [Stage 6: 数据与洞察 (Post-MVP)](./stage-6-数据与洞察.md) ✅ (已合并至 Stage 7)
 - [Stage 7: 产品打磨与增长](./stage-7-产品打磨与增长.md) ✅
 - [Stage 8: AI 辅助写作](./stage-8-AI辅助写作.md) ✅
-- [Stage 9: 上线前必备功能](./stage-9-上线前必备功能.md) 📋
+- [Stage 9: 上线前必备功能](./stage-9-上线前必备功能.md) ✅
 
 ---
 
@@ -163,13 +163,13 @@ DocStudio 是一个**实时协作的知识管理平台**，具有两种使用模
 - AI 订阅制（三档套餐：普通/VIP/Max，申请审批，按月/按年，到期自动处理）✅
 - LLM Provider 抽象层（OpenAI 兼容，支持 MiniMax/DeepSeek 等国产模型）✅
 
-### 🎯 Milestone 9: 上线前必备功能（Stage 9）📋
+### 🎯 Milestone 9: 上线前必备功能（Stage 9）✅
 
 **目标**: 补齐上线前的安全、合规和体验短板
 
-- P0 上线阻断项：密码重置、邮箱验证、邮件服务、错误页面、安全 Headers、健康检查
-- P1 强烈推荐：OAuth 登录、新用户引导、移动端适配、全局错误边界、JWT 刷新
-- P2 体验打磨：空间转让、面包屑导航、Cookie 同意、CI/CD、结构化日志
+- P0 上线阻断项：密码重置✅、邮箱验证✅、邮件服务✅、错误页面✅、安全 Headers✅、健康检查✅、隐私/服务条款✅
+- P1 强烈推荐：OAuth 登录✅、新用户引导✅、移动端适配✅、全局错误边界✅、邮件通知✅、JWT 刷新✅、账号删除✅
+- P2 体验打磨：空间转让✅、用户模板管理✅、面包屑导航✅、Cookie 同意✅、CI/CD✅、结构化日志✅
 
 ---
 
@@ -296,6 +296,12 @@ DocStudio 是一个**实时协作的知识管理平台**，具有两种使用模
   - 新增 `ImageProcessingService`、`POST /files/upload-attachment` 端点
   - 全局站点配置 `site-config.ts`（URL/SEO/keywords 统一管理）
   - 修复 4 个 TypeScript 编译错误（dashboard-stats / comment-bubble-menu / search-dialog / simple-editor / use-collaboration）
+
+- **2026-03-30**: Stage 9 上线前必备功能全部完成 + README 状态同步
+  - P0（7 项）：密码重置、邮箱验证、邮件服务（Nodemailer+SMTP+Handlebars）、404/500 错误页、Helmet 安全 Headers、Health Check、隐私/服务条款
+  - P1（7 项）：OAuth 登录（Google+GitHub）、新用户引导（4 步弹窗）、移动端适配、全局错误边界、邮件通知、JWT 刷新（token 轮换）、账号删除（GDPR）
+  - P2（6 项）：空间所有权转让、用户模板管理、面包屑导航、Cookie 同意横幅、CI/CD（GitHub Actions）、结构化日志（nestjs-pino）
+  - 全部 9 个 Stage 共 20 项功能均已实现，项目达到 MVP 上线标准
 
 ---
 

@@ -34,6 +34,16 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    if (formData.password.length < 8) {
+      setError('密码长度至少为 8 个字符');
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      setError('密码需包含至少一个大写字母、一个小写字母和一个数字');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('两次输入的密码不一致');
       return;
@@ -121,7 +131,7 @@ export default function RegisterPage() {
               required
               minLength={8}
               className={`${inputCls} pr-12`}
-              placeholder="至少 8 个字符"
+              placeholder="需含大写、小写字母和数字"
             />
             <button
               type="button"
