@@ -131,7 +131,10 @@ export function Sidebar() {
                 </div>
 
                 {/* Space name badge */}
-                <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/15 dark:to-indigo-900/15 rounded-xl border border-blue-100/60 dark:border-blue-800/30">
+                <Link
+                  href={`/spaces/${spaceId}`}
+                  className="flex items-center gap-2.5 px-3 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/15 dark:to-indigo-900/15 rounded-xl border border-blue-100/60 dark:border-blue-800/30 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/25 dark:hover:to-indigo-900/25 transition-all"
+                >
                   <div className="w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                     {currentSpace?.name?.charAt(0) || '?'}
                   </div>
@@ -145,7 +148,7 @@ export function Sidebar() {
                       </p>
                     )}
                   </div>
-                </div>
+                </Link>
 
                 {/* Section label */}
                 <div className="flex items-center gap-2 px-1">

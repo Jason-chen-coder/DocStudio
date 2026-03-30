@@ -10,6 +10,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 
@@ -20,6 +21,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private emailService: EmailService,
+    private onboardingService: OnboardingService,
   ) {}
 
   private async generateTokens(userId: string, email: string) {
@@ -52,6 +54,9 @@ export class AuthService {
 
     // 异步发送验证邮件（不阻塞注册响应）
     this.emailService.sendEmailVerification(email, name, emailVerifyToken);
+
+    // 异步创建默认工作空间和欢迎文档（不阻塞注册响应）
+    this.onboardingService.setupNewUser(user.id);
 
     // 生成 token 对
     const tokens = await this.generateTokens(user.id, user.email);
@@ -255,6 +260,9 @@ export class AuthService {
           emailVerified: true, // OAuth 已验证邮箱
         },
       });
+
+      // 异步创建默认工作空间和欢迎文档（不阻塞登录响应）
+      this.onboardingService.setupNewUser(user.id);
     }
 
     const tokens = await this.generateTokens(user.id, user.email);

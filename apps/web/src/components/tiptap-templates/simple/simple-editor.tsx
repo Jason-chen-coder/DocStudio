@@ -411,6 +411,14 @@ type TableOfContentsItem = {
   isActive: boolean
 }
 
+/** Parse content: JSON string → Tiptap JSON object, otherwise pass through */
+function parseContent(content: unknown): unknown {
+  if (typeof content === 'string' && content.trimStart().startsWith('{')) {
+    try { return JSON.parse(content); } catch { /* not valid JSON */ }
+  }
+  return content;
+}
+
 export function SimpleEditor({
   content,
   onUpdate,
@@ -606,8 +614,9 @@ export function SimpleEditor({
         ]
         : []),
     ],
-    // In collab mode, don't pass initial content (Yjs manages it from server)
-    content: isCollabMode ? undefined : content,
+    // In collab mode, Yjs manages content entirely — pass undefined.
+    // In non-collab mode, parse JSON string into Tiptap JSON object for initial render.
+    content: isCollabMode ? undefined : parseContent(content),
     editable,
     onCreate: ({ editor }: { editor: Editor }) => {
       onReady?.(editor);
@@ -709,26 +718,16 @@ export function SimpleEditor({
     }
   }, [isMobile, mobileView])
 
+  // Non-collab content fallback: if the editor was created with content but it
+  // didn't take effect (TipTap v3 timing issue), inject it explicitly.
   useEffect(() => {
-    // Only update content in non-collab mode (collab mode is driven by Yjs)
-    if (editor && !isCollabMode && content !== undefined) {
-      // Content may be: a Tiptap JSON object, a JSON string, or an HTML string
-      let parsed: unknown = content;
-      if (typeof content === 'string' && content.trimStart().startsWith('{')) {
-        try {
-          parsed = JSON.parse(content);
-        } catch {
-          // not valid JSON — treat as HTML string
-        }
-      }
-      // Defer to avoid flushSync error during render cycle
-      setTimeout(() => {
-        if (editor.isDestroyed) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        editor.commands.setContent(parsed as any);
-      }, 0);
+    if (!editor || editor.isDestroyed || isCollabMode || !content) return
+    if (editor.state.doc.textContent.trim() !== '') return
+    const parsed = parseContent(content)
+    if (parsed && typeof parsed === 'object') {
+      editor.commands.setContent(parsed as any)
     }
-  }, [editor, content, isCollabMode])
+  }, [editor, isCollabMode, content])
 
   useEffect(() => {
     if (editor && editable !== undefined) {

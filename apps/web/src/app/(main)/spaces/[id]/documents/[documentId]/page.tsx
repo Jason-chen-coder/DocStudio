@@ -121,10 +121,13 @@ export default function DocumentPage() {
     : null;
 
   // Initialize collaboration (requires ydocKey from document)
+  // Skip collab for brand-new documents (ydocData is null) — load content from DB instead.
+  // Once the user edits, Hocuspocus will initialize ydocData on first save.
+  const hasYdocData = !!document?.hasYdocData;
   const ydocKey = document?.ydocKey ?? null;
 
   const { ydoc, provider, connectedUsers, status: collabStatus } = useCollaboration(
-    ydocKey && collabUser
+    ydocKey && collabUser && hasYdocData
       ? {
         documentId,
         ydocKey,
@@ -133,7 +136,7 @@ export default function DocumentPage() {
       : null,
   );
 
-  const isCollabReady = !!(ydocKey && ydoc && provider);
+  const isCollabReady = !!(ydocKey && ydoc && provider && hasYdocData);
 
   const [isEditorReady, setIsEditorReady] = useState(false);
 
@@ -533,23 +536,21 @@ export default function DocumentPage() {
             editorRef.current = editor;
             setIsEditorReady(true);
 
-            // In collab mode, Yjs manages content. But for a brand-new document
-            // created from a template, ydocData is null so Yjs starts empty.
-            // Detect this case and inject the template content from DB once.
-            if (isCollabReady && document.content) {
-              // Wait a tick for Yjs sync to settle
-              setTimeout(() => {
+            // For collab documents: after Yjs syncs, if editor is still empty
+            // but DB has content (e.g. ydocData was saved empty previously), inject it.
+            if (isCollabReady && provider && document.content?.trim().startsWith('{')) {
+              const injectIfEmpty = () => {
                 if (editor.isDestroyed) return;
-                const isEmpty = editor.state.doc.textContent.trim() === '';
-                if (isEmpty && document.content?.trim().startsWith('{')) {
-                  try {
-                    const json = JSON.parse(document.content);
-                    editor.commands.setContent(json);
-                  } catch {
-                    // content is not JSON, skip
-                  }
-                }
-              }, 500);
+                if (editor.state.doc.textContent.trim() !== '') return;
+                try {
+                  editor.commands.setContent(JSON.parse(document.content!));
+                } catch { /* not valid JSON */ }
+              };
+              if (provider.synced) {
+                setTimeout(injectIfEmpty, 200);
+              } else {
+                provider.on('synced', () => setTimeout(injectIfEmpty, 200));
+              }
             }
           }}
         />

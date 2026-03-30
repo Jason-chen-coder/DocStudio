@@ -105,7 +105,7 @@ model Document {
   space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   parent      Document?    @relation("DocumentHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children    Document[]   @relation("DocumentHierarchy")
-  creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id])
+  creator     User         @relation("DocumentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   shareLinks  ShareLink[]
   snapshots   DocumentSnapshot[]
   visits      DocumentVisit[]
@@ -281,7 +281,7 @@ model DocumentSnapshot {
   ydocData  Bytes?            // Yjs 编码快照（可选，用于精确 Yjs 回滚）
   message   String?           // 版本说明（可选）
   createdBy String
-  creator   User     @relation(fields: [createdBy], references: [id])
+  creator   User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@index([docId, createdAt])
@@ -304,7 +304,7 @@ model DocumentTemplate {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  creator User   @relation(fields: [createdBy], references: [id])
+  creator User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   space   Space? @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@index([scope, category])

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getCdnUrl } from '@/lib/cdn';
+import { getAvatarUrl } from '@/lib/cdn';
 import {
   LogOut,
   UserCircle,
@@ -36,8 +36,7 @@ export function Header() {
     setIsMac(navigator.platform.toUpperCase().includes('MAC'));
   }, []);
 
-  const avatarUrl = getCdnUrl(user?.avatarUrl);
-  const initial = (user?.name || 'U').charAt(0).toUpperCase();
+  const avatarUrl = getAvatarUrl(user?.avatarUrl, user?.name);
   const { theme, toggleTheme, mounted } = useTheme();
 
   return (
@@ -159,11 +158,11 @@ export function Header() {
                         icon: UserCircle,
                         label: '个人中心',
                       },
-                      {
-                        href: '/spaces',
-                        icon: FolderOpen,
-                        label: '工作空间',
-                      },
+                      // {
+                      //   href: '/spaces',
+                      //   icon: FolderOpen,
+                      //   label: '工作空间',
+                      // },
                       {
                         href: '/settings',
                         icon: SlidersHorizontal,

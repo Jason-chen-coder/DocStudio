@@ -186,7 +186,7 @@ export function PublicHeader() {
                                     {[
                                         { href: '/dashboard', icon: LayoutDashboard, label: '进入控制台' },
                                         { href: '/profile', icon: UserCircle, label: '个人中心' },
-                                        { href: '/spaces', icon: FolderOpen, label: '工作空间' },
+                                        // { href: '/spaces', icon: FolderOpen, label: '工作空间' },
                                         { href: '/settings', icon: SlidersHorizontal, label: '设置' },
                                     ].map((item) => (
                                         <DropdownMenuItem key={item.href} asChild>

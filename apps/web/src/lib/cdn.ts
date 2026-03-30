@@ -13,3 +13,20 @@ export function getCdnUrl(path?: string | null): string | undefined {
   const base = (process.env.NEXT_PUBLIC_CDN_URL ?? 'http://localhost:9000').replace(/\/$/, '');
   return `${base}/${path}`;
 }
+
+/**
+ * 获取用户头像 URL，当用户没有自定义头像时返回基于姓名首字母生成的默认头像。
+ * 使用 ui-avatars.com 服务生成，零依赖、无需本地图片。
+ */
+export function getAvatarUrl(
+  avatarPath?: string | null,
+  name?: string | null,
+): string {
+  const cdn = getCdnUrl(avatarPath);
+  if (cdn) return cdn;
+
+  // 生成基于姓名的默认头像
+  const displayName = name?.trim() || 'U';
+  const encoded = encodeURIComponent(displayName);
+  return `https://ui-avatars.com/api/?name=${encoded}&background=6366f1&color=fff&size=128&font-size=0.4&bold=true`;
+}

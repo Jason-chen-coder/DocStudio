@@ -7,39 +7,44 @@ import { spaceService } from '@/services/space-service';
 import { Space } from '@/types/space';
 import {
   ArrowRight,
+  ArrowUpRight,
+  ArrowDownRight,
   FileText,
   Users,
   FolderOpen,
   Plus,
-  Clock,
-  LayoutDashboard,
-  Sparkles,
-  X,
   TrendingUp,
   Star,
   Eye,
+  X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { RecentDocuments } from '@/components/activity/recent-documents';
-import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { DashboardStats } from '@/components/activity/dashboard-stats';
 import CountUp from '@/components/ui/count-up';
-import { FadeIn } from '@/components/ui/fade-in';
 import { activityService, type UserProductivityStats } from '@/services/activity-service';
 import { AnimatedModal } from '@/components/ui/animated-modal';
 import { documentService } from '@/services/document-service';
 import { DocumentFavorite } from '@/types/document';
 import Link from 'next/link';
 
+/* ── color accents for space cards ── */
+const SPACE_COLORS = [
+  { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+  { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400' },
+  { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+  { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+  { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+  { bg: 'bg-cyan-100 dark:bg-cyan-900/30', text: 'text-cyan-600 dark:text-cyan-400' },
+];
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [showRecentModal, setShowRecentModal] = useState(false);
-  const [showActivityModal, setShowActivityModal] = useState(false);
   const [favorites, setFavorites] = useState<DocumentFavorite[]>([]);
   const [prodStats, setProdStats] = useState<UserProductivityStats | null>(null);
 
@@ -68,409 +73,205 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 6 ? '夜深了' : hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
 
+  const createdDiff = prodStats ? prodStats.thisWeekCreated - prodStats.lastWeekCreated : null;
+  const editedDiff = prodStats ? prodStats.thisWeekEdited - prodStats.lastWeekEdited : null;
+
+  const statItems = [
+    { value: spaces.length, label: '工作空间', icon: FolderOpen, diff: null, loading: loading },
+    { value: totalDocs, label: '文档总数', icon: FileText, diff: null, loading: loading },
+    { value: totalMembers, label: '协作者', icon: Users, diff: null, loading: loading },
+    { value: prodStats?.thisWeekCreated ?? 0, label: '本周创建', icon: Plus, diff: createdDiff, loading: false },
+    { value: prodStats?.thisWeekEdited ?? 0, label: '本周编辑', icon: TrendingUp, diff: editedDiff, loading: false },
+    { value: prodStats?.totalReads ?? 0, label: '总阅读', icon: Eye, diff: null, loading: false },
+  ];
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
 
-      {/* ═══════ Hero Banner ═══════ */}
-      <FadeIn delay={0} y={30}>
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 border border-blue-100/80 dark:border-gray-700 px-12 py-14">
-        {/* decorative blobs */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-200/30 dark:bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 left-1/4 w-96 h-40 bg-violet-200/20 dark:bg-violet-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 right-1/4 w-48 h-48 bg-indigo-200/20 dark:bg-indigo-500/5 rounded-full blur-3xl" />
-
-        <div className="relative z-10">
-          {/* Top row: greeting + avatar */}
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3.5 py-1.5 rounded-full">
-                <Sparkles className="w-3.5 h-3.5" />
-                {greeting}
-              </span>
-              <h1 className="text-4xl font-bold mt-5 tracking-tight leading-tight text-gray-900 dark:text-white">
-                {user.name}
-              </h1>
-              <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">
-                这是你的工作概览，一切尽在掌握
-              </p>
-            </div>
-            <div className="hidden md:block">
-              <div className="w-16 h-16 rounded-2xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/40">
-                {user.name?.charAt(0) || '?'}
-              </div>
-            </div>
-          </div>
-
-          {/* Stats row */}
-          <div className="hidden md:flex items-end justify-between mt-10">
-            <div className="flex items-center gap-10">
-              {[
-                { value: spaces.length, label: '工作空间', icon: FolderOpen, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
-                { value: totalDocs, label: '文档总数', icon: FileText, color: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' },
-                { value: totalMembers, label: '协作者', icon: Users, color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-xl ${s.color.split(' ').slice(0, 2).join(' ')} flex items-center justify-center`}>
-                    <s.icon className={`w-5 h-5 ${s.color.split(' ').slice(2).join(' ')}`} />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold leading-none text-gray-900 dark:text-white">
-                      {loading ? (
-                        <span className="tabular-nums text-gray-300 dark:text-gray-600">–</span>
-                      ) : (
-                        <CountUp from={0} to={s.value} duration={2} separator="," direction="up" />
-                      )}
-                    </p>
-                    <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{s.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Quick actions */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/spaces')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                新建空间
-              </button>
-              <button
-                onClick={() => router.push('/spaces')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-xl transition-colors cursor-pointer"
-              >
-                <FolderOpen className="w-4 h-4" />
-                管理空间
-              </button>
-            </div>
-          </div>
+      {/* ── Header ── */}
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{greeting}</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mt-1 tracking-tight">
+            {user.name}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/spaces')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            管理空间
+          </button>
+          <button
+            onClick={() => router.push('/spaces')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            新建空间
+          </button>
         </div>
       </div>
-      </FadeIn>
 
-      {/* ═══════ Productivity Stats ═══════ */}
-      {prodStats && (
-        <FadeIn delay={0.12} y={30}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              {
-                label: '本周创建',
-                value: prodStats.thisWeekCreated,
-                prev: prodStats.lastWeekCreated,
-                icon: FileText,
-                color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-              },
-              {
-                label: '本周编辑',
-                value: prodStats.thisWeekEdited,
-                prev: prodStats.lastWeekEdited,
-                icon: TrendingUp,
-                color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-              },
-              {
-                label: '被阅读总次数',
-                value: prodStats.totalReads,
-                prev: null,
-                icon: Eye,
-                color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-              },
-            ].map((s) => {
-              const diff = s.prev !== null ? s.value - s.prev : null;
-              return (
-                <div
-                  key={s.label}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.color}`}>
-                      <s.icon className="w-4.5 h-4.5" />
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{s.label}</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                      <CountUp from={0} to={s.value} duration={2} separator="," direction="up" />
-                    </p>
-                    {diff !== null && diff !== 0 && (
-                      <span className={`text-xs font-medium ${diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                        {diff > 0 ? '↑' : '↓'} {Math.abs(diff)} vs 上周
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </FadeIn>
-      )}
+      {/* ── KPI Stats Strip (VisActor style: border-separated, trend badges) ── */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-gray-200 dark:divide-gray-700">
+          {statItems.map((s) => (
+            <div key={s.label} className="px-5 py-5 first:rounded-l-xl last:rounded-r-xl">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">{s.label}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-semibold text-gray-900 dark:text-white tabular-nums">
+                  {s.loading ? (
+                    <span className="text-gray-300 dark:text-gray-600">-</span>
+                  ) : (
+                    <CountUp from={0} to={s.value} duration={2} separator="," direction="up" />
+                  )}
+                </span>
+                {s.diff !== null && s.diff !== 0 && (
+                  <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${
+                    s.diff > 0
+                      ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+                      : 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
+                  }`}>
+                    {s.diff > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {Math.abs(s.diff)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      {/* ═══════ Stats Charts ═══════ */}
-      <FadeIn delay={0.15} y={30}>
+      {/* ── Activity Chart (full-width, prominent) ── */}
       <DashboardStats />
-      </FadeIn>
 
-      {/* ═══════ Favorites ═══════ */}
+      {/* ── Favorites (conditional) ── */}
       {favorites.length > 0 && (
-        <FadeIn delay={0.2} y={30}>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-7">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                收藏文档
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">快速访问你收藏的文档</p>
-            </div>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">收藏文档</h3>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-0.5">
             {favorites.slice(0, 6).map((fav) => (
               <Link
                 key={fav.id}
                 href={`/spaces/${fav.document.spaceId}/documents/${fav.document.id}`}
-                className="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-amber-200 dark:hover:border-amber-800 hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-all"
+                className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
-                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
-                    {fav.document.title || '无标题文档'}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                    {fav.document.creator?.name || '未知'}
-                  </p>
-                </div>
+                <FileText className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  {fav.document.title || '无标题文档'}
+                </span>
               </Link>
             ))}
           </div>
         </div>
-        </FadeIn>
       )}
 
-      {/* ═══════ Recent Documents + Activity ═══════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Documents */}
-        <FadeIn delay={0.25} y={30}>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-7">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  最近访问
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">最近浏览的文档</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowRecentModal(true)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3.5 py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              查看全部
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-          <RecentDocuments limit={3} />
-        </div>
-        </FadeIn>
+      {/* ── Recent Spaces + Recent Documents (side by side) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
 
-        {/* My Activity */}
-        <FadeIn delay={0.35} y={30}>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-7">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  我的活动
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">最近的操作记录</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowActivityModal(true)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3.5 py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              查看全部
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-          <ActivityTimeline compact maxItems={3} />
-        </div>
-        </FadeIn>
-      </div>
-
-      {/* ═══════ Recent Spaces ═══════ */}
-      <FadeIn delay={0.45} y={30}>
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-7">
-        <div className="flex items-center justify-between mb-7">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-              <FolderOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                最近活跃的空间
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">你正在参与的工作空间</p>
-            </div>
-          </div>
-          <button
-            onClick={() => router.push('/spaces')}
-            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3.5 py-2 rounded-lg transition-colors cursor-pointer"
-          >
-            查看全部
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[120px] bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl animate-pulse p-6">
-                <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
-                <div className="h-3 w-full bg-gray-100 dark:bg-gray-700 rounded mb-2" />
-                <div className="h-3 w-2/3 bg-gray-100 dark:bg-gray-700 rounded" />
-              </div>
-            ))}
-          </div>
-        ) : recentSpaces.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-6">
-              <FolderOpen className="w-8 h-8 text-gray-400" />
-            </div>
-            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              还没有工作空间
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              创建一个空间，开始和团队一起协作
-            </p>
+        {/* Recent Spaces */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+          <div className="flex items-center justify-between px-5 pt-5 pb-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">最近活跃的空间</h3>
             <button
               onClick={() => router.push('/spaces')}
-              className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              创建空间
+              查看全部
+              <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {recentSpaces.map((space) => (
-              <button
-                key={space.id}
-                onClick={() => router.push(`/spaces/${space.id}`)}
-                className="group text-left bg-gray-50/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-700 rounded-xl p-6 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-colors">
-                      <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-                      {space.name}
-                    </h4>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 flex-shrink-0 mt-3 transition-opacity" />
-                </div>
-                {space.description && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-3 ml-[52px]">
-                    {space.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500 ml-[52px]">
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3 h-3" />
-                    {space._count?.documents ?? 0} 文档
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {space._count?.permissions ?? 0} 成员
-                  </span>
-                  <span className="ml-auto flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {formatDistanceToNow(new Date(space.updatedAt), {
-                      addSuffix: true,
-                      locale: zhCN,
-                    })}
-                  </span>
-                </div>
-              </button>
-            ))}
+
+          <div className="flex-1 px-2 pb-3">
+            {loading ? (
+              <div className="space-y-1 px-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-14 bg-gray-50 dark:bg-gray-700/30 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : recentSpaces.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-10">
+                <FolderOpen className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">还没有工作空间</p>
+                <button
+                  onClick={() => router.push('/spaces')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  创建空间
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {recentSpaces.slice(0, 4).map((space, i) => {
+                  const color = SPACE_COLORS[i % SPACE_COLORS.length];
+                  return (
+                    <button
+                      key={space.id}
+                      onClick={() => router.push(`/spaces/${space.id}`)}
+                      className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer"
+                    >
+                      <div className={`w-8 h-8 rounded-lg ${color.bg} flex items-center justify-center flex-shrink-0`}>
+                        <FolderOpen className={`w-4 h-4 ${color.text}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {space.name}
+                        </h4>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 tabular-nums">
+                          {space._count?.documents ?? 0} 文档 · {space._count?.permissions ?? 0} 成员 · {formatDistanceToNow(new Date(space.updatedAt), { addSuffix: true, locale: zhCN })}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Recent Documents */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+          <div className="flex items-center justify-between px-5 pt-5 pb-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">最近访问</h3>
+            <button
+              onClick={() => setShowRecentModal(true)}
+              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+            >
+              查看全部
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="flex-1 px-2 pb-3">
+            <RecentDocuments limit={4} />
+          </div>
+        </div>
       </div>
-      </FadeIn>
 
-      {/* ═══════ Modal: 最近访问 ═══════ */}
+      {/* ── Modal: Recent Documents ── */}
       {showRecentModal && (
-        <FullListModal
-          title="最近访问"
-          icon={<Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-          iconBg="bg-blue-50 dark:bg-blue-900/20"
-          onClose={() => setShowRecentModal(false)}
-        >
-          <RecentDocuments />
-        </FullListModal>
-      )}
-
-      {/* ═══════ Modal: 我的活动 ═══════ */}
-      {showActivityModal && (
-        <FullListModal
-          title="我的活动"
-          icon={<TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
-          iconBg="bg-violet-50 dark:bg-violet-900/20"
-          onClose={() => setShowActivityModal(false)}
-        >
-          <ActivityTimeline compact />
-        </FullListModal>
+        <AnimatedModal open onClose={() => setShowRecentModal(false)} className="w-full max-w-2xl mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">最近访问</h2>
+              <button
+                onClick={() => setShowRecentModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <RecentDocuments />
+            </div>
+          </div>
+        </AnimatedModal>
       )}
     </div>
-  );
-}
-
-// ────────────────────── FullListModal ──────────────────────
-
-function FullListModal({
-  title,
-  icon,
-  iconBg,
-  onClose,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  iconBg: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <AnimatedModal open onClose={onClose} className="w-full max-w-2xl mx-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center`}>
-              {icon}
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {title}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-7 py-6">
-          {children}
-        </div>
-      </div>
-    </AnimatedModal>
   );
 }

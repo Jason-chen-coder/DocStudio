@@ -128,7 +128,14 @@ export function RecentDocuments({ limit }: RecentDocumentsProps) {
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/spaces/${doc.spaceId}`);
+                  }}
+                  className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                >
                   {doc.spaceName}
                 </span>
                 {doc.creator && (

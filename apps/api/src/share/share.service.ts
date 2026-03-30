@@ -60,10 +60,14 @@ export class ShareService {
       where: { token },
       include: {
         document: {
-          select: {
-            title: true,
-            id: true,
-            updatedAt: true,
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
       },
@@ -77,14 +81,47 @@ export class ShareService {
       throw new ForbiddenException('Share link expired');
     }
 
-    // Return public info only
-    return {
+    const base = {
       token: share.token,
       type: share.type,
       documentTitle: share.document.title,
       expiresAt: share.expiresAt,
       hasPassword: !!share.password,
     };
+
+    // For PUBLIC shares, include content directly to avoid a second API call
+    if (share.type === ShareType.PUBLIC) {
+      // Increment view count (fire and forget)
+      this.prisma.shareLink
+        .update({
+          where: { id: share.id },
+          data: { viewCount: { increment: 1 } },
+        })
+        .catch(() => undefined);
+
+      let content: string | object = share.document.content;
+      if (share.document.ydocData) {
+        const tiptapJson = ydocUpdateToTiptapJson(
+          new Uint8Array(share.document.ydocData),
+        );
+        if (tiptapJson) {
+          content = tiptapJson;
+        }
+      }
+
+      return {
+        ...base,
+        document: {
+          title: share.document.title,
+          content,
+          createdAt: share.document.createdAt,
+          updatedAt: share.document.updatedAt,
+          creator: share.document.creator,
+        },
+      };
+    }
+
+    return base;
   }
 
   async verifyPassword(token: string, password: string) {

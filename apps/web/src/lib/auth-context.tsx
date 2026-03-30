@@ -20,8 +20,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // 页面加载时检查登录状态
+  // 页面加载时检查登录状态（OAuth callback 页面自行处理 token，跳过自动检查）
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/oauth-callback')) {
+      setIsLoading(false);
+      return;
+    }
     checkAuth();
   }, []);
 

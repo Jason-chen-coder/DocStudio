@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,8 @@ import {
   AlertTriangle,
   Eye,
   Share2,
-  Copy,
   Check,
   LogIn,
-  ShieldX,
 } from 'lucide-react';
 import Image from 'next/image';
 import { getCdnUrl } from '@/lib/cdn';
@@ -40,6 +38,7 @@ interface ShareInfo {
   documentTitle: string;
   expiresAt: string | null;
   hasPassword: boolean;
+  document?: DocMeta;
 }
 
 interface DocMeta {
@@ -107,7 +106,7 @@ function ShareHeader({ title }: { title?: string }) {
               alt="DocStudio"
               width={28}
               height={28}
-              className="rounded-lg shadow-sm"
+              className="shadow-sm"
               unoptimized
             />
             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 hidden sm:block">
@@ -372,7 +371,7 @@ export default function SharePage() {
 
   const [password, setPassword] = useState('');
   const [verifying, setVerifying] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
 
   // ─── Document Link click handling ───
   const [linkDialog, setLinkDialog] = useState<{
@@ -425,11 +424,22 @@ export default function SharePage() {
     async function fetchShareInfo() {
       try {
         setLoading(true);
-        const data = await api.get(`/share/${token}`);
-        setShareInfo(data as any);
+        const data: any = await api.get(`/share/${token}`);
+        setShareInfo(data);
+
+        // PUBLIC shares include content directly — no second API call needed
+        if (data.type === 'PUBLIC' && data.document) {
+          setDocMeta({
+            title: data.document.title,
+            content: data.document.content,
+            createdAt: data.document.createdAt,
+            updatedAt: data.document.updatedAt,
+            creator: data.document.creator ?? null,
+          });
+        }
 
         const pwd = searchParams.get('pwd');
-        if (pwd && (data as any).type === 'PASSWORD') {
+        if (pwd && data.type === 'PASSWORD') {
           setPassword(pwd);
         }
       } catch (err: any) {
@@ -442,21 +452,13 @@ export default function SharePage() {
     if (token) fetchShareInfo();
   }, [token, searchParams]);
 
-  useEffect(() => {
-    if (shareInfo && shareInfo.type === 'PUBLIC') {
-      fetchContent();
-    }
-  }, [shareInfo]);
-
-  const fetchContent = async (tokenOverride?: string) => {
+  /** Fetch content for PASSWORD shares after verification */
+  const fetchContent = async (verifiedToken: string) => {
     try {
       setContentLoading(true);
-      const headers: any = {};
-      if (tokenOverride || accessToken) {
-        headers['Authorization'] = `Bearer ${tokenOverride || accessToken}`;
-      }
-
-      const res: any = await api.get(`/share/${token}/content`, { headers });
+      const res: any = await api.get(`/share/${token}/content`, {
+        headers: { Authorization: `Bearer ${verifiedToken}` },
+      });
       setDocMeta({
         title: res.title,
         content: res.content,
@@ -464,8 +466,7 @@ export default function SharePage() {
         updatedAt: res.updatedAt,
         creator: res.creator ?? null,
       });
-    } catch (err: any) {
-      console.error(err);
+    } catch {
       toast.error('无法加载文档内容');
     } finally {
       setContentLoading(false);
@@ -479,11 +480,9 @@ export default function SharePage() {
     try {
       setVerifying(true);
       const res: any = await api.post(`/share/${token}/verify`, { password });
-      const newToken = res.accessToken;
-      setAccessToken(newToken);
-      await fetchContent(newToken);
-    } catch (err: any) {
-      console.error(err);
+      setVerified(true);
+      await fetchContent(res.accessToken);
+    } catch {
       toast.error('密码错误');
     } finally {
       setVerifying(false);
@@ -491,7 +490,7 @@ export default function SharePage() {
   };
 
   // ─── Loading ───
-  if (loading || contentLoading || (shareInfo?.type === 'PUBLIC' && !docMeta && !error)) {
+  if (loading || contentLoading) {
     return <LoadingSkeleton />;
   }
 
@@ -501,7 +500,7 @@ export default function SharePage() {
   }
 
   // ─── Password gate ───
-  if (shareInfo?.type === 'PASSWORD' && !accessToken) {
+  if (shareInfo?.type === 'PASSWORD' && !verified) {
     return (
       <PasswordGate
         title={shareInfo.documentTitle}

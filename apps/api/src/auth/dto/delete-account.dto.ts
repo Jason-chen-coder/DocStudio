@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class DeleteAccountDto {
-  @ApiProperty({ description: '当前密码（确认身份）' })
+  @ApiProperty({ description: '当前密码（OAuth 用户可不填）', required: false })
   @IsString()
-  @IsNotEmpty({ message: '密码不能为空' })
-  password: string;
+  @IsOptional()
+  password?: string;
 }

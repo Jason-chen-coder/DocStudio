@@ -129,6 +129,73 @@ function tagToTiptapType(tag: string): {
 }
 
 /**
+ * Convert a Tiptap/ProseMirror JSON document to a Yjs state update binary.
+ * This is the reverse of ydocUpdateToTiptapJson — used to seed documents
+ * (e.g. onboarding welcome doc) so they load through the Yjs collab path.
+ */
+export function tiptapJsonToYDocBinary(
+  doc: { type: string; content?: any[] },
+): Buffer {
+  const ydoc = new Y.Doc();
+  const fragment = ydoc.getXmlFragment('content');
+
+  ydoc.transact(() => {
+    insertTiptapNodes(fragment, doc.content || []);
+  });
+
+  const update = Y.encodeStateAsUpdate(ydoc);
+  ydoc.destroy();
+  return Buffer.from(update);
+}
+
+/**
+ * Recursively insert Tiptap JSON nodes into a Yjs XmlFragment/XmlElement.
+ * Consecutive text nodes are merged into a single Y.XmlText (matching
+ * y-prosemirror's internal representation).
+ */
+function insertTiptapNodes(
+  parent: Y.XmlFragment | Y.XmlElement,
+  nodes: any[],
+): void {
+  let currentText: Y.XmlText | null = null;
+
+  for (const node of nodes) {
+    if (node.type === 'text') {
+      if (!currentText) {
+        currentText = new Y.XmlText();
+        parent.insert(parent.length, [currentText]);
+      }
+
+      const markAttrs: Record<string, any> | undefined = node.marks?.length
+        ? Object.fromEntries(
+            node.marks.map((m: any) => [m.type, m.attrs ?? null]),
+          )
+        : undefined;
+
+      currentText.insert(currentText.length, node.text || '', markAttrs);
+    } else {
+      currentText = null;
+
+      const el = new Y.XmlElement(node.type);
+
+      if (node.attrs) {
+        for (const [key, value] of Object.entries(node.attrs)) {
+          if (value !== null && value !== undefined) {
+            el.setAttribute(key, value as any);
+          }
+        }
+      }
+
+      if (node.content) {
+        insertTiptapNodes(el, node.content);
+      }
+
+      parent.insert(parent.length, [el]);
+    }
+  }
+}
+
+/**
  * Extract Tiptap JSON from a full Yjs state update binary.
  * Returns a ProseMirror-compatible JSON doc, or null on failure.
  */

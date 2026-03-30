@@ -142,7 +142,7 @@ export class AuthController {
     @CurrentUser() user: UserResponseDto,
     @Body() dto: DeleteAccountDto,
   ) {
-    return this.authService.deleteAccount(user.id, dto.password);
+    return this.authService.deleteAccount(user.id, dto.password ?? '');
   }
 
   // ==================== Refresh Token ====================
@@ -169,6 +169,7 @@ export class AuthController {
         `${process.env.API_URL || 'http://localhost:3001'}/auth/google/callback`,
       response_type: 'code',
       scope: 'email profile',
+      prompt: 'select_account', // 每次都显示账号选择，避免静默回调失败
     });
     const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     return res.code(302).header('Location', url).send();

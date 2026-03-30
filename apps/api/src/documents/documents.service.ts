@@ -190,7 +190,9 @@ export class DocumentsService {
       this.activityService.recordDocumentVisit(userId, doc.id, doc.spaceId);
     }
 
-    return doc;
+    // 返回 hasYdocData 标记（布尔值），避免向前端传输大体积 ydocData 二进制
+    const { ydocData, ...rest } = doc;
+    return { ...rest, hasYdocData: ydocData != null };
   }
 
   async update(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface AnimatedModalProps {
   open: boolean;
@@ -45,7 +46,7 @@ export function AnimatedModal({
 
   if (!mounted) return null;
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 transition-all duration-200 ${
         visible ? 'bg-black/40 backdrop-blur-sm' : 'bg-black/0'
@@ -62,6 +63,7 @@ export function AnimatedModal({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

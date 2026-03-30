@@ -1,13 +1,21 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { setToken, setRefreshToken } from '@/lib/api';
+import { useEffect, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { setToken, setRefreshToken, authAPI } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { updateUser } = useAuth();
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double-fire in React Strict Mode
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     const token = searchParams.get('token');
     const refreshToken = searchParams.get('refresh_token');
 
@@ -16,10 +24,17 @@ function OAuthCallbackContent() {
       return;
     }
 
+    // Save tokens, fetch user profile, then navigate (mirrors auth context's login flow)
     setToken(token);
     if (refreshToken) setRefreshToken(refreshToken);
-    window.location.replace('/dashboard');
-  }, [searchParams]);
+
+    authAPI.getMe().then((user) => {
+      updateUser(user);
+      router.replace('/dashboard');
+    }).catch(() => {
+      window.location.replace('/auth/login?error=oauth_failed');
+    });
+  }, [searchParams, router, updateUser]);
 
   return (
     <div className="space-y-4 text-center">

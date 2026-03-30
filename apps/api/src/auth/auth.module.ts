@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { OnboardingModule } from '../onboarding/onboarding.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
@@ -20,6 +21,7 @@ if (process.env.GITHUB_CLIENT_ID) {
 @Module({
   imports: [
     UsersModule,
+    OnboardingModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
