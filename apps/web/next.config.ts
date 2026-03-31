@@ -1,9 +1,15 @@
 import type { NextConfig } from "next";
 
+const isGithubPages = process.env.GITHUB_PAGES === 'true';
+
 const nextConfig: NextConfig = {
-  // 生成独立部署包，用于 Docker 容器（减小镜像体积）
-  output: 'standalone',
+  // GitHub Pages 使用静态导出，Docker 部署使用 standalone 模式
+  output: isGithubPages ? 'export' : 'standalone',
+  // GitHub Pages 部署在子路径 /DocStudio 下
+  basePath: isGithubPages ? '/DocStudio' : '',
   images: {
+    // GitHub Pages 不支持 next/image 优化，需要关闭
+    unoptimized: isGithubPages,
     remotePatterns: [
       // 开发环境：直连本地 MinIO
       {

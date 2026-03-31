@@ -37,6 +37,7 @@ export function Header() {
   }, []);
 
   const avatarUrl = getAvatarUrl(user?.avatarUrl, user?.name);
+  const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
   const { theme, toggleTheme, mounted } = useTheme();
 
   return (

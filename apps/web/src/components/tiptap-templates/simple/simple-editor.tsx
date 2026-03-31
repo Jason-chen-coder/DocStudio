@@ -616,7 +616,7 @@ export function SimpleEditor({
     ],
     // In collab mode, Yjs manages content entirely — pass undefined.
     // In non-collab mode, parse JSON string into Tiptap JSON object for initial render.
-    content: isCollabMode ? undefined : parseContent(content),
+    content: isCollabMode ? undefined : (parseContent(content) as import('@tiptap/core').Content),
     editable,
     onCreate: ({ editor }: { editor: Editor }) => {
       onReady?.(editor);
