@@ -11,6 +11,8 @@ DocStudio 是一个**AI 驱动的实时协作知识管理平台**。支持多人
 [![NestJS](https://img.shields.io/badge/NestJS-11-red)](https://nestjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748)](https://www.prisma.io/)
 
+> **在线预览**：[Landing Page Demo](https://jason-chen-coder.github.io/DocStudio)（静态演示模式，GitHub Pages 托管）
+
 ---
 
 ### 核心能力
@@ -22,21 +24,13 @@ DocStudio 是一个**AI 驱动的实时协作知识管理平台**。支持多人
 - **灵活权限** — 空间/文档级权限、公开/私有切换、带密码的分享链接
 - **导入导出** — Markdown/HTML/DOCX 导入，Markdown/HTML/PDF 导出
 - **AI 订阅制** — 三档套餐（普通/VIP/Max），申请审批，按月/按年计费
+- **移动端适配** — 全平台响应式布局，触控优化交互
+- **生产就绪** — Docker 一键部署、Nginx 反代、SSL 自动续签、数据库定时备份
 
 ---
-
-<div align="center" style="display: flex; flex-direction: column; gap: 0;">
-  <img src="./images/home_page_1.png" width="100%" alt="DocStudio Home Page Part 1" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-  <img src="./images/home_page_2.png" width="100%" alt="DocStudio Home Page Part 2" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-  <img src="./images/home_page_3.png" width="100%" alt="DocStudio Home Page Part 3" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-  <img src="./images/home_page_4.png" width="100%" alt="DocStudio Home Page Part 4" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-  <img src="./images/home_page_5.png" width="100%" alt="DocStudio Home Page Part 5" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-  <img src="./images/home_page_6.png" width="100%" alt="DocStudio Home Page Part 6" style="display: block; margin: 0; padding: 0; vertical-align: bottom;" />
-</div>
-
 ## 🚀 快速开始（本地开发）
 
-**前置要求**：Node.js >= 22、pnpm >= 9、Docker Desktop
+**前置要求**：Node.js >= 20、pnpm >= 9、Docker Desktop
 
 ```bash
 # 1. 克隆项目
@@ -82,9 +76,12 @@ cp .env.example .env
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+生产环境包含 **8 个服务**：PostgreSQL、Redis、MinIO、API（NestJS）、Web（Next.js）、Nginx 反代、Certbot SSL 续签、数据库定时备份（每日 03:00，保留 30 天）。
+
 首次启动完成后：
-- 前端：`http://your-server:3000`
+- 前端：`http://your-server:3000`（经 Nginx 反代可用 80/443）
 - 后端 API：`http://your-server:3001`
+- WebSocket 协作：`ws://your-server:1234`
 - 超级管理员账号：`.env` 中 `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`
 
 > ⚠️ `.env` 中的 `NEXT_PUBLIC_*` 变量在构建时烧入镜像，**修改后需重新执行 `--build`**。
@@ -114,17 +111,26 @@ git pull && docker compose -f docker-compose.prod.yml up -d --build
 ```
 docStudio/
 ├── apps/
-│   ├── web/                    # Next.js 15 前端
-│   │   ├── src/app/           # App Router
+│   ├── web/                        # Next.js 15 前端
+│   │   ├── src/app/
+│   │   │   ├── (main)/            # 主应用（Dashboard/Spaces/Profile/Settings/Subscription/Favorites）
+│   │   │   ├── (public)/          # 公开访问（分享页、探索页）
+│   │   │   ├── auth/              # 认证（登录/注册/OAuth/重置密码）
+│   │   │   ├── admin/             # 超级管理员控制台
+│   │   │   └── page.tsx           # Landing Page
 │   │   └── tailwind.config.ts
-│   └── api/                    # NestJS 后端
+│   └── api/                        # NestJS 后端
 │       ├── src/
 │       ├── prisma/schema.prisma
 │       └── .env
 ├── packages/
-│   ├── shared/                 # 共享类型和常量
-│   └── config/                 # 共享配置
-├── docker-compose.yml          # Docker 服务
+│   ├── shared/                     # 共享类型和常量
+│   └── config/                     # 共享配置
+├── nginx/                          # Nginx 反代配置
+├── scripts/                        # 部署/维护脚本
+├── .github/workflows/              # CI/CD（GitHub Pages 部署）
+├── docker-compose.yml              # 本地开发环境
+├── docker-compose.prod.yml         # 生产环境（8 服务）
 └── pnpm-workspace.yaml
 ```
 
@@ -135,7 +141,7 @@ docStudio/
 | 领域       | 技术选型                             |
 | ---------- | ------------------------------------ |
 | **包管理** | pnpm workspace (Monorepo)            |
-| **前端**   | Next.js 16, React 19, Tailwind CSS 4 |
+| **前端**   | Next.js 15, React 19, Tailwind CSS 4, Framer Motion |
 | **后端**   | NestJS 11, Fastify                   |
 | **数据库** | PostgreSQL 16, Prisma 5.22           |
 | **缓存**   | Redis 7                              |
@@ -145,6 +151,10 @@ docStudio/
 | **AI**     | OpenAI 兼容 API (SSE 流式)           |
 | **图表**   | Recharts + D3                        |
 | **图像**   | Sharp (压缩/缩略图/WebP)            |
+| **邮件**   | Nodemailer (SMTP)                    |
+| **认证**   | JWT + OAuth 2.0 (Google/GitHub)      |
+| **部署**   | Docker Compose + Nginx + Certbot     |
+| **CI/CD**  | GitHub Actions (Pages 静态部署)      |
 | **语言**   | TypeScript 5.9                       |
 
 ---
@@ -190,14 +200,15 @@ pnpm exec prisma studio         # 可视化工具
 
 - **[开发环境配置](./DEVELOPMENT.md)** - 详细的环境搭建指南
 - **[Prisma 数据库](./apps/api/PRISMA_SETUP.md)** - 数据库配置和使用
-- **[技术规格文档](./DocStudio%20v1%20–%20技术规格文档.md)** - 产品和技术规格
+- **[技术规格文档](./plan/DocStudio%20v1–文档.md)** - 产品和技术规格
+- **[开发计划](./plan/README.md)** - 各阶段开发计划
 
 ---
 
 ### ✅ Stage 0: 基础设施
 
 - [x] Monorepo 项目结构 (pnpm workspace)
-- [x] 前端框架 (Next.js 16 + React 19)
+- [x] 前端框架 (Next.js 15 + React 19)
 - [x] 后端框架 (NestJS 11 + Fastify)
 - [x] 数据库 Schema (PostgreSQL + Prisma)
 - [x] Docker 开发环境 (PostgreSQL, Redis, MinIO)
@@ -266,27 +277,16 @@ pnpm exec prisma studio         # 可视化工具
 - [x] OAuth 登录（Google / GitHub）
 - [x] 404/500 错误页面 + 全局错误边界
 - [x] 安全 Headers + JWT 刷新
-- [ ] 移动端适配
-- [ ] 新用户引导流程
+- [x] 移动端深度适配（全页面响应式 + 触控优化）
+- [x] 新用户引导流程
+- [x] 生产部署基础设施（Docker Compose + Nginx + SSL + 定时备份）
+- [x] GitHub Pages 静态 Landing Page 部署
+- [x] CD 流水线（GitHub Actions 自动部署）
 
----
-
-## 🤝 开发工作流
-
-详见：[开发环境配置指南](./DEVELOPMENT.md)
-
----
-
-## 开发计划
-
-详见：[开发计划](./plan/README.md)
+> **v1 MVP 全部 Stage（0-9）已完成**
 
 ---
 
 ## 📄 许可
 
-Private - DocStudio v1 MVP
-
----
-
-**开发愉快！** 🎉 如有问题请查看 [开发环境指南](./DEVELOPMENT.md)
+Private - DocStudio v1
