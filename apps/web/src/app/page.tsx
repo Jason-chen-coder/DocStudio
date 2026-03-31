@@ -278,7 +278,7 @@ export default function Home() {
             </motion.div>
 
             {/* Bento Grid layout */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[280px]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-auto md:auto-rows-[280px]">
 
               {/* Card 1: 实时协作 (6 cols, 2 rows) */}
               <motion.div
@@ -342,11 +342,11 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="md:col-span-6 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex flex-col sm:flex-row items-center justify-between gap-8 h-[280px]"
+                className="md:col-span-6 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex flex-col sm:flex-row items-center justify-between gap-8"
               >
                 <div className="absolute inset-0 pointer-events-none rounded-[2.5rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] z-10" />
 
-                <div className="relative z-20 flex-1 max-w-[60%]">
+                <div className="relative z-20 flex-1 max-w-full sm:max-w-[60%]">
                   <div className="w-12 h-12 rounded-[1rem] bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 ring-1 ring-indigo-100 dark:ring-indigo-800/50">
                     <Layout className="w-5 h-5" />
                   </div>
@@ -379,7 +379,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="md:col-span-3 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col justify-center text-center h-[280px]"
+                className="md:col-span-3 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col justify-center text-center py-12 md:py-8"
               >
                 <div className="absolute inset-0 pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] z-10" />
                 <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-purple-500/5 dark:from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
@@ -399,7 +399,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="md:col-span-3 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col justify-center text-center h-[280px]"
+                className="md:col-span-3 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-8 flex flex-col justify-center text-center py-12 md:py-8"
               >
                 <div className="absolute inset-0 pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] z-10" />
                 <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-emerald-500/5 dark:from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
@@ -421,12 +421,12 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="md:col-span-7 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex items-center justify-between h-[280px]"
+                className="md:col-span-7 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex flex-col md:flex-row items-center justify-between"
               >
                 <div className="absolute inset-0 pointer-events-none rounded-[2.5rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] z-10" />
                 <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.05),transparent_60%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.1),transparent_50%)] pointer-events-none" />
 
-                <div className="relative z-20 max-w-[60%]">
+                <div className="relative z-20 max-w-full md:max-w-[60%]">
                   <div className="w-12 h-12 rounded-[1rem] bg-orange-50 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-6 ring-1 ring-orange-100 dark:ring-orange-800/50 transition-transform group-hover:-translate-y-1 duration-300">
                     <Users className="w-5 h-5" />
                   </div>
@@ -451,7 +451,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="md:col-span-5 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex flex-col justify-center h-[280px]"
+                className="md:col-span-5 md:row-span-1 group relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] p-10 flex flex-col justify-center"
               >
                 <div className="absolute inset-0 pointer-events-none rounded-[2.5rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] z-10" />
 
