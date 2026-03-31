@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils';
 import { getCdnUrl } from '@/lib/cdn';
 import { LogOut, LayoutDashboard, UserCircle, FolderOpen, SlidersHorizontal, ChevronRight, Github, Sun, Moon, Menu, X } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+import { toast } from 'sonner';
+
+const isStaticDemo = !!process.env.NEXT_PUBLIC_BASE_PATH;
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -288,17 +291,31 @@ export function PublicHeader() {
                             )}
 
                             {/* Login — desktop only */}
-                            <Link
-                                href="/auth/login"
-                                className={cn(
-                                    "hidden md:inline-flex text-sm font-medium px-3.5 py-1.5 rounded-lg transition-all duration-200",
-                                    isTransparent
-                                        ? "bg-white/15 text-white border border-white/30 backdrop-blur-sm hover:bg-white/25 hover:border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.15)]"
-                                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-                                )}
-                            >
-                                登录
-                            </Link>
+                            {isStaticDemo ? (
+                                <button
+                                    onClick={() => toast.info('功能开发中，敬请期待！')}
+                                    className={cn(
+                                        "hidden md:inline-flex text-sm font-medium px-3.5 py-1.5 rounded-lg transition-all duration-200 cursor-pointer",
+                                        isTransparent
+                                            ? "bg-white/15 text-white border border-white/30 backdrop-blur-sm hover:bg-white/25 hover:border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+                                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                                    )}
+                                >
+                                    登录
+                                </button>
+                            ) : (
+                                <Link
+                                    href="/auth/login"
+                                    className={cn(
+                                        "hidden md:inline-flex text-sm font-medium px-3.5 py-1.5 rounded-lg transition-all duration-200",
+                                        isTransparent
+                                            ? "bg-white/15 text-white border border-white/30 backdrop-blur-sm hover:bg-white/25 hover:border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+                                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                                    )}
+                                >
+                                    登录
+                                </Link>
+                            )}
                         </>
                     )}
 
@@ -383,13 +400,22 @@ export function PublicHeader() {
                         </div>
                     ) : (
                         <div className="pt-2 border-t border-gray-200 dark:border-white/[0.08] mt-2">
-                            <Link
-                                href="/auth/login"
-                                onClick={() => toggleMobileMenu(false)}
-                                className="block px-3 py-3 rounded-lg text-[15px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                            >
-                                登录
-                            </Link>
+                            {isStaticDemo ? (
+                                <button
+                                    onClick={() => { toast.info('功能开发中，敬请期待！'); toggleMobileMenu(false); }}
+                                    className="block w-full text-left px-3 py-3 rounded-lg text-[15px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                >
+                                    登录
+                                </button>
+                            ) : (
+                                <Link
+                                    href="/auth/login"
+                                    onClick={() => toggleMobileMenu(false)}
+                                    className="block px-3 py-3 rounded-lg text-[15px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                >
+                                    登录
+                                </Link>
+                            )}
                         </div>
                     )}
                 </nav>

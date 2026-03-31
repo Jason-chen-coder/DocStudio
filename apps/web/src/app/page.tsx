@@ -15,6 +15,9 @@ import { Marquee } from "@/components/ui/marquee";
 import BorderGlow from '@/components/BorderGlow';
 import { useTheme } from '@/hooks/use-theme';
 import CountUp from '@/components/ui/count-up';
+import { toast } from 'sonner';
+
+const isStaticDemo = !!process.env.NEXT_PUBLIC_BASE_PATH;
 
 const mockSpaces = [
   {
@@ -242,9 +245,18 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <Link href="/auth/register" className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium text-lg transition shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                开始免费使用 <ArrowRight className="w-5 h-5" />
-              </Link>
+              {isStaticDemo ? (
+                <button
+                  onClick={() => toast.info('功能开发中，敬请期待！')}
+                  className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium text-lg transition shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  开始免费使用 <ArrowRight className="w-5 h-5" />
+                </button>
+              ) : (
+                <Link href="/auth/register" className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium text-lg transition shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                  开始免费使用 <ArrowRight className="w-5 h-5" />
+                </Link>
+              )}
               <Link href="/explore" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 rounded-full font-medium text-lg transition flex items-center justify-center gap-2">
                 探索公开知识库
               </Link>
@@ -727,12 +739,21 @@ export default function Home() {
                   colors={['#6366f1', '#3b82f6', '#60a5fa']}
                   className="w-full sm:w-auto"
                 >
-                  <Link
-                    href="/auth/register"
-                    className="inline-flex items-center justify-center gap-2.5 w-full px-10 py-4 text-white font-semibold text-base transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                  >
-                    免费开始使用 <ArrowRight className="w-5 h-5" />
-                  </Link>
+                  {isStaticDemo ? (
+                    <button
+                      onClick={() => toast.info('功能开发中，敬请期待！')}
+                      className="inline-flex items-center justify-center gap-2.5 w-full px-10 py-4 text-white font-semibold text-base transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+                    >
+                      免费开始使用 <ArrowRight className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <Link
+                      href="/auth/register"
+                      className="inline-flex items-center justify-center gap-2.5 w-full px-10 py-4 text-white font-semibold text-base transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                    >
+                      免费开始使用 <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  )}
                 </BorderGlow>
                 <Link
                   href="/explore"
