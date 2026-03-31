@@ -11,6 +11,7 @@ import {
   DragStartEvent,
   MeasuringStrategy,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragOverlay,
@@ -126,10 +127,13 @@ export function DocumentTree({ spaceId, className }: { spaceId: string; classNam
   const tree = useMemo(() => buildTree(documents), [documents]);
   const flatItems = useMemo(() => flattenTree(tree, expanded), [tree, expanded]);
 
-  // ─── 拖拽传感器（移动 8px 才触发，避免误触） ───
+  // ─── 拖拽传感器（桌面端移动 8px 触发，移动端长按 200ms + 5px 容差） ───
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
     })
   );
 

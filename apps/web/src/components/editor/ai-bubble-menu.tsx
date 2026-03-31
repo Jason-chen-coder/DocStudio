@@ -74,12 +74,12 @@ export function AiBubbleMenu({ editor, isAiPanelOpen, onAiPanelOpen, canUseComma
         offset: { mainAxis: 8, crossAxis: 0 },
       }}
     >
-      <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-1 py-0.5 gap-0.5">
+      <div className="flex items-center max-w-[calc(100vw-2rem)] overflow-x-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-1 py-0.5 gap-0.5">
         {/* AI 创作 button — opens inline panel (or upgrade modal for non-subscribers) */}
         <button
           type="button"
           onClick={canUseCommand ? onAiPanelOpen : onUpgradeNeeded}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors whitespace-nowrap"
         >
           <Sparkles className={iconSize} />
           AI 创作

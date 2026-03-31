@@ -161,7 +161,7 @@ export default function ExplorePage() {
 
                     <div className="flex items-center gap-3">
                         {/* Sort Selector */}
-                        <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-1 py-1 shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-1 py-1 shadow-sm overflow-x-auto max-w-[calc(100vw-6rem)]">
                             <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 ml-2" />
                             {SORT_OPTIONS.map((option) => (
                                 <button

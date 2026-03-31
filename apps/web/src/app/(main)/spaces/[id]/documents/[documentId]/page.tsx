@@ -477,7 +477,7 @@ export default function DocumentPage() {
                   导出 PDF
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowShortcuts(true)}>
+                <DropdownMenuItem onClick={() => setShowShortcuts(true)} className="hidden md:flex">
                   <Keyboard className="h-4 w-4" />
                   快捷键
                 </DropdownMenuItem>

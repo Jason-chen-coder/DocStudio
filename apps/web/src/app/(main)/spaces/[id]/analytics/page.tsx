@@ -165,7 +165,7 @@ export default function SpaceAnalyticsPage() {
       <FadeIn delay={0.2} y={20}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Doc Growth Trend */}
-          <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-7 py-6">
+          <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:px-7 sm:py-6">
             <p className="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase mb-4">
               文档增长趋势（近 30 天）
             </p>
@@ -186,7 +186,7 @@ export default function SpaceAnalyticsPage() {
           </div>
 
           {/* Action Distribution */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-7 py-6">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:px-7 sm:py-6">
             <p className="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase mb-4">
               操作分布
             </p>
@@ -219,7 +219,7 @@ export default function SpaceAnalyticsPage() {
       <FadeIn delay={0.3} y={20}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Documents */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-7 py-6">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:px-7 sm:py-6">
             <p className="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase mb-4">
               热门文档 Top 10
             </p>
@@ -255,7 +255,7 @@ export default function SpaceAnalyticsPage() {
           </div>
 
           {/* Top Members */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-7 py-6">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:px-7 sm:py-6">
             <p className="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase mb-4">
               活跃成员 Top 10（近 30 天）
             </p>

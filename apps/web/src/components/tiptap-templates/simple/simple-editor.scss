@@ -84,10 +84,15 @@ body,
 
 .simple-editor-content .tiptap.ProseMirror.simple-editor {
   flex: 1;
-  padding: 3rem 3rem 30vh;
+  padding: 1.5rem 1rem 30vh;
+
+  @media (min-width: 640px) {
+    padding: 3rem 3rem 30vh;
+  }
 }
 
 .simple-editor-wrapper .simple-editor-toc {
+  display: none;
   position: absolute;
   top: 10px;
   bottom: 0;
@@ -98,6 +103,10 @@ body,
   --toc-progress-indent: 0.25rem;
   --toc-progress-width-base: 1rem;
   --toc-progress-width-min: 0.25rem;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
   --tt-toc-sidebar-line-bg: var(--tt-gray-light-a-300);
   --toc-expanded-width: min(250px, calc(100% - 2rem));
   width: 2.5rem;
@@ -987,11 +996,19 @@ body,
 @media screen and (max-width: 768px) {
   .simple-editor-comment-panel {
     position: fixed;
+    left: 0;
     right: 0;
     top: 0;
     bottom: 0;
     z-index: 50;
-    box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+    width: 100%;
+    flex: none;
+    box-shadow: none;
+    border-left: none;
+  }
+
+  .simple-editor-wrapper.has-comment-panel .simple-editor-main {
+    display: block;
   }
 }
 

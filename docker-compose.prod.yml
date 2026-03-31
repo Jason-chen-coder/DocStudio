@@ -5,12 +5,21 @@ name: docstudio
 #   1. cp .env.example .env  然后修改所有变量
 #   2. docker compose -f docker-compose.prod.yml up -d --build
 
+# ── 日志轮转配置（所有服务共享）──────────────────────────────
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+    compress: "true"
+
 services:
   # ── 数据库 ────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: docstudio-postgres
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -30,6 +39,7 @@ services:
     image: redis:7-alpine
     container_name: docstudio-redis
     restart: unless-stopped
+    logging: *default-logging
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -46,6 +56,7 @@ services:
     image: minio/minio:latest
     container_name: docstudio-minio
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
@@ -125,6 +136,7 @@ services:
     ports:
       - '3001:3001'   # HTTP API
       - '1234:1234'   # Hocuspocus WebSocket
+    logging: *default-logging
     networks:
       - docstudio
 
@@ -141,10 +153,81 @@ services:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     container_name: docstudio-web
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       - api
     ports:
       - '3000:3000'
+    networks:
+      - docstudio
+
+  # ── Nginx 反向代理 ──────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: docstudio-nginx
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      - api
+      - web
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    networks:
+      - docstudio
+
+  # ── Let's Encrypt 自动证书（首次运行后每 12 小时续期）─────
+  # 首次申请：
+  #   docker compose -f docker-compose.prod.yml run --rm certbot \
+  #     certonly --webroot -w /var/www/certbot \
+  #     -d your-domain.com --email admin@your-domain.com --agree-tos
+  certbot:
+    image: certbot/certbot:latest
+    container_name: docstudio-certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done'"
+    networks:
+      - docstudio
+
+  # ── 数据库自动备份（每天凌晨 3:00）──────────────────────────
+  db-backup:
+    image: postgres:16-alpine
+    container_name: docstudio-db-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-docstudio}
+      BACKUP_DIR: /backups
+      BACKUP_RETAIN_DAYS: ${BACKUP_RETAIN_DAYS:-30}
+    volumes:
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+      - db_backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "[db-backup] Scheduled daily backup at 03:00"
+        while true; do
+          # 计算到次日 03:00 的秒数
+          NOW=$$(date +%s)
+          TARGET=$$(date -d "tomorrow 03:00" +%s 2>/dev/null || date -v+1d -v3H -v0M -v0S +%s)
+          SLEEP_SEC=$$((TARGET - NOW))
+          if [ "$$SLEEP_SEC" -le 0 ]; then SLEEP_SEC=86400; fi
+          echo "[db-backup] Next backup in $$SLEEP_SEC seconds"
+          sleep "$$SLEEP_SEC"
+          /usr/local/bin/backup-db.sh
+        done
     networks:
       - docstudio
 
@@ -156,3 +239,6 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  db_backups:
+  certbot_www:
+  certbot_conf:

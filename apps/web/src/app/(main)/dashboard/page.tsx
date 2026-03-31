@@ -89,7 +89,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
 
       {/* ── Header ── */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">{greeting}</p>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mt-1 tracking-tight">
@@ -99,13 +99,13 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/spaces')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
             管理空间
           </button>
           <button
             onClick={() => router.push('/spaces')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             新建空间
@@ -115,9 +115,9 @@ export default function DashboardPage() {
 
       {/* ── KPI Stats Strip (VisActor style: border-separated, trend badges) ── */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-gray-200 dark:divide-gray-700">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {statItems.map((s) => (
-            <div key={s.label} className="px-5 py-5 first:rounded-l-xl last:rounded-r-xl">
+            <div key={s.label} className="px-5 py-5 border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r lg:[&:nth-child(6n)]:border-r-0 lg:border-b-0">
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">{s.label}</p>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-semibold text-gray-900 dark:text-white tabular-nums">

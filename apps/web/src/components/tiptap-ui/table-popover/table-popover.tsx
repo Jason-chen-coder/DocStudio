@@ -24,7 +24,24 @@ export function TablePopover({ editor: providedEditor }: TablePopoverProps) {
   useEffect(() => {
     if (isOpen && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 4, left: rect.left });
+      const popoverWidth = MAX_COLS * 28 + 24; // cell size + padding
+      const popoverHeight = MAX_ROWS * 28 + 48; // cells + label + padding
+
+      // Ensure popover stays within viewport
+      let left = rect.left;
+      let top = rect.bottom + 4;
+
+      if (left + popoverWidth > window.innerWidth - 8) {
+        left = window.innerWidth - popoverWidth - 8;
+      }
+      if (left < 8) {
+        left = 8;
+      }
+      if (top + popoverHeight > window.innerHeight - 8) {
+        top = rect.top - popoverHeight - 4;
+      }
+
+      setPos({ top, left });
     }
   }, [isOpen]);
 

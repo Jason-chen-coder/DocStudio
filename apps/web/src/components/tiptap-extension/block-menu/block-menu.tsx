@@ -68,6 +68,39 @@ export function BlockMenu({ editor }: BlockMenuProps) {
     [editor, menuOpen],
   );
 
+  // Touch support: show block menu on tap near left edge of a block
+  const handleTouchStart = useCallback(
+    (event: TouchEvent) => {
+      if (!editor.isEditable || menuOpen) return;
+
+      const touch = event.touches[0];
+      if (!touch) return;
+
+      const editorEl = editor.view.dom;
+      const editorRect = editorEl.getBoundingClientRect();
+
+      // Find the block node at the touch position
+      const pos = editor.view.posAtCoords({ left: editorRect.left + 10, top: touch.clientY });
+      if (!pos) return;
+
+      const resolved = editor.state.doc.resolve(pos.pos);
+      const blockDepth = Math.min(resolved.depth, 1);
+      const blockStart = resolved.before(blockDepth + 1);
+
+      const domNode = editor.view.nodeDOM(blockStart);
+      if (!domNode || !(domNode instanceof HTMLElement)) return;
+
+      const nodeRect = domNode.getBoundingClientRect();
+      const scrollContainer = editorEl.closest('.simple-editor-content');
+      const containerRect = scrollContainer?.getBoundingClientRect() || editorRect;
+
+      setTop(nodeRect.top - containerRect.top + (scrollContainer?.scrollTop || 0));
+      setBlockPos(blockStart);
+      setVisible(true);
+    },
+    [editor, menuOpen],
+  );
+
   useEffect(() => {
     const editorEl = editor.view.dom;
     const container = editorEl.closest('.simple-editor-content') || editorEl.parentElement;
@@ -77,11 +110,13 @@ export function BlockMenu({ editor }: BlockMenuProps) {
     container.addEventListener('mouseleave', () => {
       if (!menuOpen) setVisible(false);
     });
+    container.addEventListener('touchstart', handleTouchStart as EventListener, { passive: true });
 
     return () => {
       container.removeEventListener('mousemove', updatePosition as EventListener);
+      container.removeEventListener('touchstart', handleTouchStart as EventListener);
     };
-  }, [editor, updatePosition, menuOpen]);
+  }, [editor, updatePosition, handleTouchStart, menuOpen]);
 
   const handleAction = useCallback(
     (action: 'delete' | 'duplicate' | 'moveUp' | 'moveDown' | 'addAbove') => {
@@ -186,7 +221,7 @@ export function BlockMenu({ editor }: BlockMenuProps) {
         type="button"
         onClick={() => setMenuOpen(!menuOpen)}
         onMouseDown={(e) => e.preventDefault()}
-        className="p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors cursor-grab active:cursor-grabbing"
+        className="p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors cursor-grab active:cursor-grabbing touch-manipulation"
         title="块操作"
         aria-label="块级操作菜单"
       >

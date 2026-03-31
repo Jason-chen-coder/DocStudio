@@ -238,19 +238,20 @@ export function ImageBubbleMenu({ editor, onAddComment, onCommentAdded }: ImageB
         shouldShow={({ editor: e }) => e.isActive('image') && e.isEditable}
         options={{ placement: 'top', offset: { mainAxis: 8 } }}
       >
-        <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-1 py-0.5 gap-0.5">
+        <div className="flex items-center flex-wrap max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-1 py-0.5 gap-0.5 overflow-x-auto">
           {/* OCR - Extract text (delegates to AI result panel) */}
           <button
             type="button"
             onClick={handleOCR}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors whitespace-nowrap"
             title="提取图中文字"
           >
             <Type className={iconSize} />
-            提取图中文字
+            <span className="hidden sm:inline">提取图中文字</span>
+            <span className="sm:hidden">OCR</span>
           </button>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
 
           {/* Crop */}
           <FmtBtn onClick={handleCrop} title="裁剪">
@@ -372,7 +373,7 @@ export function ImageBubbleMenu({ editor, onAddComment, onCommentAdded }: ImageB
             )}
           </div>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
 
           {/* Alignment */}
           <FmtBtn active={editor.getAttributes('image')?.alignment === 'left'} onClick={() => handleAlign('left')} title="左对齐">
@@ -385,7 +386,7 @@ export function ImageBubbleMenu({ editor, onAddComment, onCommentAdded }: ImageB
             <AlignRight className={iconSize} />
           </FmtBtn>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 hidden sm:block" />
 
           {/* Replace image */}
           <FmtBtn onClick={handleReplace} title="替换图片">

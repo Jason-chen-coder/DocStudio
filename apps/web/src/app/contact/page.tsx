@@ -186,7 +186,7 @@ export default function ContactPage() {
 
       <PublicHeader />
 
-      <div className="relative pt-20 pb-20 px-4 flex flex-col items-center">
+      <div className="relative min-h-screen px-4 pt-10 flex flex-col items-center justify-center">
         <motion.div
           variants={container}
           initial="hidden"

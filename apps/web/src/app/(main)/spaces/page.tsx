@@ -69,7 +69,7 @@ export default function SpacesPage() {
   if (loading && !spaces.length) {
     return (
       <div className="space-y-8 animate-pulse">
-        <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 px-12 py-14">
+        <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 px-6 sm:px-12 py-14">
           <div className="h-9 w-64 bg-white/60 dark:bg-gray-700 rounded-lg mb-3" />
           <div className="h-5 w-96 bg-white/40 dark:bg-gray-700 rounded" />
         </div>
@@ -86,7 +86,7 @@ export default function SpacesPage() {
     <div className="space-y-8">
       {/* ═══════ Hero ═══════ */}
       <FadeIn delay={0} y={30}>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 border border-blue-100/80 dark:border-gray-700 px-12 py-12">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 border border-blue-100/80 dark:border-gray-700 px-6 sm:px-12 py-12">
           <div className="absolute -top-20 -right-20 w-72 h-72 bg-blue-200/30 dark:bg-blue-500/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-16 left-1/4 w-80 h-36 bg-violet-200/20 dark:bg-violet-500/5 rounded-full blur-3xl" />
 

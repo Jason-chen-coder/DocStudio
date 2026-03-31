@@ -85,7 +85,7 @@ export const SlashCommandsList = forwardRef<SlashCommandsListRef, SlashCommandsL
     return (
       <div
         ref={listRef}
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden w-72 max-h-80 overflow-y-auto"
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden w-72 max-w-[calc(100vw-2rem)] max-h-80 overflow-y-auto"
       >
         {Object.entries(groups).map(([groupName, groupItems]) => (
           <div key={groupName}>

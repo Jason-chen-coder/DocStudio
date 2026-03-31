@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useEffect } from 'react';
 import { ArrowRight, Globe, Lock, Zap, Sparkles, Layout, Users, Database, BrainCircuit, Link2, History, FileInput, BarChart3, WifiOff, MessageSquareText, Search, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PublicHeader } from '@/components/layout/public-header';
@@ -126,6 +127,13 @@ const ReviewCard = ({
 export default function Home() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+    document.documentElement.style.overscrollBehavior = 'none';
+    return () => {
+      document.documentElement.style.overscrollBehavior = '';
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 selection:bg-blue-100 selection:text-blue-900">
@@ -650,7 +658,7 @@ export default function Home() {
         </section>
 
         {/* Community Reviews Section */}
-        <section className="py-24 bg-white dark:bg-zinc-900 relative overflow-hidden border-t border-slate-100 dark:border-zinc-800/50">
+        <section className="py-24 bg-white dark:bg-gray-950 relative overflow-hidden border-t border-slate-100 dark:border-zinc-800/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative mb-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -677,8 +685,8 @@ export default function Home() {
             </Marquee>
 
             {/* Gradient Overlays */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-white dark:from-zinc-900"></div>
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-white dark:from-zinc-900"></div>
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-white dark:from-gray-950"></div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-white dark:from-gray-950"></div>
           </div>
         </section>
         {/* ==================== Bottom CTA ==================== */}

@@ -383,8 +383,8 @@ export default function AdminUsersPage() {
 
       {/* 搜索 + 筛选 */}
       <FadeIn delay={0.1} y={16} duration={0.4}>
-      <div className="flex items-center gap-3 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -394,7 +394,7 @@ export default function AdminUsersPage() {
             className="w-full pl-9 pr-4 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
           />
         </div>
-        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+        <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700" />
         <div className="relative inline-flex items-center">
           <select
             value={selectedSpaceId}
@@ -417,7 +417,7 @@ export default function AdminUsersPage() {
       <FadeIn delay={0.2} y={16} duration={0.4}>
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex-1 min-h-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-700">
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">用户</th>
@@ -488,7 +488,7 @@ export default function AdminUsersPage() {
 
       {/* 分页 */}
       <FadeIn delay={0.3} y={12} duration={0.4}>
-      <div className="flex items-center justify-between mt-4 pt-2 text-sm text-gray-500 dark:text-gray-400 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-2 text-sm text-gray-500 dark:text-gray-400 shrink-0">
         <div className="flex items-center gap-3">
           <label className="whitespace-nowrap">每页</label>
           <select
