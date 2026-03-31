@@ -21,5 +21,5 @@ export const siteConfig = {
     '自托管',
     'wiki',
   ],
-  ogImage: '/docStudio_icon.png',
+  ogImage: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`,
 } as const;

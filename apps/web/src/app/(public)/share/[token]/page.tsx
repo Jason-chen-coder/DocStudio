@@ -102,7 +102,7 @@ function ShareHeader({ title }: { title?: string }) {
             title="返回首页"
           >
             <Image
-              src="/docStudio_icon.png"
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`}
               alt="DocStudio"
               width={28}
               height={28}

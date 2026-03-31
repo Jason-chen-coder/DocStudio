@@ -91,7 +91,7 @@ export function Sidebar() {
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col h-full">
       <div className="h-16 flex items-center gap-3 px-6 border-b border-gray-200 dark:border-gray-700">
         <Image
-          src="/docStudio_icon.png"
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`}
           alt="DocStudio"
           width={32}
           height={32}

@@ -84,7 +84,7 @@ export function PublicHeader() {
             <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between max-w-7xl mx-auto">
                 <div className="flex-1 flex justify-start">
                     <Link href="/" className="flex items-center gap-3 relative group">
-                        <Image src="/docStudio_icon.png" alt="DocStudio" width={32} height={32} style={{ width: 32, height: 'auto' }} />
+                        <Image src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`} alt="DocStudio" width={32} height={32} style={{ width: 32, height: 'auto' }} />
 
                         {/* Wrapper for smooth cross-fade of gradient text */}
                         <div className="relative flex items-center">

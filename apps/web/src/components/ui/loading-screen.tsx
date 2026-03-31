@@ -26,7 +26,7 @@ export function LoadingScreen({ className }: LoadingScreenProps) {
         {/* Center Icon (Logo) */}
         <div className="absolute flex items-center justify-center z-10 bg-white dark:bg-gray-900 rounded-full p-1">
           <Image
-            src="/docStudio_icon.png"
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`}
             alt="DocStudio Logo"
             width={20}
             height={20}

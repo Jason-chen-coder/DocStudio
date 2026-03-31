@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: '/docStudio_icon.png',
+    icon: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`,
   },
 };
 

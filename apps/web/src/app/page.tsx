@@ -777,7 +777,7 @@ export default function Home() {
             {/* Brand */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2.5">
-                <Image src="/docStudio_icon.png" alt="DocStudio" width={22} height={22} style={{ width: 22, height: 'auto' }} />
+                <Image src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/docStudio_icon.png`} alt="DocStudio" width={22} height={22} style={{ width: 22, height: 'auto' }} />
                 <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">DocStudio</span>
               </div>
               <p className="text-[13px] text-gray-500 dark:text-gray-500 leading-relaxed max-w-[220px]">

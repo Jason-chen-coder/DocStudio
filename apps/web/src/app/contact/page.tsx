@@ -147,7 +147,7 @@ function WeChatCard() {
           >
             <div className="bg-white dark:bg-[#1C1C20] rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/50 border border-gray-200/80 dark:border-white/[0.08] p-3 flex flex-col items-center gap-2">
               <Image
-                src="/we_chat.png"
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/we_chat.png`}
                 alt="微信二维码"
                 width={960}
                 height={960}
